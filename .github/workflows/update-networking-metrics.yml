@@ -48,7 +48,7 @@ jobs:
                 existing_data = pd.read_json(file)
                 all_data.extend(existing_data.to_dict(orient='records'))
         except FileNotFoundError:
-            print("data/networking-metrics-data.json not found, starting with downloaded data.")
+            raise FileNotFoundError("Error: 'data/networking-metrics-data.json' not found.")
 
         df = pd.DataFrame(all_data)
         df = df.drop_duplicates(subset=['date', 'channel', 'os', 'metric'], keep='last')
