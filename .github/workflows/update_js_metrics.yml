@@ -44,11 +44,11 @@ jobs:
             all_data.extend(rows)
 
         try:
-            with open('js-metrics-data.json', 'r') as file:
+            with open('data/js-metrics-data.json', 'r') as file:
                 existing_data = pd.read_json(file)
                 all_data.extend(existing_data.to_dict(orient='records'))
         except FileNotFoundError:
-            print("js-metrics-data.json not found, starting with downloaded data.")
+            raise FileNotFoundError("Error: 'data/js-metrics-data.json' not found.")
 
         df = pd.DataFrame(all_data)
         df = df.drop_duplicates(subset=['date', 'channel', 'os', 'metric'], keep='last')
