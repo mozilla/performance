@@ -44,11 +44,11 @@ jobs:
             all_data.extend(rows)
 
         try:
-            with open('pageload-metrics-data.json', 'r') as file:
+            with open('data/pageload-metrics-data.json', 'r') as file:
                 existing_data = pd.read_json(file)
                 all_data.extend(existing_data.to_dict(orient='records'))
         except FileNotFoundError:
-            print("pageload-metrics-data.json not found, starting with downloaded data.")
+                raise FileNotFoundError("Error: 'data/pageload-metrics-data.json' not found.")
 
         df = pd.DataFrame(all_data)
         df = df.drop_duplicates(subset=['date', 'channel', 'os', 'metric'], keep='last')
