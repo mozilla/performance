@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JS Metrics</title>
+<script src="helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
+<link rel="stylesheet" href="assets/metrics-style.css">
+
+<script src="assets/metrics.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+      const dataUrl = 'data/js-metrics-data.json';
+      generateContent(dataUrl);
+  });
+</script>
+
+</head>
+<body>
+  <div class="sidebar">
+    <div class="dropdown">
+      <label for="history-select">History (days):</label>
+      <select id="history-select" onchange="setHistory(this.value)">
+        <option value=14>14</option>
+        <option value=30>30</option>
+        <option value=60>60</option>
+        <option value=90>90</option>
+        <option value=180>180</option>
+        <option value=360>360</option>
+      </select>
+    </div>
+    <div class="dropdown">
+      <label for="channel-select">Channel:</label>
+      <select id="channel-select" onchange="setChannel(this.value)">
+        <option value="Nightly">Nightly</option>
+        <option value="Beta">Beta</option>
+        <option value="Release">Release</option>
+      </select>
+    </div>
+    <div class="dropdown">
+      <label for="platform-select">Platform:</label>
+      <select id="platform-select" onchange="setPlatform(this.value)">
+        <option value="Windows">Windows</option>
+        <option value="Linux">Linux</option>
+        <option value="Mac">Mac</option>
+        <option value="Android">Android</option>
+      </select>
+    </div>
+
+    <div class="sections">
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="content-title" id="content-title">
+      Windows - Release - 90 days
+    </div>
+
+    <div class="charts-content">
+    </div>
+  </div>
+
+  <script>
+
+    var metrics = [
+      ["javascript_pageload_execution_time",       "JS Pageload Execution Time"],
+      ["javascript_pageload_baseline_compile_time","JS Pageload Baseline Compile Time"],
+      ["javascript_pageload_gc_time",              "JS Pageload GC Time"],
+      ["javascript_gc_total_time",                 "GC Major Time"],
+      ["javascript_gc_minor_time",                 "GC Minor Time"],
+      ["javascript_gc_slice_time",                 "GC Slice Time"],
+      ["javascript_gc_mark_time",                  "GC Mark Time"],
+      ["javascript_gc_mark_roots_time",            "GC Mark Roots Time"],
+      ["javascript_gc_prepare_time",               "GC Prepare Time"],
+      ["javascript_gc_sweep_time",                 "GC Sweep Time"],
+      ["javascript_gc_compact_time",               "GC Compact Time"],
+    ];
+
+    // Create sidebar sections
+    createSidebarSections(metrics);
+    // Create charts content
+    createChartsContent(metrics);
+  </script>
+</body>
+</html>

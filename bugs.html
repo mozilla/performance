@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Bugs</title>
+<script src="helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 50px;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0;
+  }
+
+  .row {
+    width: 80%;
+    margin-bottom: 30px;
+  }
+
+  .row-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    border-bottom: 3px double #000;
+    padding-bottom: 5px;
+    text-align: center;
+  }
+
+  .stats-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    align: center;
+    width: 300px;
+  }
+
+  .content-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+  }
+
+  .metrics-container {
+    width: 80%;
+    margin-bottom: 30px;
+  }
+
+  .metrics {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    text-align: center;
+  }
+
+  .metric-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #e0e0e0;
+    border-radius: 10px;
+    padding: 20px;
+    margin: 0 10px;
+    flex: 1;
+  }
+
+  .metric-title {
+    font-size: 20px;
+    margin-bottom: 10px;
+  }
+
+  .metric-number {
+    font-size: 50px;
+  }
+
+  .canvas-column canvas {
+    width: 100%;
+    height: 450px;
+    background-color: white;
+    border-radius: 10px;
+  }
+
+  .sub-row {
+    flex: 1;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+  }
+
+  th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+    word-wrap: break-word;
+  }
+
+  th {
+    background-color: #f2f2f2;
+  }
+
+  tr:hover {
+    background-color: #f0f0f0;
+    cursor: pointer;
+  }
+
+  .bug-table-container {
+    width: 80%;
+    margin-bottom: 30px;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+</style>
+  <script>
+    function displayMetrics() {
+      const regressionCount = window.openBugs.filter(bug => bug.keywords.includes('regression')).length;
+      const newBugCount = window.openBugs.filter(bug => new Date(bug.creation_time) > new Date('2024-01-01')).length;
+      const resolvedBugCount = window.resolvedBugs.filter(bug => new Date(bug.creation_time) > new Date('2024-01-01')).length;
+
+      document.getElementById('regression-count').textContent = regressionCount;
+      document.getElementById('new-bug-count').textContent = newBugCount;
+      document.getElementById('resolved-bug-count').textContent = resolvedBugCount;
+    }
+
+    function sortTable(columnIndex, tableId) {
+      const table = document.getElementById(tableId);
+      const tbody = table.getElementsByTagName('tbody')[0];
+      const rows = Array.from(tbody.getElementsByTagName('tr'));
+
+      const isAscending = table.getAttribute('data-sort-direction') === 'asc';
+      const direction = isAscending ? 1 : -1;
+
+      rows.sort((a, b) => {
+        const cellA = a.getElementsByTagName('td')[columnIndex].innerText.toLowerCase();
+        const cellB = b.getElementsByTagName('td')[columnIndex].innerText.toLowerCase();
+
+        if (!isNaN(cellA) && !isNaN(cellB)) {
+          return direction * (parseFloat(cellA) - parseFloat(cellB));
+        } else {
+          return direction * cellA.localeCompare(cellB);
+        }
+      });
+
+      while (tbody.firstChild) {
+        tbody.removeChild(tbody.firstChild);
+      }
+      rows.forEach(row => tbody.appendChild(row));
+      table.setAttribute('data-sort-direction', isAscending ? 'desc' : 'asc');
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadBugzillaData();
+    });
+
+    function displayBugTables() {
+      const impactOrder = {
+        '?': 1,
+        'pending-needinfo': 2,
+        'high': 3,
+        'medium': 4,
+        'low': 5
+      };
+      const regressions = window.openBugs.filter(bug => bug.keywords.includes('regression')).sort((a, b) => {
+        if (a.cf_performance_impact === b.cf_performance_impact) {
+          return (new Date(b.last_change_time)) - (new Date(a.last_change_time));
+        } else {
+          return impactOrder[a.cf_performance_impact] - impactOrder[b.cf_performance_impact];
+        }
+      });
+
+      const regressionTableBody = document.querySelector('#regression-table tbody');
+
+      regressions.forEach(bug => {
+        const row = document.createElement('tr');
+        const creationDate = (new Date(bug.creation_time)).toISOString().split('T')[0];
+        const lastUpdate = (new Date(bug.last_change_time)).toISOString().split('T')[0];
+
+        row.innerHTML = `
+          <td>${bug.id}</td>
+          <td>${bug.status}</td>
+          <td>${bug.cf_performance_impact}</td>
+          <td>${bug.priority}</td>
+          <td>${bug.component}</td>
+          <td>${bug.summary}</td>
+          <td>${creationDate}</td>
+          <td>${lastUpdate}</td>
+        `;
+        row.onclick = () => {
+          window.top.location.href = `https://bugzilla.mozilla.org/show_bug.cgi?id=${bug.id}`;
+        };
+        regressionTableBody.appendChild(row);
+      });
+
+      const highImpactTableBody = document.querySelector('#high-impact-table tbody');
+      const highImpactBugs = window.highImpact.filter(bug => bug.status !== 'RESOLVED');
+      highImpactBugs.forEach(bug => {
+        const row = document.createElement('tr');
+        const lastUpdate = (new Date(bug.last_change_time)).toISOString().split('T')[0];
+        const creationDate = (new Date(bug.creation_time)).toISOString().split('T')[0];
+        row.innerHTML = `
+          <td>${bug.id}</td>
+          <td>${bug.status}</td>
+          <td>${bug.priority}</td>
+          <td>${bug.component}</td>
+          <td>${bug.summary}</td>
+          <td>${lastUpdate}</td>
+          <td>${creationDate}</td>
+        `;
+        row.onclick = () => {
+          window.top.location.href = `https://bugzilla.mozilla.org/show_bug.cgi?id=${bug.id}`;
+        };
+        highImpactTableBody.appendChild(row);
+      });
+    }
+
+    const backgroundColorPlugin = {
+      id: 'backgroundColor',
+      beforeDraw: (chart) => {
+        const {ctx, width, height} = chart;
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(0, 0, width, height);
+      }
+    };
+
+    function displayOSChart() {
+      const os_counts = window.openBugs.reduce((acc, bug) => {
+        acc[bug.op_sys] = (acc[bug.op_sys] || 0) + 1;
+        return acc;
+      }, {});
+
+      const labels = Object.keys(os_counts).map(key => `${key} (${os_counts[key]})`);
+      const data = Object.values(os_counts);
+
+      const navigateToBugzilla = (label) => {
+        const op_sys = label.split(' (')[0];
+        const url = `https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&o1=isnotempty&query_format=advanced&bug_status=__open__&op_sys=${encodeURIComponent(op_sys)}&f3=cf_performance_impact&o3=notequals&v3=none`;
+        window.top.location.href = url;
+      };
+
+      const ctx = document.getElementById('os-canvas').getContext('2d');
+      const osChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data
+          }]
+        },
+        options: {
+          responsive: true,
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const chartElement = elements[0];
+              const label = osChart.data.labels[chartElement.index];
+              navigateToBugzilla(label);
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'right',
+              onClick: (e, legendItem, legend) => {
+                const label = legendItem.text;
+                navigateToBugzilla(label);
+              },
+              labels: {
+                boxWidth: 20,
+                maxWidth: 300,
+                font: {
+                  size: 14
+                }
+              }
+            }
+          }
+        },
+        plugins: [backgroundColorPlugin]
+      });
+      
+    }
+
+    function displayComponentTable() {
+      const componentCounts = window.openBugs.reduce((acc, bug) => {
+        acc[bug.component] = (acc[bug.component] || 0) + 1;
+        return acc;
+      }, {});
+
+      const totalBugs = window.openBugs.length;
+      const components = Object.keys(componentCounts).map(component => ({
+        name: component,
+        count: componentCounts[component],
+        percentage: ((componentCounts[component] / totalBugs) * 100).toFixed(2)
+      }));
+
+      components.sort((a, b) => b.count - a.count);
+
+      const tableBody = document.querySelector('#component-table tbody');
+      components.forEach(component => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${component.name}</td>
+          <td>${component.count}</td>
+          <td>${component.percentage}%</td>
+        `;
+        row.onclick = () => {
+          const url = `https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&o1=isnotempty&query_format=advanced&bug_status=__open__&component=${encodeURIComponent(component.name)}&f3=cf_performance_impact&o3=notequals&v3=none`;
+          window.top.location.href = url;
+        };
+        tableBody.appendChild(row);
+      });
+    }
+
+    function displayHighImpactChart() {
+      const openHighImpactBugs = window.highImpact.filter(bug => bug.status !== 'RESOLVED');
+      const componentCounts = openHighImpactBugs.reduce((acc, bug) => {
+        acc[bug.component] = (acc[bug.component] || 0) + 1;
+        return acc;
+      }, {});
+
+      const labels = Object.keys(componentCounts).map(key => `${key} (${componentCounts[key]})`);
+      const data = Object.values(componentCounts);
+
+      const navigateToBugzilla = (label) => {
+        const component = label.split(' (')[0];
+        const url = `https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&o1=equals&v1=high&query_format=advanced&bug_status=__open__&component=${encodeURIComponent(component)}`;
+        window.top.location.href = url;
+      };
+
+      const ctx = document.getElementById('high-impact-canvas').getContext('2d');
+      const highImpactComponentChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+          }]
+        },
+        options: {
+          responsive: true,
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const chartElement = elements[0];
+              const label = highImpactComponentChart.data.labels[chartElement.index];
+              navigateToBugzilla(label);
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'right',
+              onClick: (e, legendItem, legend) => {
+                const label = legendItem.text;
+                navigateToBugzilla(label);
+              },
+              labels: {
+                boxWidth: 20,
+                maxWidth: 300,
+                font: {
+                  size: 12
+                }
+              }
+            }
+          }
+        },
+        plugins: [backgroundColorPlugin]
+      });
+    }
+
+    function displayComponentChart() {
+      const componentCounts = window.openBugs.reduce((acc, bug) => {
+        acc[bug.component] = (acc[bug.component] || 0) + 1;
+        return acc;
+      }, {});
+
+      const labels = Object.keys(componentCounts).map(key => `${key} (${componentCounts[key]})`);
+      const data = Object.values(componentCounts);
+
+      const navigateToBugzilla = (label) => {
+        const component = label.split(' (')[0];
+        const url = `https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&o1=isnotempty&query_format=advanced&bug_status=__open__&component=${encodeURIComponent(component)}&f3=cf_performance_impact&o3=notequals&v3=none`;
+        window.top.location.href = url;
+      };
+
+      const ctx = document.getElementById('component-canvas').getContext('2d');
+      const componentChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: data,
+          }]
+        },
+        options: {
+          responsive: true,
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const chartElement = elements[0];
+              const label = componentChart.data.labels[chartElement.index];
+              navigateToBugzilla(label);
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              onClick: (e, legendItem, legend) => {
+                const label = legendItem.text;
+                navigateToBugzilla(label);
+              },
+              labels: {
+                boxWidth: 20,
+                maxWidth: 300,
+                font: {
+                  size: 12
+                }
+              }
+            }
+          }
+        },
+        plugins: [backgroundColorPlugin]
+      });
+      
+    }
+
+    function displayImpactChart() {
+      const highImpactLength = window.highImpact.filter(bug => bug.status !== 'RESOLVED').length;
+      const medImpactLength = window.medImpact.filter(bug => bug.status !== 'RESOLVED').length;
+      const lowImpactLength = window.lowImpact.filter(bug => bug.status !== 'RESOLVED').length;
+      const untriagedLength = window.untriaged.filter(bug => bug.status !== 'RESOLVED').length;
+      const needinfoLength = window.needinfo.filter(bug => bug.status !== 'RESOLVED').length;
+
+      window.highImpact.forEach(bug => bug.cf_performance_impact = 'high');
+      window.medImpact.forEach(bug => bug.cf_performance_impact = 'medium');
+      window.lowImpact.forEach(bug => bug.cf_performance_impact = 'low');
+      window.untriaged.forEach(bug => bug.cf_performance_impact = '?');
+      window.needinfo.forEach(bug => bug.cf_performance_impact = 'pending-needinfo');
+
+      const labels = [
+            `High (${highImpactLength})`,
+            `Medium (${medImpactLength})`,
+            `Low (${lowImpactLength})`,
+            `Untriaged (${untriagedLength})`,
+            `Pending Needinfo (${needinfoLength})`,
+      ];
+
+      const navigateToBugzilla = (label) => {
+        let impact = label.split(' ')[0];
+        if (impact === 'Pending') {
+          impact = 'pending-needinfo';
+        } else if (impact === 'Untriaged') {
+          impact = '%3F';
+        }
+        const url = `https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&v1=${impact}&o1=equals&query_format=advanced&bug_status=__open__`
+        window.top.location.href = url;
+      };
+
+      const ctx = document.getElementById('impact-canvas').getContext('2d');
+      const impactChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: [highImpactLength, medImpactLength, lowImpactLength, untriagedLength, needinfoLength],
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#4D5360'],
+            hoverBackgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#4D5360']
+          }]
+        },
+        options: {
+          responsive: true,
+          onClick: (event, elements) => {
+            if (elements.length > 0) {
+              const chartElement = elements[0];
+              const label = impactChart.data.labels[chartElement.index];
+              navigateToBugzilla(label);
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'right',
+              onClick: (e, legendItem, legend) => {
+                const label = legendItem.text;
+                navigateToBugzilla(label);
+              },
+              labels: {
+                boxWidth: 20,
+                maxWidth: 300,
+                font: {
+                  size: 14
+                }
+              },
+            }
+          }
+        },
+        plugins: [backgroundColorPlugin]
+      });
+    }
+
+    function displayPerfKeywordsChart() {
+        const perfCounts = window.openBugs.reduce((acc, bug) => {
+             let hasPerfKeyword = false;
+             bug.keywords.forEach(keyword => {
+                 if (keyword.startsWith('perf:')) {
+                     hasPerfKeyword = true;
+                     acc[keyword] = (acc[keyword] || 0) + 1;
+                 }
+             });
+             if (!hasPerfKeyword) {
+                 acc['unspecified'] = (acc['unspecified'] || 0) + 1;
+             }
+             return acc;
+        }, {});
+
+        const labels = Object.keys(perfCounts).map(key => `${key.replace('perf:', '')} (${perfCounts[key]})`);
+        const data = Object.values(perfCounts);
+
+        const navigateToBugzilla = (label) => {
+          const value = label.split(' (')[0];
+            
+          if (value === 'unspecified') {
+            const url = 'https://bugzilla.mozilla.org/buglist.cgi?f2=cf_performance_impact&bug_status=__open__&f1=keywords&query_format=advanced&o1=notsubstring&v1=perf%3A&o2=isnotempty&f3=cf_performance_impact&o3=notequals&v3=none';
+            window.top.location.href = url;
+          } else {
+            const keyword = encodeURIComponent(`perf:${value}`);
+            const url = `https://bugzilla.mozilla.org/buglist.cgi?o1=substring&query_format=advanced&bug_status=__open__&f2=cf_performance_impact&o2=isnotempty&v1=${keyword}&f1=keywords&f3=cf_performance_impact&o3=notequals&v3=none`
+            window.top.location.href = url;
+          }
+        };
+
+        console.log("BLAH");
+
+        const ctx = document.getElementById('keyword-canvas').getContext('2d');
+        const perfKeywordChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+            }]
+          },
+          options: {
+            responsive: true,
+            onClick: (event, elements) => {
+              if (elements.length > 0) {
+                const chartElement = elements[0];
+                const label = perfKeywordChart.data.labels[chartElement.index];
+                navigateToBugzilla(label);
+              }
+            },
+            plugins: {
+              legend: {
+                position: 'right',
+                onClick: (e, legendItem, legend) => {
+                  const label = legendItem.text;
+                  navigateToBugzilla(label);
+                },
+                labels: {
+                  boxWidth: 20,
+                  maxWidth: 300,
+                  font: {
+                    size: 14
+                  }
+                }
+              }
+            }
+          },
+          plugins: [backgroundColorPlugin]
+        });
+    }
+
+    function loadBugzillaData() {
+      const bugzillaUrl = 'data/bugzilla-data-all.json';
+
+      fetch(bugzillaUrl)
+        .then(response => response.json())
+        .then(data => {
+          // bugzilla sorts from oldest->newest, so reverse the arrays.
+          window.highImpact = data.high.bugs.reverse();
+          window.medImpact = data.medium.bugs.reverse();
+          window.lowImpact = data.low.bugs.reverse();
+          window.untriaged = data.untriaged.bugs.reverse();
+          window.needinfo = data.needinfo.bugs.reverse();
+          let allBugs = [...window.highImpact, ...window.medImpact, ...window.lowImpact, ...window.untriaged, ...window.needinfo];
+          allBugs.sort((a, b) => (new Date(b.last_change_time)) - (new Date(a.last_change_time)));
+
+          window.openBugs = allBugs.filter(bug => bug.status !== 'RESOLVED');
+          window.resolvedBugs = allBugs.filter(bug => bug.status === 'RESOLVED');
+
+          displayMetrics();
+          displayPerfKeywordsChart();
+          displayImpactChart();
+          displayHighImpactChart();
+          displayComponentTable();
+          displayOSChart();
+          displayBugTables();
+        })
+        .catch(error => console.error('Error fetching Bugzilla data:', error));
+    }
+
+    function generateContent() {
+      loadBugzillaData();
+    }
+
+    document.addEventListener("DOMContentLoaded", generateContent);
+  </script>
+
+</head>
+<body>
+  <div class="metrics-container">
+    <div class="row-title" style="text-align: center">Metrics (YTD)</div>
+    <div class="metrics">
+      <div class="metric-column">
+        <div class="metric-title">New Bugs</div>
+        <div class="metric-number" id="new-bug-count">0</div>
+      </div>
+      <div class="metric-column">
+        <div class="metric-title">Regressions</div>
+        <div class="metric-number" id="regression-count">0</div>
+      </div>
+      <div class="metric-column">
+        <div class="metric-title">Resolved</div>
+        <div class="metric-number" id="resolved-bug-count">0</div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="row">
+    <div class="content-row">
+      <div class="sub-row">
+        <div class="row-title">Performance Impact Distribution</div>
+        <div class="content-row">
+          <div class="canvas-column">
+            <canvas id="impact-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="sub-row">
+        <div class="row-title">High Impact Distribution</div>
+        <div class="content-row">
+          <div class="canvas-column">
+            <canvas id="high-impact-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="content-row">
+      <div class="sub-row">
+        <div class="row-title">OS Distribution</div>
+        <div class="content-row">
+          <div class="canvas-column">
+            <canvas id="os-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="sub-row">
+        <div class="row-title">Performance Type Distribution</div>
+        <div class="content-row">
+          <div class="canvas-column">
+            <canvas id="keyword-canvas"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row-title" style="width:80%">Component Distribution</div>
+  <div class="bug-table-container" style="max-height: 300px">
+     <table id="component-table">
+       <thead>
+         <tr>
+           <th>Component</th>
+           <th>Number of Bugs</th>
+           <th>Percentage of Bugs</th>
+         </tr>
+       </thead>
+       <tbody></tbody>
+     </table>
+  </div>
+
+  <div class="row-title" style="width:80%">All Open Regressions</div>
+  <div class="bug-table-container">
+    <table id="regression-table">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0, 'regression-table')">ID</th>
+          <th onclick="sortTable(1, 'regression-table')">Status</th>
+          <th onclick="sortTable(2, 'regression-table')">Impact</th>
+          <th onclick="sortTable(3, 'regression-table')">Priority</th>
+          <th onclick="sortTable(4, 'regression-table')">Component</th>
+          <th onclick="sortTable(5, 'regression-table')">Summary</th>
+          <th onclick="sortTable(6, 'regression-table')">Creation Date</th>
+          <th onclick="sortTable(7, 'regression-table')">Last Update</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="row-title" style="width:80%">All High Impact Bugs</div>
+  <div class="bug-table-container">
+    <table id="high-impact-table">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0, 'high-impact-table')">ID</th>
+          <th onclick="sortTable(1, 'high-impact-table')">Status</th>
+          <th onclick="sortTable(2, 'high-impact-table')">Priority</th>
+          <th onclick="sortTable(3, 'high-impact-table')">Component</th>
+          <th onclick="sortTable(4, 'high-impact-table')">Summary</th>
+          <th onclick="sortTable(5, 'high-impact-table')">Creation Date</th>
+          <th onclick="sortTable(6, 'high-impact-table')">Last Update</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+
+</body>
+</html>

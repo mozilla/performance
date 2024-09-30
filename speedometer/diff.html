@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Speedometer 3 Status Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <script>
+    function round(number, decimals) {
+      return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    function getDiffColor(diff) {
+      if (diff < -0.05) {
+        return 'green'
+      } else if (diff < 0.095) {
+        return 'black'
+      } else if (diff < 0.2) {
+        return '#b38f00'
+      } else {
+        return 'red'
+      }
+    }
+
+    function loadChart() {
+      fetch('https://sql.telemetry.mozilla.org/api/queries/91105/results.json?api_key=l1VW7NobZMxWLDNpLHMYMMcLsBKFSeeoWBZi0gpZ')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          displayChart(data);
+        })
+        .catch(function (err) {
+          console.log('error: ' + err);
+        });
+    }
+
+    function getPlatformWeight(platform) {
+      switch (platform) {
+        case 'windows10-64-shippable-qr':
+          return 0.8;
+        case 'macosx1015-64-shippable-qr':
+          return 0.2;
+        default:
+          return 0.0;
+      }
+    }
+
+    function displayChart(data) {
+      const ctxDesktop = document.getElementById('chartDesktop').getContext('2d');
+
+      var weightedValuesDesktop = {};
+      var weightedValuesMobile = {};
+      data.query_result.data.rows.forEach(function (row) {
+        if (row.platform == 'android-hw-a51-11-0-aarch64-shippable-qr' || row.difference == null) {
+          return;
+        }
+
+        if (!weightedValuesDesktop.hasOwnProperty(row.push_timestamp)) {
+          weightedValuesDesktop[row.push_timestamp] = {};
+          weightedValuesDesktop[row.push_timestamp]['diff'] = 0;
+          weightedValuesDesktop[row.push_timestamp]['totalWeight'] = 0;
+        }
+
+        weightedValuesDesktop[row.push_timestamp]['diff'] += getPlatformWeight(row.platform) * -row.moving_difference;
+        weightedValuesDesktop[row.push_timestamp]['totalWeight'] += getPlatformWeight(row.platform);
+      });
+
+      data.query_result.data.rows.forEach(function (row) {
+        if (row.platform != 'android-hw-a51-11-0-aarch64-shippable-qr' || row.difference == null) {
+          return;
+        }
+
+        if (!weightedValuesMobile.hasOwnProperty(row.push_timestamp)) {
+          weightedValuesMobile[row.push_timestamp] = {};
+          weightedValuesMobile[row.push_timestamp]['diff'] = 0;
+          weightedValuesMobile[row.push_timestamp]['totalWeight'] = 0;
+        }
+
+        weightedValuesMobile[row.push_timestamp]['diff'] += -row.moving_difference;
+        weightedValuesMobile[row.push_timestamp]['totalWeight'] += 1.0;
+      });
+
+      let xyValues = [];
+      let xyValuesMobile = [];
+      let xyValuesTrend = [];
+
+      for (const timestamp in weightedValuesDesktop) {
+        if (weightedValuesDesktop[timestamp]['totalWeight'] > 0.999) {
+          xyValues.push({ x: timestamp, y: (weightedValuesDesktop[timestamp]['diff']) * 100 });
+        }
+      }
+
+
+      for (const timestamp in weightedValuesMobile) {
+        if (weightedValuesMobile[timestamp]['totalWeight'] > 0.999) {
+          xyValuesMobile.push({ x: timestamp, y: (weightedValuesMobile[timestamp]['diff']) * 100 });
+        }
+      }
+
+      new Chart("chartDesktop", {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: 'Difference',
+              data: xyValues
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 2,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              },
+              min: '2023-04-14'
+
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Performance Difference (%)'
+              },
+            }
+          }
+        }
+      });
+
+      new Chart("chartMobile", {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: 'Difference',
+              data: xyValuesMobile
+            },
+          ]
+        },
+        options: {
+          aspectRatio: 2,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              },
+              min: '2023-04-14'
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Performance Difference (%)'
+              },
+            }
+          }
+        }
+      });
+    }
+
+  </script>
+  <style>
+    h2 {
+      font-family: sans-serif;
+    }
+
+    th {
+      font-family: sans-serif;
+      font-size: 22px;
+      text-align: center;
+      width: 180px;
+    }
+
+    td {
+      font-family: sans-serif;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .buttons td {
+      width: 200px;
+    }
+
+    a {
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-decoration: none;
+      color: black;
+      border-radius: 5px;
+    }
+
+      a:hover {
+        background-color: lightgray;
+      }
+  </style>
+</head>
+
+<body onload="loadChart();">
+  <center>
+
+    <h2>Desktop</h2>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="chartDesktop" style="width:100%;max-width:900px"></canvas>
+    </div>
+
+    <h2>Mobile</h2>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="chartMobile" style="width:100%;max-width:900px"></canvas>
+    </div>
+
+  </center>
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Speedometer 3 Status Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <script>
+    function round(number, decimals) {
+      return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    var platform = 'windows10-64-shippable-qr';
+
+    const searchParams = new URLSearchParams(window.location.search);
+
+    let likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/97531/results.json?api_key=IaOu0H5GXoCdMzhxudfQOMVVv66WgD1cfWpRYxk5';
+    let timeWindow = '6wk';
+    let supportsCaR = true;
+
+    let range = '';
+
+    var timeChart;
+
+    if (searchParams.get('os') == 'osx') {
+      platform = 'macosx1015-64-shippable-qr';
+    } else if (searchParams.get('os') == 'osxm2') {
+      platform = 'macosx1300-64-shippable-qr';
+    } else if (searchParams.get('os') == 'linux') {
+      platform = 'linux1804-64-shippable-qr';
+    } else if (searchParams.get('os') == 'android') {
+      platform = 'android-hw-a51-11-0-aarch64-shippable-qr';
+    }
+
+    fetch(likelyDataURL)
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        loadDataLikely(data);
+      })
+      .catch(function (err) {
+        console.log('error: ' + err);
+      });
+
+    function getDiffColor(diff) {
+      if (diff < -0.05) {
+        return 'green'
+      } else if (diff < 0.095) {
+        return 'black'
+      } else if (diff < 0.2) {
+        return '#b38f00'
+      } else {
+        return 'red'
+      }
+    }
+
+    function getSelfDiffColor(diff) {
+      if (diff <= 0.98) {
+        return 'green';
+      } else if (diff >= 1.02) {
+        return 'red';
+      } else {
+        return 'black';
+      }
+    }
+
+    function fillData(tableId, row) {
+      if (row.platform != platform) {
+        return;
+      }
+      diffColor = getDiffColor(row.Difference);
+      oldDiffColor = getDiffColor(row.OldDifference);
+
+      let firefoxDiff = 1.0;
+      if (row.FirefoxOldMean > 0) {
+        firefoxDiff = row.FirefoxDifference;
+      }
+
+      
+      let newLine = '';
+      newLine += '<tr onClick="openTestComparison(' + row.signature_id_firefox + ', ' + row.signature_id_chrome + ', ' + row.signature_id_car + ');"><th scope="row" class="testName">' +
+        row.test.split('/')[0] + '</th><td>' +
+        round(row.FirefoxMean, 2) + ' ms</td><td>' +
+        round(row.ChromeMean, 2) + ' ms</td>';
+      if (supportsCaR) {
+        newLine += '<td>' + round(row.CaRMean, 2) + ' ms</td>';
+      }
+      newLine += '<td style =\'color: ' + diffColor + '\'>' +
+        Math.round(-row.Difference * 100) + '\%</td>'
+      if (supportsCaR) {
+        newLine += '<td style=\'color: ' + getDiffColor(row.CaRDifference) + '\'>' + Math.round(-row.CaRDifference * 100) + '\%</td>'
+      }
+      newLine += '<td>' +
+        round(row.FirefoxOldMean, 2) + ' ms</td><td>' +
+        round(row.ChromeOldMean, 2) + ' ms</td><td style=\'color: ' + oldDiffColor + '\'>' +
+        Math.round(-row.OldDifference * 100) + '\%</td><td style=\'color: ' + getSelfDiffColor(firefoxDiff) + '\'>' +
+        Math.round(-(1 - firefoxDiff) * 100) + '%</td></tr >\n';
+
+      document.getElementById(tableId).innerHTML += newLine;
+    }
+
+    function loadDataLikely(data) {
+      let table = document.getElementById('tableLikely');
+      if (!supportsCaR) {
+        table.rows[0].cells[1].colSpan = 2;
+        table.rows[0].cells[2].colSpan = 1;
+        table.rows[1].deleteCell(2);
+        table.rows[1].deleteCell(3);
+      }
+      data.query_result.data.rows.forEach(fillData.bind(null, 'tableBodyLikely'));
+
+      document.getElementById('timewindow').innerHTML = timeWindow + ' prior';
+
+      let arithmeticMeanOfLogsFX = 0;
+      let arithmeticMeanOfLogsFXOld = 0;
+      let arithmeticMeanOfLogsChrome = 0;
+      let arithmeticMeanOfLogsChromeOld = 0;
+      let arithmeticMeanOfLogsCaR = 0;
+      let numValues = 0;
+      let numValuesOld = 0;
+      data.query_result.data.rows.forEach(function (row) {
+        if (row.platform != platform) {
+          return;
+        }
+        numValues++;
+        arithmeticMeanOfLogsFX += Math.log(row.FirefoxMean);
+        arithmeticMeanOfLogsChrome += Math.log(row.ChromeMean);
+        arithmeticMeanOfLogsCaR += Math.log(row.CaRMean);
+        if (row.FirefoxOldMean > 0) {
+          numValuesOld++;
+          arithmeticMeanOfLogsFXOld += Math.log(row.FirefoxOldMean);
+          arithmeticMeanOfLogsChromeOld += Math.log(row.ChromeOldMean);
+        }
+      });
+      let FxGeoMean = Math.exp(arithmeticMeanOfLogsFX / numValues);
+      let ChromeGeoMean = Math.exp(arithmeticMeanOfLogsChrome / numValues);
+      let CaRGeoMean = Math.exp(arithmeticMeanOfLogsCaR / numValues);
+      let FxOldGeoMean = Math.exp(arithmeticMeanOfLogsFXOld / numValuesOld);
+      let ChromeOldGeoMean = Math.exp(arithmeticMeanOfLogsChromeOld / numValuesOld);
+
+      let diff = FxGeoMean / ChromeGeoMean - 1;
+      let CaRdiff = FxGeoMean / CaRGeoMean - 1;
+      let oldDiff = ChromeOldGeoMean > 0 ? (FxOldGeoMean / ChromeOldGeoMean - 1) : 0;
+      let diffColor = getDiffColor(diff);
+      let oldDiffColor = getDiffColor(oldDiff);
+      let firefoxDiff = 0;
+      if (FxOldGeoMean > 0) {
+        firefoxDiff = FxGeoMean / FxOldGeoMean;
+      }
+
+      let newLine = '<tr class="sumRow"><th scope="row" class="testName">Total Score</th><td>' +
+        round(FxGeoMean, 2) + ' ms</td><td>' +
+        round(ChromeGeoMean, 2) + ' ms</td>';
+
+      if (supportsCaR) {
+        newLine += '<td>' +
+          round(CaRGeoMean, 2) + ' ms</td>';
+      }
+
+      newLine += '<td style=\'color: ' + diffColor + '\'>' +
+        round(-diff * 100, 2) + '\%</td>';
+      if (supportsCaR) {
+        newLine += '<td style=\'color: ' + getDiffColor(CaRdiff) + '\'>' +
+          round(-CaRdiff * 100, 2) + '\%</td>';
+      }
+      newLine += '<td>' +
+        round(FxOldGeoMean, 2) + ' ms</td><td>' +
+        round(ChromeOldGeoMean, 2) + ' ms</td><td style=\'color: ' + oldDiffColor + '\'>' +
+        round(-oldDiff * 100, 2) + '\%</td><td style=\'color: ' + getSelfDiffColor(firefoxDiff) + '\'>' +
+        Math.round(-(1 - firefoxDiff) * 100) + '%</td></tr >\n';
+
+      document.getElementById("tableBodyLikely").innerHTML += newLine;
+    }
+
+    function openTestComparison(signatureFirefox, signatureChrome, signatureCaR) {
+      let repoFirefox = 'mozilla-central';
+      let repoChrome = 'mozilla-central';
+      if (platform == 'android-hw-a51-11-0-aarch64-shippable-qr') {
+        repoFirefox = 'firefox-android';
+      }
+      let linkString = "https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&series=" + repoFirefox + "," + signatureFirefox + ",1,13&series=" + repoChrome + "," + signatureChrome + ",1,13&timerange=7776000";
+      if (supportsCaR) {
+        linkString += "&series=" + repoChrome + "," + signatureCaR + ",1,13";
+      }
+      window.open(linkString, "_blank")
+    }
+
+    function loadChart() {
+      if (searchParams.get('os') == 'osx') {
+        document.getElementById("macbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'linux') {
+        document.getElementById("linuxbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'android') {
+        document.getElementById("mobilebutton").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'osxm2') {
+        document.getElementById("osxm2button").style.backgroundColor = "gray";
+      } else {
+        document.getElementById("windowsbutton").style = "background-color:gray;";
+      }
+      fetch('https://sql.telemetry.mozilla.org/api/queries/97533/results.json?api_key=bf25Y5w6XgKXFcG33m3Ce9CIvdO9tT8wOros4NE0')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          displayChart(data);
+        })
+        .catch(function (err) {
+          console.log('error: ' + err);
+        });
+    }
+
+    function displayChart(data) {
+      const ctx = document.getElementById('myChart').getContext('2d');
+      let xyValuesFx = [];
+      let xyValuesChrome = [];
+      let xyValuesCaR = [];
+      data.query_result.data.rows.forEach(function (row) {
+        if (row.platform != platform) {
+          return;
+        }
+        // Hack to remove values where a run failed.
+        if (row.application == 'firefox' && row.geomean > 300) {
+          return;
+        }
+
+        if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
+          return;
+        }
+
+        if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
+        if (row.application == 'chrome' || row.application == 'chrome-m') { xyValuesChrome.push({ x: row.push_timestamp, y: row.geomean }); }
+        if (row.application == 'custom-car' || row.application == 'cstm-car-m') { xyValuesCaR.push({ x: row.push_timestamp, y: row.geomean }); }
+      });
+
+      let cfg = {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: 'Firefox',
+              pointRadius: 3,
+              pointBackgroundColor: "#FF9500",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesFx
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 1.5,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              }
+            },
+            y: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+              }
+            }
+          }
+        }
+      };
+
+      cfg.data.datasets.push({
+        label: 'Chrome',
+        pointRadius: 3,
+        pointBackgroundColor: "#1DA462",
+        pointBorderColor: "#000000",
+        pointBorderWidth: 0.5,
+        data: xyValuesChrome
+      });
+
+      if (platform == 'linux1804-64-shippable-qr') {
+        cfg.options.plugins.annotation.annotations.line3 = {
+          type: 'line',
+          xMin: '2023-02-08 17:00',
+          xMax: '2023-02-08 17:00',
+          borderColor: 'black',
+          borderWidth: 2,
+        };
+        cfg.options.plugins.annotation.annotations.label3 = {
+          type: 'label',
+          xValue: '2023-02-08 17:00',
+          yValue: 50,
+          backgroundColor: 'rgb(255,128,128)',
+          content: ['Linux Firmware Update'],
+          font: {
+            size: 14
+          },
+          rotation: -90,
+          borderRadius: 4
+        };
+      }
+
+      if (xyValuesCaR.length > 0) {
+        cfg.data.datasets.push({
+          label: 'Chromium-as-Release',
+          pointRadius: 3,
+          pointBackgroundColor: "#0099ff",
+          pointBorderColor: "#000000",
+          pointBorderWidth: 0.5,
+          data: xyValuesCaR
+        });
+      }
+
+      if (platform == 'macosx1300-64-shippable-qr') {
+        cfg.options.scales.x.min = '2023-12-01';
+      }
+
+      timeChart = new Chart("myChart", cfg);
+    }
+
+    function changeRange(newRange) {
+      if (newRange == 'all') {
+        if (platform != 'macosx1300-64-shippable-qr') {
+          timeChart.options.scales.x.min = '';
+        } else {
+          timeChart.options.scales.x.min = '2023-12-01';
+        }
+      } else {
+        var d = new Date();
+        d.setMonth(d.getMonth() - newRange);
+        timeChart.options.scales.x.min = d;
+      }
+      timeChart.update();
+    }
+
+  </script>
+  <style>
+    h3 {
+      font-family: sans-serif;
+    }
+
+    .styled-table {
+      border-collapse: collapse;
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: sans-serif;
+      min-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+      .styled-table thead th {
+        background-color: #3366ff;
+        color: #ffffff;
+        text-align: center;
+      }
+
+      .styled-table th {
+        padding: 12px 15px;
+      }
+
+      .styled-table td {
+        text-align: right;
+      }
+
+      .styled-table .testName {
+        text-align: left;
+      }
+
+    .tableBody tr {
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .tableBody .sumRow {
+      border-top: 2px solid black;
+    }
+
+    .tableBody tr:nth-of-type(odd) {
+      background-color: #f3f3f3;
+    }
+
+    .tableBody tr:nth-of-type(even) {
+      background-color: #e3e3e3;
+    }
+
+    .tableBody tr:hover {
+      background-color: #d0d0d0;
+    }
+
+    .buttons td {
+      width: 200px;
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 20px;
+    }
+
+    a {
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-decoration: none;
+      color: black;
+      border-radius: 5px;
+    }
+
+      a:hover {
+        background-color: lightgray;
+      }
+  </style>
+</head>
+
+<body onload="loadChart();">
+  <center>
+    <table class="buttons">
+      <tr><td colspan="2"><a href="details-sp2.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details-sp2.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="2"><a href="details-sp2.html?os=linux" id="linuxbutton">Linux</a></td></tr>
+      <tr><td colspan="3" style="height:80px;"><a href="details-sp2.html?os=android" id="mobilebutton">Android</a></td><td colspan="3" style="height:80px;"><a href="details-sp2.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+    </table>
+
+    <h3>Current Status (lower is better)</h3>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="myChart" style="width:100%;max-width:900px"></canvas>
+      <table class="buttons">
+        <tr><td><a onclick="changeRange('all')" id="allbutton">All time</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td></tr>
+      </table>
+    </div>
+
+    <h3>Breakdown: Speedometer 3 Likely Candidates</h3>
+    <table class="styled-table" id="tableLikely">
+      <col>
+      <col>
+      <colgroup span="2"></colgroup>
+      <col>
+      <colgroup span="2"></colgroup>
+      <col>
+      <thead>
+        <tr><th rowspan="2"></th><th colspan="3" scope="colgroup">Total time (Lower is better)<br />1wk moving average</th><th colspan="2">Difference</th><th colspan="2" scope="colgroup" id="timewindow">6wk prior</th><th rowspan="2">Difference</th><th rowspan="2">Firefox<br />Evolution</th></tr>
+        <tr><th scope="col">Firefox<br />Nightly</th><th scope="col">Chrome<br />Release</th><th scope="col">Chromium-<br />As-Release</th><th scope="col">Chrome<br />Release</th><th scope="col">Chromium-<br />As-Release</th><th scope="col">Firefox<br />Nightly</th><th scope="col">Chrome<br />Release</th></tr>
+      </thead>
+      <tbody class="tableBody" id="tableBodyLikely">
+      </tbody>
+    </table>
+  </center>
+</body>
+</html>

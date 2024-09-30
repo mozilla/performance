@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Speedometer 3 Status Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <script>
+    function round(number, decimals) {
+      return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    function getDiffColor(diff) {
+      if (diff < -0.05) {
+        return 'green'
+      } else if (diff < 0.095) {
+        return 'black'
+      } else if (diff < 0.2) {
+        return '#b38f00'
+      } else {
+        return 'red'
+      }
+    }
+
+    function loadChart() {
+      fetch('https://sql.telemetry.mozilla.org/api/queries/91105/results.json?api_key=l1VW7NobZMxWLDNpLHMYMMcLsBKFSeeoWBZi0gpZ')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          displayChart(data);
+        })
+        .catch(function (err) {
+          console.log('error: ' + err);
+        });
+    }
+
+    function getPlatformWeight(platform) {
+      switch (platform) {
+        case 'windows10-64-shippable-qr':
+          return 0.8;
+        case 'macosx1015-64-shippable-qr':
+          return 0.2;
+        default:
+          return 0.0;
+      }
+    }
+
+    function displayChart(data) {
+      const ctxDesktop = document.getElementById('chartDesktop').getContext('2d');
+
+      let xyValues = {};
+
+      data.query_result.data.rows.forEach(function (row) {
+        if (row.difference == null) {
+          return;
+        }
+
+        if (!xyValues.hasOwnProperty(row.platform)) {
+          xyValues[row.platform] = [];
+        }
+
+        xyValues[row.platform].push({ x: row.push_timestamp, y: -row.moving_difference * 100 });
+      });
+
+
+      new Chart("chartDesktop", {
+        type: "line",
+        data: {
+          datasets: [
+            {
+              label: 'Windows',
+              data: xyValues['windows10-64-shippable-qr']
+            },
+            {
+              label: 'Mac OS',
+              data: xyValues['macosx1015-64-shippable-qr']
+            },
+            {
+              label: 'Linux',
+              data: xyValues['linux1804-64-shippable-qr']
+            },
+            {
+              label: 'Android',
+              data: xyValues['android-hw-a51-11-0-aarch64-shippable-qr']
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 2,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              }
+            },
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Performance Difference (%)'
+              },
+            }
+          }
+        }
+      });
+    }
+
+  </script>
+  <style>
+    h2 {
+      font-family: sans-serif;
+    }
+
+    th {
+      font-family: sans-serif;
+      font-size: 22px;
+      text-align: center;
+      width: 180px;
+    }
+
+    td {
+      font-family: sans-serif;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .buttons td {
+      width: 200px;
+    }
+
+    a {
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-decoration: none;
+      color: black;
+      border-radius: 5px;
+    }
+
+      a:hover {
+        background-color: lightgray;
+      }
+  </style>
+</head>
+
+<body onload="loadChart();">
+  <center>
+
+    <h2>Speedometer 3 Comparison to Chrome</h2>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="chartDesktop" style="width:100%;max-width:900px"></canvas>
+    </div>
+
+  </center>
+</body>
+</html>
