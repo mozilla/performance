@@ -1,25 +1,20 @@
 window.telemetryData = [];
+
+// Set some defaults.
 window.platformStatus = 'Windows';
 window.channelStatus = 'Nightly';
 window.historyStatus = 30;
 window.allCharts = [];
 
 function setHistory(history) {
-  if (history < 14) {
-    history = 14;
-  }
-
   // Find max number of days.
   const latestDate = new Date(window.telemetryData.at(-1).date);
   const furthestDate = new Date(window.telemetryData.at(0).date);
   const maxDays = (latestDate - furthestDate) / (1000 * 60 * 60 * 24);
 
-  console.log(maxDays);
-
   if (history > maxDays) {
     history = maxDays;
   }
-
 
   window.historyStatus = history;
   const input = document.getElementById('history-select');
@@ -171,11 +166,11 @@ function plotChart(id, labels, values1, title1, color1, values2, title2, color2)
 }
 
 function updateChart() {
-   Chart.helpers.each(Chart.instances, function (instance) {
-         instance.options.scales.xAxes[0].time.min = leftEnd;
-         instance.options.scales.xAxes[0].time.max = rightEnd;
-         instance.update();
-       });
+  Chart.helpers.each(Chart.instances, function (instance) {
+     instance.options.scales.xAxes[0].time.min = leftEnd;
+     instance.options.scales.xAxes[0].time.max = rightEnd;
+     instance.update();
+  });
 }
 
 function displayChartForMetric(data, metric) {
@@ -199,7 +194,8 @@ function displayCharts() {
   const history  = window.historyStatus;
 
   const latestDate = new Date(window.telemetryData.at(-1).date);
-  let cutoffDate = new Date;
+
+  let cutoffDate = new Date(latestDate);
   cutoffDate.setDate(latestDate.getDate() - history);
   cutoffDate = cutoffDate.toISOString().split('T')[0];
 
