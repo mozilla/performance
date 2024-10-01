@@ -51,8 +51,8 @@ jobs:
             raise FileNotFoundError("Error: 'data/js-metrics-data.json' not found.")
 
         df = pd.DataFrame(all_data)
-        df = df.drop_duplicates(subset=['date', 'channel', 'os', 'metric'], keep='last')
         df['date'] = pd.to_datetime(df['date']).dt.strftime('%Y-%m-%d')
+        df = df.drop_duplicates(subset=['date', 'channel', 'os', 'metric'], keep='last')
         df = df.sort_values(by='date')
         df.to_json('data/js-metrics-data.json', orient='records')
         EOF
