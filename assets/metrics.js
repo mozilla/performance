@@ -3,7 +3,7 @@ window.telemetryData = [];
 // Set some defaults.
 window.platformStatus = 'Windows';
 window.channelStatus = 'Nightly';
-window.historyStatus = 30;
+window.historyStatus = 60;
 window.allCharts = [];
 
 function setHistory(history) {
