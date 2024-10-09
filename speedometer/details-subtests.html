@@ -24,12 +24,20 @@
 
     if (searchParams.get('os') == 'osx') {
       platform = 'macosx1015-64-shippable-qr';
+    } else if (searchParams.get('os') == 'windows-new') {
+      platform = 'windows11-64-shippable-qr';
     } else if (searchParams.get('os') == 'osxm2') {
       platform = 'macosx1400-64-shippable-qr';
     } else if (searchParams.get('os') == 'linux') {
       platform = 'linux1804-64-shippable-qr';
     } else if (searchParams.get('os') == 'android') {
       platform = 'android-hw-a51-11-0-aarch64-shippable-qr';
+    } else if (searchParams.get('os') == 'android-s21') {
+      platform = 'android-hw-s21-13-0-android-aarch64-shippable-qr';
+    } else if (searchParams.get('os') == 'android-a55') {
+      platform = 'android-hw-a55-14-0-android-aarch64-shippable-qr';
+    } else if (searchParams.get('os') == 'android-p6') {
+      platform = 'android-hw-p6-13-0-android-aarch64-shippable-qr';
     }
 
     function getDiffColor(diff) {
@@ -83,12 +91,18 @@
     function loadCharts() {
       if (searchParams.get('os') == 'osx') {
         document.getElementById("macbutton").style = "background-color:gray;";
-      } else if (searchParams.get('os') == 'osxm2') {
-        document.getElementById("osxm2button").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'windows-new') {
+        document.getElementById("winnewbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'android') {
         document.getElementById("mobilebutton").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'android-a55') {
+        document.getElementById("mobilebutton2").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'android-p6') {
+        document.getElementById("mobilebutton3").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'osxm2') {
+        document.getElementById("osxm2button").style.backgroundColor = "gray";
       } else {
         document.getElementById("windowsbutton").style = "background-color:gray;";
       }
@@ -259,7 +273,7 @@
     }
 
     .buttons td {
-      width: 200px;
+      width: 250px;
       text-align: center;
       font-family: sans-serif;
       font-size: 20px;
@@ -284,8 +298,9 @@
 <body onload="loadCharts();">
   <center>
     <table class="buttons">
-      <tr><td colspan="2"><a href="details-subtests.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details-subtests.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="2"><a href="details-subtests.html?os=linux" id="linuxbutton">Linux</a></td></tr>
-      <tr><td colspan="3" style="height:80px;"><a href="details-subtests.html?os=android" id="mobilebutton">Android</a></td><td colspan="3" style="height:80px;"><a href="details-subtests.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+      <tr><td colspan="2"><a href="details-subtests.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details-subtests.html?os=windows-new" id="winnewbutton">Windows (New)</a></td><td colspan="2"><a href="details-subtests.html?os=linux" id="linuxbutton">Linux</a></td></tr>
+      <tr><td colspan="3"><a href="details-subtests.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="3" style="height:50px;"><a href="details-subtests.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+      <tr><td colspan="2" style="padding-bottom:80px;"><a href="details-subtests.html?os=android" id="mobilebutton">Android (A51)</a></td><td colspan="2" style="padding-bottom: 80px;"><a href="details-subtests.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="padding-bottom: 80px;"><a href="details-subtests.html?os=android-p6" id="mobilebutton3">Android (Pixel 6)</a></td></tr>
       <tr><td colspan="2"><a id="fxbutton" href="javascript:dataSetVisible[0] = !dataSetVisible[0]; updateVisibility();">Firefox</a></td><td colspan="2"><a id="chromebutton" href="javascript:dataSetVisible[1] = !dataSetVisible[1]; updateVisibility();">Chrome</a></td><td colspan="2"><a id="carbutton" href="javascript:dataSetVisible[2] = !dataSetVisible[2]; updateVisibility();">CaR</a></td></tr>
     </table>
 

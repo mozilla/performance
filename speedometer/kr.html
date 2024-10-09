@@ -55,12 +55,12 @@
         CaRGeoMeanDesktop += Math.exp(arithmeticMeanOfLogsCaR[platform] / numValues[platform]) * getPlatformWeight(platform);
       }
 
-      let FxGeoMeanMobile = Math.exp(arithmeticMeanOfLogsFX['android-hw-a51-11-0-aarch64-shippable-qr'] /
-                            numValues['android-hw-a51-11-0-aarch64-shippable-qr'])
-      let ChromeGeoMeanMobile = Math.exp(arithmeticMeanOfLogsChrome['android-hw-a51-11-0-aarch64-shippable-qr'] /
-                                numValues['android-hw-a51-11-0-aarch64-shippable-qr'])
-      let CaRGeoMeanMobile = Math.exp(arithmeticMeanOfLogsCaR['android-hw-a51-11-0-aarch64-shippable-qr'] /
-        numValues['android-hw-a51-11-0-aarch64-shippable-qr'])
+      let FxGeoMeanMobile = Math.exp(arithmeticMeanOfLogsFX['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
+        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
+      let ChromeGeoMeanMobile = Math.exp(arithmeticMeanOfLogsChrome['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
+        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
+      let CaRGeoMeanMobile = Math.exp(arithmeticMeanOfLogsCaR['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
+        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
       let diffDesktop = FxGeoMeanDesktop / ChromeGeoMeanDesktop - 1;
       let diffMobile = (FxGeoMeanMobile / ChromeGeoMeanMobile) - 1;
       let diffDesktopCaR = FxGeoMeanDesktop / CaRGeoMeanDesktop - 1;
@@ -106,7 +106,9 @@
     function getPlatformWeight(platform) {
       switch (platform) {
         case 'windows10-64-shippable-qr':
-          return 0.8;
+          return 0.65;
+        case 'windows11-64-shippable-qr':
+          return 0.15;
         case 'macosx1400-64-shippable-qr':
           return 0.2;
         default:
@@ -132,7 +134,7 @@
 
         weightedValuesDesktop[row.push_timestamp][row.application]['value'] += getPlatformWeight(row.platform) * row.geomean;
         weightedValuesDesktop[row.push_timestamp][row.application]['totalWeight'] += getPlatformWeight(row.platform);
-        if (row.platform == 'android-hw-a51-11-0-aarch64-shippable-qr') {
+        if (row.platform == 'android-hw-a55-14-0-android-aarch64-shippable-qr') {
           if (!weightedValuesMobile.hasOwnProperty(row.push_timestamp)) {
             weightedValuesMobile[row.push_timestamp] = {};
           }
@@ -226,25 +228,6 @@
           plugins: {
             annotation: {
               annotations: {
-                line9: {
-                  type: 'line',
-                  xMin: '2024-03-09 00:00',
-                  xMax: '2024-03-09 00:00',
-                  borderColor: 'black',
-                  borderWidth: 2,
-                },
-                label9: {
-                  type: 'label',
-                  xValue: '2024-03-09 00:00',
-                  yValue: 40,
-                  backgroundColor: 'rgb(255,128,128)',
-                  content: ['Release'],
-                  font: {
-                    size: 14
-                  },
-                  rotation: -90,
-                  borderRadius: 4
-                },
               }
             }
           }
@@ -296,25 +279,6 @@
           plugins: {
             annotation: {
               annotations: {
-                line9: {
-                  type: 'line',
-                  xMin: '2024-03-09 00:00',
-                  xMax: '2024-03-09 00:00',
-                  borderColor: 'black',
-                  borderWidth: 2,
-                },
-                label9: {
-                  type: 'label',
-                  xValue: '2024-03-09 00:00',
-                  yValue: 200,
-                  backgroundColor: 'rgb(255,128,128)',
-                  content: ['Release'],
-                  font: {
-                    size: 14
-                  },
-                  rotation: -90,
-                  borderRadius: 4
-                },
               }
             }
           }
@@ -380,7 +344,7 @@
       <tr><td colspan="6" style="height:80px;"><a href="index.html" style="background-color:gray;">Overall</a></td></tr>
       <tr><td colspan="2"><a href="details.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details.html?os=windows-new" id="winnewbutton">Windows (New)</a></td><td colspan="2"><a href="details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
       <tr><td colspan="3"><a href="details.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="3" style="height:50px;"><a href="details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
-      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (A51)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-s21" id="mobilebutton">Android (S21)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (Pixel 6)</a></td></tr>
+      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (A51)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-a55" id="mobilebutton">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (Pixel 6)</a></td></tr>
     </table>
 
     <table>
