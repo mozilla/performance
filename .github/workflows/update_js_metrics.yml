@@ -3,7 +3,7 @@ name: Update JS metrics
 on:
   workflow_dispatch:
   schedule:
-    - cron: '45 23 * * *'  # Runs daily at 11:30 PM
+    - cron: '45 23 * * *'  # Runs daily at 11:45 PM
 
 jobs:
   merge-json:
