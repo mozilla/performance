@@ -2,7 +2,7 @@ name: Download and Merge Bugzilla Data
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Runs every 6 hours
+    - cron: '00 00 * * *'  # Runs every day at 12:00AM (midnight)
   workflow_dispatch:
 
 jobs:
