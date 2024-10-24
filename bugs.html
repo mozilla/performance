@@ -173,20 +173,31 @@
     }
 
     function filterRegressionTable() {
+      // Split out any terms if a comma was used.
       const searchInput = document.getElementById('search-box').value.toLowerCase();
+      const searchTerms = searchInput.split(',').map(term => term.trim());
+
       const table = document.getElementById('regression-table');
       const rows = table.getElementsByTagName('tbody')[0].getElementsByTagName('tr');
     
+      let count = 0;
       Array.from(rows).forEach(row => {
-        const summaryCell = row.getElementsByTagName('td')[5]; // Assuming the summary is in the 6th column
+        const summaryCell = row.getElementsByTagName('td')[4];
         const summaryText = summaryCell ? summaryCell.textContent.toLowerCase() : '';
     
-        if (summaryText.includes(searchInput)) {
-          row.style.display = ''; // Show row if it matches the search
+        // Check if any search term matches the summary text
+        const matches = searchTerms.some(term => summaryText.includes(term));
+    
+        if (matches) {
+          row.style.display = '';
+          count++;
         } else {
-          row.style.display = 'none'; // Hide row if it doesn't match
+          row.style.display = 'none';
         }
       });
+      
+      const countElement = document.getElementById('bug-table-count');
+      countElement.innerText = `Results found: ${count}`;
     }
 
     function displayBugTables() {
@@ -199,12 +210,15 @@
       regressions.forEach(bug => {
         const row = document.createElement('tr');
         const creationDate = (new Date(bug.creation_time)).toISOString().split('T')[0];
-        const lastUpdate = (new Date(bug.last_change_time)).toISOString().split('T')[0];
+
+        const lastChangeTime = new Date(bug.last_change_time);
+        const currentTime = new Date();
+        const timeDifference = currentTime - lastChangeTime; // milliseconds
+        const lastUpdate = Math.floor(timeDifference / (1000 * 60 * 60 * 24)); // days
 
         row.innerHTML = `
           <td>${bug.id}</td>
-          <td>${bug.status}</td>
-          <td>${bug.cf_performance_impact}</td>
+          <td>${bug.severity}</td>
           <td>${bug.priority}</td>
           <td>${bug.component}</td>
           <td>${bug.summary}</td>
@@ -216,6 +230,9 @@
         };
         regressionTableBody.appendChild(row);
       });
+
+      const countElement = document.getElementById('bug-table-count');
+      countElement.innerText = `Results found: ${regressions.length}`;
     }
 
     const backgroundColorPlugin = {
@@ -638,17 +655,17 @@
     <input type="text" id="search-box" placeholder="Search by summary" style="width: 100%; padding: 10px; border-radius: 5px;">
   </div>
   <div class="bug-table-container">
+    <div id="bug-table-count">Results found: 10</div>
     <table id="regression-table">
       <thead>
         <tr>
           <th onclick="sortTable(0, 'regression-table')">ID</th>
-          <th onclick="sortTable(1, 'regression-table')">Status</th>
-          <th onclick="sortTable(2, 'regression-table')">Impact</th>
-          <th onclick="sortTable(3, 'regression-table')">Priority</th>
-          <th onclick="sortTable(4, 'regression-table')">Component</th>
-          <th onclick="sortTable(5, 'regression-table')">Summary</th>
-          <th onclick="sortTable(6, 'regression-table')">Creation Date</th>
-          <th onclick="sortTable(7, 'regression-table')">Last Update</th>
+          <th onclick="sortTable(1, 'regression-table')">Severity</th>
+          <th onclick="sortTable(2, 'regression-table')">Priority</th>
+          <th onclick="sortTable(3, 'regression-table')">Component</th>
+          <th onclick="sortTable(4, 'regression-table')">Summary</th>
+          <th onclick="sortTable(5, 'regression-table')">Creation Date</th>
+          <th onclick="sortTable(6, 'regression-table')">Last Update (days)</th>
         </tr>
       </thead>
       <tbody></tbody>
