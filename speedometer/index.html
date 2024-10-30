@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Speedometer 3 Status Dashboard</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
+
+  <script>
+    var chartMobile;
+    var chartDesktop;
+
+    function round(number, decimals) {
+      return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    function getDiffColor(diff) {
+      if (diff < -0.05) {
+        return 'green'
+      } else if (diff < 0.095) {
+        return 'black'
+      } else if (diff < 0.2) {
+        return '#b38f00'
+      } else {
+        return 'red'
+      }
+    }
+
+    function loadDataLikely(data) {
+      let arithmeticMeanOfLogsFX = {};
+      let arithmeticMeanOfLogsChrome = {};
+      let arithmeticMeanOfLogsCaR = {};
+      let numValues = {};
+      data.query_result.data.rows.forEach(function (row) {
+        if (!arithmeticMeanOfLogsFX.hasOwnProperty(row.platform)) {
+          arithmeticMeanOfLogsFX[row.platform] = 0;
+          arithmeticMeanOfLogsChrome[row.platform] = 0;
+          arithmeticMeanOfLogsCaR[row.platform] = 0;
+          numValues[row.platform] = 0;
+        }
+        numValues[row.platform]++;
+        arithmeticMeanOfLogsFX[row.platform] += Math.log(row.firefoxmean);
+        arithmeticMeanOfLogsChrome[row.platform] += Math.log(row.chromemean);
+        arithmeticMeanOfLogsCaR[row.platform] += Math.log(row.carmean);
+      });
+
+      let FxGeoMeanDesktop = 0;
+      let ChromeGeoMeanDesktop = 0
+      let CaRGeoMeanDesktop = 0
+      for (const platform in arithmeticMeanOfLogsFX) {
+        FxGeoMeanDesktop += Math.exp(arithmeticMeanOfLogsFX[platform] / numValues[platform]) * getPlatformWeight(platform);
+        ChromeGeoMeanDesktop += Math.exp(arithmeticMeanOfLogsChrome[platform] / numValues[platform]) * getPlatformWeight(platform);
+        CaRGeoMeanDesktop += Math.exp(arithmeticMeanOfLogsCaR[platform] / numValues[platform]) * getPlatformWeight(platform);
+      }
+
+      let FxGeoMeanMobile = 0;
+      let ChromeGeoMeanMobile = 0;
+      let CaRGeoMeanMobile = 0;
+      for (const platform in arithmeticMeanOfLogsFX) {
+        FxGeoMeanMobile += Math.exp(arithmeticMeanOfLogsFX[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+        ChromeGeoMeanMobile += Math.exp(arithmeticMeanOfLogsChrome[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+        CaRGeoMeanMobile += Math.exp(arithmeticMeanOfLogsCaR[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+      }
+      let diffDesktop = FxGeoMeanDesktop / ChromeGeoMeanDesktop - 1;
+      let diffMobile = (FxGeoMeanMobile / ChromeGeoMeanMobile) - 1;
+      let diffDesktopCaR = FxGeoMeanDesktop / CaRGeoMeanDesktop - 1;
+      let diffMobileCaR = (FxGeoMeanMobile / CaRGeoMeanMobile) - 1;
+
+      document.getElementById("firefoxTimeDesktop").innerHTML += round(FxGeoMeanDesktop, 2) + ' ms';
+      document.getElementById("chromeTimeDesktop").innerHTML += round(ChromeGeoMeanDesktop, 2) + ' ms';
+      document.getElementById("carTimeDesktop").innerHTML += round(CaRGeoMeanDesktop, 2) + ' ms';
+      document.getElementById("firefoxTimeMobile").innerHTML += round(FxGeoMeanMobile, 2) + ' ms';
+      document.getElementById("chromeTimeMobile").innerHTML += round(ChromeGeoMeanMobile, 2) + ' ms';
+      document.getElementById("carTimeMobile").innerHTML += round(CaRGeoMeanMobile, 2) + ' ms';
+
+      document.getElementById("KRscoreDesktop").innerHTML += '<p style="margin:0px;padding:0;color:' + getDiffColor(diffDesktop) + ';">' + -round(diffDesktop * 100, 1) + '%</p>';
+      document.getElementById("KRscoreMobile").innerHTML += '<p style="margin:0px;padding:0;color:' + getDiffColor(diffMobile) + ';">' + -round(diffMobile * 100, 1) + '%</p>';
+      document.getElementById("futScoreDesktop").innerHTML += '<p style="margin:0px;padding:0;color:' + getDiffColor(diffDesktopCaR) + ';">' + -round(diffDesktopCaR * 100, 1) + '%</p>';
+      document.getElementById("futScoreMobile").innerHTML += '<p style="margin:0px;padding:0;color:' + getDiffColor(diffMobileCaR) + ';">' + -round(diffMobileCaR * 100, 1) + '%</p>';
+    }
+
+    fetch('https://sql.telemetry.mozilla.org/api/queries/89943/results.json?api_key=8pVTrtmbttRWqE5MGuCplgHncRFHON0JUj5zCSGh')
+      .then(function (response) {
+        return response.json();
+      })
+      .then(function (data) {
+        loadDataLikely(data);
+      })
+      .catch(function (err) {
+        console.log('error: ' + err);
+      });
+
+    function loadChart() {
+      fetch('https://sql.telemetry.mozilla.org/api/queries/96199/results.json?api_key=DtrYOBSoDrUaeuxRfvXPdlDiOS5sqrbsGcXyM5Q2')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          displayChart(data);
+        })
+        .catch(function (err) {
+          console.log('error: ' + err);
+        });
+    }
+
+    function getPlatformWeight(platform) {
+      switch (platform) {
+        case 'windows10-64-shippable-qr':
+          return 0.65;
+        case 'windows11-64-shippable-qr':
+          return 0.15;
+        case 'macosx1400-64-shippable-qr':
+          return 0.2;
+        default:
+          return 0.0;
+      }
+    }
+
+    function getMobilePlatformWeight(platform) {
+      switch (platform) {
+        case 'android-hw-a55-14-0-aarch64-shippable':
+          return 0.5;
+        case 'android-hw-p6-13-0-android-aarch64-shippable-qr':
+          return 0.25;
+        case 'android-hw-s24-14-0-android-aarch64-shippable-qr':
+          return 0.25;
+        default:
+          return 0.0;
+      }
+    }
+
+    function displayChart(data) {
+      const ctxDesktop = document.getElementById('chartDesktop').getContext('2d');
+      const ctxMobile = document.getElementById('chartMobile').getContext('2d');
+
+      var weightedValuesDesktop = {};
+      var weightedValuesMobile = {};
+      data.query_result.data.rows.forEach(function (row) {
+        if (!weightedValuesDesktop.hasOwnProperty(row.push_timestamp)) {
+          weightedValuesDesktop[row.push_timestamp] = {};
+        }
+        if (!weightedValuesMobile.hasOwnProperty(row.push_timestamp)) {
+          weightedValuesMobile[row.push_timestamp] = {};
+        }
+        if (!weightedValuesDesktop[row.push_timestamp].hasOwnProperty(row.application)) {
+          weightedValuesDesktop[row.push_timestamp][row.application] = {};
+          weightedValuesDesktop[row.push_timestamp][row.application]['value'] = 0;
+          weightedValuesDesktop[row.push_timestamp][row.application]['totalWeight'] = 0;
+        }
+        if (!weightedValuesMobile[row.push_timestamp].hasOwnProperty(row.application)) {
+          weightedValuesMobile[row.push_timestamp][row.application] = {};
+          weightedValuesMobile[row.push_timestamp][row.application]['value'] = 0;
+          weightedValuesMobile[row.push_timestamp][row.application]['totalWeight'] = 0;
+        }
+        weightedValuesDesktop[row.push_timestamp][row.application]['value'] += getPlatformWeight(row.platform) * row.geomean;
+        weightedValuesDesktop[row.push_timestamp][row.application]['totalWeight'] += getPlatformWeight(row.platform);
+        weightedValuesMobile[row.push_timestamp][row.application]['value'] += getMobilePlatformWeight(row.platform) * row.geomean;
+        weightedValuesMobile[row.push_timestamp][row.application]['totalWeight'] += getMobilePlatformWeight(row.platform);
+      });
+
+      let xyValuesFx = [];
+      let xyValuesChrome = [];
+      let xyValuesCaR = [];
+      let xyValuesFenix = [];
+      let xyValuesChromeM = [];
+      let xyValuesCaRM = [];
+      for (const timestamp in weightedValuesDesktop) {
+        // May need hack to remove values where a run failed.
+        
+        if (weightedValuesDesktop[timestamp].hasOwnProperty('firefox')) {
+          if (weightedValuesDesktop[timestamp]['firefox']['value'] < 200 && weightedValuesDesktop[timestamp]['firefox']['totalWeight'] > 0.999) {
+            xyValuesFx.push({ x: timestamp, y: weightedValuesDesktop[timestamp]['firefox']['value'] });
+          }
+        }
+        if (weightedValuesDesktop[timestamp].hasOwnProperty('chrome')) {
+          if (weightedValuesDesktop[timestamp]['chrome']['value'] < 145 && weightedValuesDesktop[timestamp]['chrome']['totalWeight'] > 0.999) {
+            xyValuesChrome.push({ x: timestamp, y: weightedValuesDesktop[timestamp]['chrome']['value'] });
+          }
+        }
+        if (weightedValuesDesktop[timestamp].hasOwnProperty('custom-car')) {
+          if (weightedValuesDesktop[timestamp]['custom-car']['value'] < 145 && weightedValuesDesktop[timestamp]['custom-car']['totalWeight'] > 0.999) {
+            xyValuesCaR.push({ x: timestamp, y: weightedValuesDesktop[timestamp]['custom-car']['value'] });
+          }
+        }
+      }
+
+      for (const timestamp in weightedValuesMobile) {
+        if (weightedValuesMobile[timestamp].hasOwnProperty('fenix')) {
+          if (weightedValuesMobile[timestamp]['fenix']['totalWeight'] > 0.999) {
+            xyValuesFenix.push({ x: timestamp, y: weightedValuesMobile[timestamp]['fenix']['value'] });
+          }
+        }
+        if (weightedValuesMobile[timestamp].hasOwnProperty('chrome-m')) {
+          if (weightedValuesMobile[timestamp]['chrome-m']['totalWeight'] > 0.999) {
+            xyValuesChromeM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['chrome-m']['value'] });
+          }
+        }
+        if (weightedValuesMobile[timestamp].hasOwnProperty('cstm-car-m')) {
+          if (weightedValuesMobile[timestamp]['cstm-car-m']['totalWeight'] > 0.999) {
+            xyValuesCaRM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['cstm-car-m']['value'] });
+          }
+        }
+      }
+
+      chartDesktop = new Chart("chartDesktop", {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: 'Firefox',
+              pointRadius: 3,
+              pointBackgroundColor: "#FF9500",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesFx
+            },
+            {
+              label: 'Chrome',
+              pointRadius: 3,
+              pointBackgroundColor: "#1DA462",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesChrome
+            },
+            {
+              label: 'Chromium-as-Release',
+              pointRadius: 3,
+              pointBackgroundColor: "#0099ff",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesCaR
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 1.5,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              }
+            },
+            y: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+              }
+            }
+          }
+        }
+      });
+      chartMobile = new Chart("chartMobile", {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: 'Fenix',
+              pointRadius: 3,
+              pointBackgroundColor: "#FF9500",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesFenix
+            },
+            {
+              label: 'Chrome',
+              pointRadius: 3,
+              pointBackgroundColor: "#1DA462",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesChromeM
+            },
+            {
+              label: 'Chromium-as-Release',
+              pointRadius: 3,
+              pointBackgroundColor: "#0099ff",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesCaRM
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 1.5,
+          scales: {
+            x: {
+              type: 'time',
+              time: {
+                unit: 'week'
+              }
+            },
+            y: {
+              beginAtZero: true
+            }
+          },
+          plugins: {
+            annotation: {
+              annotations: {
+              }
+            }
+          }
+        }
+      });
+    }
+
+
+    function changeRange(newRange) {
+      if (newRange == 'all') {
+        chartMobile.options.scales.x.min = '';
+        chartDesktop.options.scales.x.min = '';
+      } else {
+        var d = new Date();
+        d.setMonth(d.getMonth() - newRange);
+        chartMobile.options.scales.x.min = d;
+        chartDesktop.options.scales.x.min = d;
+      }
+      chartMobile.update();
+      chartDesktop.update();
+    }
+  </script>
+  <style>
+    h2 {
+      font-family: sans-serif;
+    }
+
+    th {
+      font-family: sans-serif;
+      font-size: 22px;
+      text-align: center;
+      width:180px;
+    }
+
+    td {
+      font-family: sans-serif;
+      font-size: 20px;
+      text-align: center;
+    }
+
+    .buttons td {
+      width:250px;
+    }
+
+    a {
+      padding-left:30px;
+      padding-right:30px;
+      padding-top:10px;
+      padding-bottom:10px;
+      text-decoration:none;
+      color:black;
+      border-radius:5px;
+    }
+    a:hover {
+      background-color:lightgray;
+    }
+  </style>
+</head>
+
+<body onload="loadChart();">
+  <center>
+    <table class="buttons">
+      <tr><td colspan="6" style="height:80px;"><a href="index.html" style="background-color:gray;">Overall</a></td></tr>
+      <tr><td colspan="2"><a href="details.html" id="windowsbutton">Windows 10</a></td><td colspan="2"><a href="details.html?os=windows-new" id="winnewbutton">Windows 11</a></td><td colspan="2"><a href="details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
+      <tr><td colspan="3"><a href="details.html?os=osx" id="macbutton">Mac OSX (x86)</a></td><td colspan="3" style="height:50px;"><a href="details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-a55" id="mobilebutton">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-p6" id="mobilebutton">Android (P6)</a></td></tr>
+    </table>
+
+    <table>
+      <tr><th colspan="2">KR Score</th></tr>
+      <tr><th>Desktop</th><th>Mobile</th></tr>
+      <tr><td id="KRscoreDesktop"></td><td id="KRscoreMobile"></td></tr>
+    </table>
+    <br />
+    <table>
+      <tr><th colspan="2">Future Score (vs CaR)</th></tr>
+      <tr><th>Desktop</th><th>Mobile</th></tr>
+      <tr><td id="futScoreDesktop"></td><td id="futScoreMobile"></td></tr>
+    </table>
+    <br />
+    <table class="buttons">
+      <tr><td><a onclick="changeRange('all')" id="allbutton">All time</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td></tr>
+    </table>
+
+    <h2>Desktop Status (lower is better)</h2>
+
+    <table>
+      <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
+      <tr><td id="firefoxTimeDesktop"></td><td id="chromeTimeDesktop"></td><td id="carTimeDesktop"></td></tr>
+    </table>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="chartDesktop" style="width:100%;max-width:900px"></canvas>
+    </div>
+
+    <br />
+    <h2>Mobile Status (lower is better)</h2>
+
+    <table>
+      <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
+      <tr><td id="firefoxTimeMobile"></td><td id="chromeTimeMobile"></td><td id="carTimeMobile"></td></tr>
+    </table>
+
+    <div style="width:100%;max-width:900px">
+      <canvas id="chartMobile" style="width:100%;max-width:900px"></canvas>
+    </div>
+  </center>
+</body>
+</html>

@@ -49,25 +49,18 @@
       total_sig_chrome = 4589789;
       total_sig_car = 4725642;
       platform = 'linux1804-64-shippable-qr';
-    } else if (searchParams.get('os') == 'android') {
-      total_sig_firefox = 4654149;
-      total_sig_chrome = 4698114;
-      total_sig_car = 4942846;
-      platform = 'android-hw-a51-11-0-aarch64-shippable-qr';
+    } else if (searchParams.get('os') == 'android-a55') {
+      total_sig_firefox = 228888;
+      total_sig_chrome = 230167;
+      total_sig_car = 230550;
+      platform = 'android-hw-a55-14-0-aarch64-shippable';
       likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
       timeWindow = '4wk';
-    } else if (searchParams.get('os') == 'android-s21') {
+    } else if (searchParams.get('os') == 'android-s24') {
       total_sig_firefox = 5052258;
       total_sig_chrome = 5051172;
       total_sig_car = 5052905;
-      platform = 'android-hw-s21-13-0-android-aarch64-shippable-qr';
-      likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
-      timeWindow = '4wk';
-    } else if (searchParams.get('os') == 'android-a55') {
-      total_sig_firefox = 182595;
-      total_sig_chrome = 183909;
-      total_sig_car = 184707;
-      platform = 'android-hw-a55-14-0-android-aarch64-shippable-qr';
+      platform = 'android-hw-s24-14-0-android-aarch64-shippable-qr';
       likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
       timeWindow = '4wk';
     } else if (searchParams.get('os') == 'android-p6') {
@@ -282,7 +275,7 @@
         document.getElementById("winnewbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
-      } else if (searchParams.get('os') == 'android') {
+      } else if (searchParams.get('os') == 'android-s24') {
         document.getElementById("mobilebutton").style.backgroundColor = "gray";
       } else if (searchParams.get('os') == 'android-a55') {
         document.getElementById("mobilebutton2").style.backgroundColor = "gray";
@@ -319,8 +312,7 @@
           }
         }
 
-        if (row.geomean > 130 && !(platform == 'android-hw-a51-11-0-aarch64-shippable-qr' ||
-                                   platform == 'android-hw-s21-13-0-android-aarch64-shippable-qr' ||
+        if (row.geomean > 130 && !(platform == 'android-hw-s24-14-0-android-aarch64-shippable-qr' ||
                                    platform == 'android-hw-p6-13-0-android-aarch64-shippable-qr' ||
                                    platform == 'android-hw-a55-14-0-android-aarch64-shippable-qr')) {
           return;
@@ -367,25 +359,6 @@
           plugins: {
             annotation: {
               annotations: {
-                line9: {
-                  type: 'line',
-                  xMin: '2024-03-09 00:00',
-                  xMax: '2024-03-09 00:00',
-                  borderColor: 'black',
-                  borderWidth: 2,
-                },
-                label9: {
-                  type: 'label',
-                  xValue: '2024-03-09 00:00',
-                  yValue: platform == 'android-hw-a51-11-0-aarch64-shippable-qr' ? 200 : 40,
-                  backgroundColor: 'rgb(255,128,128)',
-                  content: ['Release'],
-                  font: {
-                    size: 14
-                  },
-                  rotation: -90,
-                  borderRadius: 4
-                },
               }
             }
           }
@@ -538,9 +511,9 @@
   <center>
     <table class="buttons">
       <tr><td colspan="6" style="height:80px;"><a href="index.html">Overall</a></td></tr>
-      <tr><td colspan="2"><a href="details.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details.html?os=windows-new" id="winnewbutton">Windows (New)</a></td><td colspan="2"><a href="details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
-      <tr><td colspan="3"><a href="details.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="3" style="height:50px;"><a href="details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
-      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (A51)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-p6" id="mobilebutton3">Android (Pixel 6)</a></td></tr>
+      <tr><td colspan="2"><a href="details.html" id="windowsbutton">Windows 10</a></td><td colspan="2"><a href="details.html?os=windows-new" id="winnewbutton">Windows 11</a></td><td colspan="2"><a href="details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
+      <tr><td colspan="3"><a href="details.html?os=osx" id="macbutton">Mac OSX (x86)</a></td><td colspan="3" style="height:50px;"><a href="details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td></tr>
     </table>
 
     <h3>Current Status (lower is better)</h3>
