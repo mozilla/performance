@@ -314,7 +314,7 @@
 
         if (row.geomean > 130 && !(platform == 'android-hw-s24-14-0-android-aarch64-shippable-qr' ||
                                    platform == 'android-hw-p6-13-0-android-aarch64-shippable-qr' ||
-                                   platform == 'android-hw-a55-14-0-android-aarch64-shippable-qr')) {
+                                   platform == 'android-hw-a55-14-0-aarch64-shippable')) {
           return;
         }
 
@@ -365,7 +365,7 @@
         }
       };
 
-      if (platform == 'android-hw-s21-13-0-android-aarch64-shippable-qr' || platform == 'android-hw-p6-13-0-android-aarch64-shippable-qr' || platform == 'android-hw-a55-14-0-android-aarch64-shippable-qr') {
+      if (platform == 'android-hw-s24-14-0-android-aarch64-shippable-qr' || platform == 'android-hw-p6-13-0-android-aarch64-shippable-qr' || platform == 'android-hw-a55-14-0-aarch64-shippable') {
         cfg.options.plugins = {};
       }
 
