@@ -444,8 +444,9 @@ function displayResultsInTable(results) {
 
     if (result.name.includes('score')) {
       result.difference = -result.difference;
+      result.monthAgoDifference = -result.monthAgoDifference;
     }
-    
+
     let recentClass = "";
     if (result.difference < -5) {
       recentClass='negative-difference';
