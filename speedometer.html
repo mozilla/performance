@@ -4,6 +4,11 @@
 <head>
   <title>Speedometer 3 Status Dashboard</title>
 
+  <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
+  <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <link rel="stylesheet" href="assets/main-ui-style.css">
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
@@ -55,12 +60,14 @@
         CaRGeoMeanDesktop += Math.exp(arithmeticMeanOfLogsCaR[platform] / numValues[platform]) * getPlatformWeight(platform);
       }
 
-      let FxGeoMeanMobile = Math.exp(arithmeticMeanOfLogsFX['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
-        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
-      let ChromeGeoMeanMobile = Math.exp(arithmeticMeanOfLogsChrome['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
-        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
-      let CaRGeoMeanMobile = Math.exp(arithmeticMeanOfLogsCaR['android-hw-a55-14-0-android-aarch64-shippable-qr'] /
-        numValues['android-hw-a55-14-0-android-aarch64-shippable-qr'])
+      let FxGeoMeanMobile = 0;
+      let ChromeGeoMeanMobile = 0;
+      let CaRGeoMeanMobile = 0;
+      for (const platform in arithmeticMeanOfLogsFX) {
+        FxGeoMeanMobile += Math.exp(arithmeticMeanOfLogsFX[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+        ChromeGeoMeanMobile += Math.exp(arithmeticMeanOfLogsChrome[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+        CaRGeoMeanMobile += Math.exp(arithmeticMeanOfLogsCaR[platform] / numValues[platform]) * getMobilePlatformWeight(platform);
+      }
       let diffDesktop = FxGeoMeanDesktop / ChromeGeoMeanDesktop - 1;
       let diffMobile = (FxGeoMeanMobile / ChromeGeoMeanMobile) - 1;
       let diffDesktopCaR = FxGeoMeanDesktop / CaRGeoMeanDesktop - 1;
@@ -116,6 +123,19 @@
       }
     }
 
+    function getMobilePlatformWeight(platform) {
+      switch (platform) {
+        case 'android-hw-a55-14-0-aarch64-shippable':
+          return 0.5;
+        case 'android-hw-p6-13-0-android-aarch64-shippable-qr':
+          return 0.25;
+        case 'android-hw-s24-14-0-android-aarch64-shippable-qr':
+          return 0.25;
+        default:
+          return 0.0;
+      }
+    }
+
     function displayChart(data) {
       const ctxDesktop = document.getElementById('chartDesktop').getContext('2d');
       const ctxMobile = document.getElementById('chartMobile').getContext('2d');
@@ -126,20 +146,23 @@
         if (!weightedValuesDesktop.hasOwnProperty(row.push_timestamp)) {
           weightedValuesDesktop[row.push_timestamp] = {};
         }
+        if (!weightedValuesMobile.hasOwnProperty(row.push_timestamp)) {
+          weightedValuesMobile[row.push_timestamp] = {};
+        }
         if (!weightedValuesDesktop[row.push_timestamp].hasOwnProperty(row.application)) {
           weightedValuesDesktop[row.push_timestamp][row.application] = {};
           weightedValuesDesktop[row.push_timestamp][row.application]['value'] = 0;
           weightedValuesDesktop[row.push_timestamp][row.application]['totalWeight'] = 0;
         }
-
+        if (!weightedValuesMobile[row.push_timestamp].hasOwnProperty(row.application)) {
+          weightedValuesMobile[row.push_timestamp][row.application] = {};
+          weightedValuesMobile[row.push_timestamp][row.application]['value'] = 0;
+          weightedValuesMobile[row.push_timestamp][row.application]['totalWeight'] = 0;
+        }
         weightedValuesDesktop[row.push_timestamp][row.application]['value'] += getPlatformWeight(row.platform) * row.geomean;
         weightedValuesDesktop[row.push_timestamp][row.application]['totalWeight'] += getPlatformWeight(row.platform);
-        if (row.platform == 'android-hw-a55-14-0-android-aarch64-shippable-qr') {
-          if (!weightedValuesMobile.hasOwnProperty(row.push_timestamp)) {
-            weightedValuesMobile[row.push_timestamp] = {};
-          }
-          weightedValuesMobile[row.push_timestamp][row.application] = row.geomean;
-        }
+        weightedValuesMobile[row.push_timestamp][row.application]['value'] += getMobilePlatformWeight(row.platform) * row.geomean;
+        weightedValuesMobile[row.push_timestamp][row.application]['totalWeight'] += getMobilePlatformWeight(row.platform);
       });
 
       let xyValuesFx = [];
@@ -170,15 +193,19 @@
 
       for (const timestamp in weightedValuesMobile) {
         if (weightedValuesMobile[timestamp].hasOwnProperty('fenix')) {
-          if (weightedValuesMobile[timestamp]['fenix'] < 950) {
-            xyValuesFenix.push({ x: timestamp, y: weightedValuesMobile[timestamp]['fenix'] });
+          if (weightedValuesMobile[timestamp]['fenix']['totalWeight'] > 0.999) {
+            xyValuesFenix.push({ x: timestamp, y: weightedValuesMobile[timestamp]['fenix']['value'] });
           }
         }
         if (weightedValuesMobile[timestamp].hasOwnProperty('chrome-m')) {
-          xyValuesChromeM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['chrome-m'] });
+          if (weightedValuesMobile[timestamp]['chrome-m']['totalWeight'] > 0.999) {
+            xyValuesChromeM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['chrome-m']['value'] });
+          }
         }
         if (weightedValuesMobile[timestamp].hasOwnProperty('cstm-car-m')) {
-          xyValuesCaRM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['cstm-car-m'] });
+          if (weightedValuesMobile[timestamp]['cstm-car-m']['totalWeight'] > 0.999) {
+            xyValuesCaRM.push({ x: timestamp, y: weightedValuesMobile[timestamp]['cstm-car-m']['value'] });
+          }
         }
       }
 
@@ -339,52 +366,71 @@
 </head>
 
 <body onload="loadChart();">
-  <center>
-    <table class="buttons">
-      <tr><td colspan="6" style="height:80px;"><a href="index.html" style="background-color:gray;">Overall</a></td></tr>
-      <tr><td colspan="2"><a href="details.html" id="windowsbutton">Windows</a></td><td colspan="2"><a href="details.html?os=windows-new" id="winnewbutton">Windows (New)</a></td><td colspan="2"><a href="details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
-      <tr><td colspan="3"><a href="details.html?os=osx" id="macbutton">Mac OSX</a></td><td colspan="3" style="height:50px;"><a href="details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
-      <tr><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (A51)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android-a55" id="mobilebutton">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="details.html?os=android" id="mobilebutton">Android (Pixel 6)</a></td></tr>
-    </table>
-
-    <table>
-      <tr><th colspan="2">KR Score</th></tr>
-      <tr><th>Desktop</th><th>Mobile</th></tr>
-      <tr><td id="KRscoreDesktop"></td><td id="KRscoreMobile"></td></tr>
-    </table>
-    <br />
-    <table>
-      <tr><th colspan="2">Future Score (vs CaR)</th></tr>
-      <tr><th>Desktop</th><th>Mobile</th></tr>
-      <tr><td id="futScoreDesktop"></td><td id="futScoreMobile"></td></tr>
-    </table>
-    <br />
-    <table class="buttons">
-      <tr><td><a onclick="changeRange('all')" id="allbutton">All time</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td></tr>
-    </table>
-
-    <h2>Desktop Status (lower is better)</h2>
-
-    <table>
-      <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
-      <tr><td id="firefoxTimeDesktop"></td><td id="chromeTimeDesktop"></td><td id="carTimeDesktop"></td></tr>
-    </table>
-
-    <div style="width:100%;max-width:900px">
-      <canvas id="chartDesktop" style="width:100%;max-width:900px"></canvas>
+  <div class="top">
+    <div class="top-title-container">
+      <div class="top-title">
+        <b>moz://a</b> performance portal
+      </div>
     </div>
+    <a href="https://firefox-source-docs.mozilla.org/performance/reporting_a_performance_problem.html" class="btn" title="Report a Performance Bug">
+      <i class="fa-solid fa-bug"></i> Report Performance Issue
+    </a>
+  </div>
+  
+  <div class="main-content">
+    <aside class="main-sidebar" id="main-sidebar">
+    </aside>
 
-    <br />
-    <h2>Mobile Status (lower is better)</h2>
+    <div class="content">
+      <center>
+        <table class="buttons">
+          <tr><td colspan="6" style="height:80px;"><a href="speedometer.html" style="background-color:gray;">Overall</a></td></tr>
+          <tr><td colspan="2"><a href="speedometer-details.html" id="windowsbutton">Windows 10</a></td><td colspan="2"><a href="speedometer-details.html?os=windows-new" id="winnewbutton">Windows 11</a></td><td colspan="2"><a href="speedometer-details.html?os=linux" id="linuxbutton">Linux</a></td></tr>
+          <tr><td colspan="3"><a href="speedometer-details.html?os=osx" id="macbutton">Mac OSX (x86)</a></td><td colspan="3" style="height:50px;"><a href="speedometer-details.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+          <tr><td colspan="2" style="height:50px;"><a href="speedometer-details.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="speedometer-details.html?os=android-a55" id="mobilebutton">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="speedometer-details.html?os=android-p6" id="mobilebutton">Android (P6)</a></td></tr>
+        </table>
 
-    <table>
-      <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
-      <tr><td id="firefoxTimeMobile"></td><td id="chromeTimeMobile"></td><td id="carTimeMobile"></td></tr>
-    </table>
+        <table>
+          <tr><th colspan="2">KR Score</th></tr>
+          <tr><th>Desktop</th><th>Mobile</th></tr>
+          <tr><td id="KRscoreDesktop"></td><td id="KRscoreMobile"></td></tr>
+        </table>
+        <br />
+        <table>
+          <tr><th colspan="2">Future Score (vs CaR)</th></tr>
+          <tr><th>Desktop</th><th>Mobile</th></tr>
+          <tr><td id="futScoreDesktop"></td><td id="futScoreMobile"></td></tr>
+        </table>
+        <br />
+        <table class="buttons">
+          <tr><td><a onclick="changeRange('all')" id="allbutton">All time</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td></tr>
+        </table>
 
-    <div style="width:100%;max-width:900px">
-      <canvas id="chartMobile" style="width:100%;max-width:900px"></canvas>
-    </div>
-  </center>
+        <h2>Desktop Status (lower is better)</h2>
+
+        <table>
+          <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
+          <tr><td id="firefoxTimeDesktop"></td><td id="chromeTimeDesktop"></td><td id="carTimeDesktop"></td></tr>
+        </table>
+
+        <div style="width:100%;max-width:900px">
+          <canvas id="chartDesktop" style="width:100%;max-width:900px"></canvas>
+        </div>
+
+        <br />
+        <h2>Mobile Status (lower is better)</h2>
+
+        <table>
+          <tr><th>Firefox</th><th>Chrome</th><th>Chromium-as-Release</th></tr>
+          <tr><td id="firefoxTimeMobile"></td><td id="chromeTimeMobile"></td><td id="carTimeMobile"></td></tr>
+        </table>
+
+        <div style="width:100%;max-width:900px">
+          <canvas id="chartMobile" style="width:100%;max-width:900px"></canvas>
+        </div>
+      </center>
+  </div> <!-- content -->
+</div> <!-- main-content -->
+<script src="assets/main-ui.js"></script>
 </body>
 </html>

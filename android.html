@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android Metrics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+
+<link rel="stylesheet" href="assets/ci-style.css">
+
+<script src="assets/ci-metrics.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/android-data.json.gz';
+      generateContent(dataUrl);
+  });
+</script>
+
+</head>
+<body>
+  <div class="sidebar">
+    <div class="dropdown">
+      <label for="history-select">History (days):</label>
+      <select id="history-select" onchange="setHistory(this.value)">
+        <option value=14>14</option>
+        <option value=30>30</option>
+        <option value=60>60</option>
+        <option value=90>90</option>
+      </select>
+    </div>
+    <div class="dropdown">
+      <label for="platform-select">Platform:</label>
+      <select id="platform-select" onchange="setPlatform(this.value)">
+        <option value="Android">Android</option>
+      </select>
+    </div>
+
+    <div class="sections">
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="row-title" id="summary-section">Summary</div>
+    <div class="table-container"> 
+      <div class="table-content">
+        <table id="summary-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th style="border-left: 1px solid #ddd;" colspan=3>Latest (7 day avg)</th>
+              <th style="border-left: 1px solid #ddd;" colspan=3>4 weeks ago (7 day avg)</th>
+            <tr>
+              <th onclick="sortTable(0, 'summary-table')">Test</th>
+              <th style="border-left: 1px solid #ddd;">Firefox</th>
+              <th>Chrome</th>
+              <th onclick="sortTable(3, 'summary-table')">Difference (%)</th>
+              <th style="border-left: 1px solid #ddd;">Firefox</th>
+              <th>Chrome</th>
+              <th onclick="sortTable(6, 'summary-table')">Difference (%)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="charts-content">
+    </div>
+  </div>
+
+  <script>
+      window.tests = [
+        {
+          name: "applink_startup",
+          metric: ["applink_startup"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "cold_view_nav_start.mean",
+          metric: ["cold_view_nav_start.mean"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "cold_main_first_frame.mean",
+          metric: ["cold_main_first_frame.mean"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "sp3-score",
+          metric: ["score"],
+          unit: "Score"
+        },
+        {
+          name: "sp3-cpuTime",
+          metric: ["cpuTime"],
+          unit: "Time (s)"
+        },
+        {
+          name: "sp3-powerUsage",
+          metric: ["powerUsage"],
+          unit: "mWh"
+        },
+        {
+          name: "background-main-cpuTime",
+          metric: ["cpuTime-main-geomean"],
+          unit: "Time (s)"
+        },
+        {
+          name: "background-gpu-cpuTime",
+          metric: ["cpuTime-gpu-geomean"],
+          unit: "Time (s)"
+        },
+        {
+          name: "background-tab-cpuTime",
+          metric: ["cpuTime-tab-geomean"],
+          unit: "Time (s)"
+        },
+        {
+          name: "background-main-rss",
+          metric: ["rss-main-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "background-gpu-rss",
+          metric: ["rss-gpu-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "background-tab-rss",
+          metric: ["rss-tab-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "background-main-pss",
+          metric: ["pss-main-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "background-gpu-pss",
+          metric: ["pss-gpu-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "background-tab-pss",
+          metric: ["pss-tab-geomean"],
+          unit: "kB"
+        },
+        {
+          name: "allrecipes",
+          metric: ["allrecipes-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "amazon-search",
+          metric: ["amazon-search-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "espn",
+          metric: ["espn-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "google",
+          metric: ["google-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "microsoft-support",
+          metric: ["microsoft-support-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "amazon",
+          metric: ["amazon-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "bing",
+          metric: ["bing-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "bing-search-restaurants",
+          metric: ["bing-search-restaurants-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "booking",
+          metric: ["booking-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "cnn",
+          metric: ["cnn-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "cnn-ampstories",
+          metric: ["cnn-ampstories-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "dailymail",
+          metric: ["dailymail-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "ebay-kleinanzeigen",
+          metric: ["ebay-kleinanzeigen-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "ebay-kleinanzeigen-search",
+          metric: ["ebay-kleinanzeigen-search-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "facebook-cristiano",
+          metric: ["facebook-cristiano-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "google-maps",
+          metric: ["google-maps-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "google-search-restaurants",
+          metric: ["google-search-restaurants-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "imdb",
+          metric: ["imdb-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "instagram",
+          metric: ["instagram-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "reddit",
+          metric: ["reddit-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "sina",
+          metric: ["sina-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "stackoverflow",
+          metric: ["stackoverflow-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "wikipedia",
+          metric: ["wikipedia-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        },
+        {
+          name: "youtube",
+          metric: ["youtube-ContentfulSpeedIndex"],
+          unit: "Time (ms)"
+        }
+      ];
+
+    // Create sidebar sections
+    createSidebarSections(tests);
+
+    // Create charts content
+    createChartsContent(tests);
+  </script>
+</body>
+</html>
