@@ -27,11 +27,6 @@ if (sidebar !== null) {
      <ul>
       <li>
        <a href="speedometer.html">
-        Overall
-       </a>
-      </li>
-      <li>
-       <a href="speedometer-details.html">
         Details
        </a>
       </li>
