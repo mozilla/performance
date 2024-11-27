@@ -16,26 +16,12 @@ if (sidebar !== null) {
 
       <!-- Speedometer menu -->
     <li class="sub-menu">
-     <a href="javascript:void(0);">
+     <a href="speedometer.html">
       <i class="fa-solid fa-gauge-high"></i>
       <span>
        Speedometer
       </span>
-      <i class="arrow fa-solid fa-angle-right pull-right">
-      </i>
      </a>
-     <ul>
-      <li>
-       <a href="speedometer.html">
-        Details
-       </a>
-      </li>
-      <li>
-        <a href="https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&replicates=0&series=autoland,185987,1,13&series=autoland,4588356,1,13&series=autoland,83179,1,13&series=autoland,4590694,1,13&series=autoland,5042134,1,13&timerange=7776000">
-        Autoland
-       </a>
-      </li>
-     </ul>
     </li>
 
       <!-- Android menu -->
@@ -75,6 +61,16 @@ if (sidebar !== null) {
       <i class="fa-solid fa-bars-progress"></i>
       <span>
        Networking
+      </span>
+     </a>
+    </li>
+
+      <!-- ML menu -->
+    <li class="sub-menu">
+     <a href="ml.html">
+      <i class="fa-solid fa-hexagon-nodes"></i>
+      <span>
+        ML
       </span>
      </a>
     </li>
