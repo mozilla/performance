@@ -321,7 +321,7 @@ function displayTable() {
       // Build row HTML
       row.innerHTML = `
         ${isFirstSuiteRow ? `<td rowspan="${testslength}">${suite.name}</td>` : ''}
-        <td class="test-cell ${class_1wk}">${test.name}</td>
+        <td class="test-cell ${class_1wk}">${test.name} (${test.unit})</td>
         <td class="${class_1wk}" style="border-left: 1px solid #ddd;">${firefoxAvg_latest.toFixed(2)}</td>
         <td class="${class_1wk}" style="border-left: 1px solid #ddd;">${firefoxAvg_1wk_ago.toFixed(2)}</td>
         <td class="${class_1wk}">${difference_1wk.toFixed(2)}</td>

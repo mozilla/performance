@@ -382,6 +382,7 @@ function displayTable() {
     if (chromeAvg !== 0) {
       results.push({
         name: test.name,
+        unit: test.unit,
         test: metric,
         firefoxAvg: firefoxAvg,
         chromeAvg: chromeAvg,
@@ -442,7 +443,7 @@ function displayResultsInTable(results) {
   results.forEach(result => {
     const row = document.createElement('tr');
 
-    if (result.name.includes('score')) {
+    if (result.unit.includes('score')) {
       result.difference = -result.difference;
       result.monthAgoDifference = -result.monthAgoDifference;
     }
@@ -466,7 +467,7 @@ function displayResultsInTable(results) {
     };
 
     row.innerHTML = `
-      <td class="${recentClass}" >${result.name}</td>
+      <td class="${recentClass}" >${result.name} (${result.unit})</td>
       <td class="${recentClass}" style="border-left: 1px solid #ddd;">${result.firefoxAvg.toFixed(2)}</td>
       <td class="${recentClass}" >${result.chromeAvg.toFixed(2)}</td>
       <td class="${recentClass}" >${result.difference}</td>
