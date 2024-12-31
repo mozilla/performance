@@ -47,7 +47,7 @@
 
   <div class="content">
     <div class="row-title" id="summary-section">Summary</div>
-    <div class="table-container"> 
+    <div class="table-container">
       <div class="table-content">
         <table id="summary-table">
           <thead>
@@ -74,7 +74,7 @@
     // List of test suites and their tests
     window.suites = [
               {
-                  "name": "engine3",
+                  "name": "Intent",
                   "tests": [
                       {
                         "name": "initialization-latency",
@@ -103,65 +103,7 @@
                   ]
               },
               {
-                  "name": "engine4",
-                  "tests": [
-                      {
-                        "name": "initialization-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "initialization-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "model-run-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "model-run-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "pipeline-ready-memory",
-                        "unit": "MB"
-                      }
-                  ]
-              },
-              {
-                  "name": "intent",
-                  "tests": [
-                      {
-                        "name": "initialization-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "initialization-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "model-run-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "model-run-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "pipeline-ready-memory",
-                        "unit": "MB"
-                      }
-                  ]
-              },
-              {
-                  "name": "suggest",
+                  "name": "Suggest",
                   "tests": [
                       {
                         "name": "initialization-latency",
@@ -190,34 +132,156 @@
                   ]
             },
             {
-                "name": "ml-perf",
+                "name": "Summarizer",
                 "tests": [
                     {
-                      "name": "initialization-latency",
+                      "name": "DISTILBART-CNN-12-6_TINY-initialization-latency",
                       "unit": "ms"
                     },
                     {
-                      "name": "initialization-memory",
+                      "name": "DISTILBART-CNN-12-6_SMALL-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_MEDIUM-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_BIG-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-initialization-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_TINY-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_SMALL-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_MEDIUM-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_BIG-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-model-run-latency",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_TINY-total-memory-usage",
                       "unit": "MB"
                     },
                     {
-                      "name": "model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "model-run-memory",
+                      "name": "DISTILBART-CNN-12-6_SMALL-total-memory-usage",
                       "unit": "MB"
                     },
                     {
-                      "name": "pipeline-ready-latency",
-                      "unit": "ms"
+                      "name": "DISTILBART-CNN-12-6_MEDIUM-total-memory-usage",
+                      "unit": "MB"
                     },
                     {
-                      "name": "pipeline-ready-memory",
+                      "name": "DISTILBART-CNN-12-6_BIG-total-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-total-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-total-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-total-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-total-memory-usage",
                       "unit": "MB"
                     },
                 ]
-              }
+              },
+              {
+                  "name": "Autofill",
+                  "tests": [
+                      {
+                        "name": "pipeline-ready-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "initialization-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "model-run-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "total-memory-usage",
+                        "unit": "MB"
+                      }
+                  ]
+                },
+                {
+                  "name": "Basic ML Perf",
+                  "tests": [
+                      {
+                        "name": "initialization-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "initialization-memory",
+                        "unit": "MB"
+                      },
+                      {
+                        "name": "model-run-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "model-run-memory",
+                        "unit": "MB"
+                      },
+                      {
+                        "name": "pipeline-ready-latency",
+                        "unit": "ms"
+                      },
+                      {
+                        "name": "pipeline-ready-memory",
+                        "unit": "MB"
+                      },
+                  ]
+                }
     ];
 
     // Create sidebar sections
