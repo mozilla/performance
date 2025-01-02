@@ -65,7 +65,6 @@ function writeContentTitle() {
 
 function calculateDelta(values) {
     const n = values.length;
-    
     // Create x values (0 to n-1) representing the time sequence of data points
     const xValues = Array.from({ length: n }, (_, i) => i);
 
@@ -87,7 +86,6 @@ function calculateDelta(values) {
 
     // Calculate the percentage improvement between the first and last points on the trend line
     const improvement = ((lastY - firstY) / firstY) * 100;
-    
     return improvement.toFixed(2);
 }
 
@@ -98,7 +96,7 @@ function displayMetrics(id, title1, values1, title2, values2) {
             return "red";
         else if (improvement < -5)
             return "green";
-        else 
+        else
             return "black";
     }
 
@@ -233,12 +231,10 @@ const backgroundColorPlugin = {
 };
 
 function fixupMLNaming() {
-  
   window.data.forEach(row => {
-  
     // Rename the suite to something more readable.
     if (row.suite === 'browser_ml_engine_perf.js') {
-      row.suite = 'ml-perf';
+      row.suite = 'Basic ML Perf';
     }
 
     // Extract the prefix from each test name and use that as the suite.
@@ -247,8 +243,26 @@ function fixupMLNaming() {
       const prefix = fields.shift();
       const test = fields.join('-');
 
-      row.suite = prefix;
+      if (prefix.includes('intent')) {
+        row.suite = 'Intent';
+      } else if (prefix.includes('suggest')) {
+        row.suite = 'Suggest';
+      } else{
+        row.suite = prefix;
+      }
       row.test = test;
+    }
+
+    if (row.suite === 'browser_ml_autofill_perf.js') {
+      row.suite = 'Autofill';
+      row.test = row.test.replace('AUTOFILL-', '');
+    }
+
+    if (row.suite === 'browser_ml_summarizer_perf.js') {
+      row.suite = 'Summarizer';
+      row.test = row.test.replace('SUM-', '')
+        .replace('ONNX-COMMUNITY-', '')
+        .replace('XENOVA-', '');
     }
   });
 
@@ -394,14 +408,14 @@ function createChartsContent() {
       let name=`${suite.name}-${test.name}`;
       chartsHTML += `
               <div class="row-title" id="${name}-section">(${suite.name}) ${test.name}</div>
-              <div class="content-row"> 
+              <div class="content-row">
                 <div class="canvas-column">
-                    <div id="${name}-metrics" class="metric-container"></div> 
-                    <canvas id="${name}-canvas"></canvas> 
-                    <button onclick="window.allCharts.forEach(chart => chart.resetZoom())"> 
+                    <div id="${name}-metrics" class="metric-container"></div>
+                    <canvas id="${name}-canvas"></canvas>
+                    <button onclick="window.allCharts.forEach(chart => chart.resetZoom())">
                         Reset Zoom
-                    </button> 
-                </div> 
+                    </button>
+                </div>
               </div>
             `;
     });
