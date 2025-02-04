@@ -264,6 +264,11 @@ function fixupMLNaming() {
         .replace('ONNX-COMMUNITY-', '')
         .replace('XENOVA-', '');
     }
+    if (row.suite === 'browser_ml_smart_tab_perf.js') {
+      row.suite = 'Smart Tab Grouping';
+      row.test = row.test.replace('SMART-TAB-TOPIC-', 'Topic-')
+        .replace('SMART-TAB-EMBEDDING-', 'Embedding-')
+    }
   });
 
 
