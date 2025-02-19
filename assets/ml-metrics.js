@@ -232,6 +232,7 @@ const backgroundColorPlugin = {
 
 function fixupMLNaming() {
   window.data.forEach(row => {
+    row.test = row.test.replace('total-memory-usage', 'residual-memory-usage')
     // Rename the suite to something more readable.
     if (row.suite === 'browser_ml_engine_perf.js') {
       row.suite = 'Basic ML Perf';
