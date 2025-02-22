@@ -81,25 +81,17 @@
                         "unit": "ms"
                       },
                       {
-                        "name": "initialization-memory",
-                        "unit": "MB"
-                      },
-                      {
                         "name": "model-run-latency",
                         "unit": "ms"
                       },
                       {
-                        "name": "model-run-memory",
+                        "name": "residual-memory-usage",
                         "unit": "MB"
                       },
                       {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "pipeline-ready-memory",
+                        "name": "peak-memory-usage",
                         "unit": "MB"
-                      }
+                      },
                   ]
               },
               {
@@ -109,24 +101,17 @@
                         "name": "initialization-latency",
                         "unit": "ms"
                       },
-                      {
-                        "name": "initialization-memory",
-                        "unit": "MB"
-                      },
+
                       {
                         "name": "model-run-latency",
                         "unit": "ms"
                       },
                       {
-                        "name": "model-run-memory",
+                        "name": "residual-memory-usage",
                         "unit": "MB"
                       },
                       {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "pipeline-ready-memory",
+                        "name": "peak-memory-usage",
                         "unit": "MB"
                       }
                   ]
@@ -147,7 +132,11 @@
                       "unit": "ms"
                     },
                     {
-                      "name": "Topic-total-memory-usage",
+                      "name": "Topic-residual-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "Topic-peak-memory-usage",
                       "unit": "MB"
                     },
                     {
@@ -163,7 +152,11 @@
                       "unit": "ms"
                     },
                     {
-                      "name": "Embedding-total-memory-usage",
+                      "name": "Embedding-residual-memory-usage",
+                      "unit": "MB"
+                    },
+                    {
+                      "name": "Embedding-peak-memory-usage",
                       "unit": "MB"
                     }
                 ]
@@ -172,31 +165,7 @@
                 "name": "Summarizer",
                 "tests": [
                     {
-                      "name": "DISTILBART-CNN-12-6_TINY-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_SMALL-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_MEDIUM-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
                       "name": "DISTILBART-CNN-12-6_BIG-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-initialization-latency",
                       "unit": "ms"
                     },
                     {
@@ -204,31 +173,7 @@
                       "unit": "ms"
                     },
                     {
-                      "name": "DISTILBART-CNN-12-6_TINY-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_SMALL-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_MEDIUM-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
                       "name": "DISTILBART-CNN-12-6_BIG-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-model-run-latency",
                       "unit": "ms"
                     },
                     {
@@ -236,36 +181,60 @@
                       "unit": "ms"
                     },
                     {
-                      "name": "DISTILBART-CNN-12-6_TINY-total-memory-usage",
+                      "name": "DISTILBART-CNN-12-6_BIG-residual-memory-usage",
                       "unit": "MB"
                     },
                     {
-                      "name": "DISTILBART-CNN-12-6_SMALL-total-memory-usage",
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-residual-memory-usage",
                       "unit": "MB"
                     },
                     {
-                      "name": "DISTILBART-CNN-12-6_MEDIUM-total-memory-usage",
-                      "unit": "MB"
+                      "name": "DISTILBART-CNN-12-6_BIG-1st-token-latency",
+                      "unit": "ms"
                     },
                     {
-                      "name": "DISTILBART-CNN-12-6_BIG-total-memory-usage",
-                      "unit": "MB"
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-1st-token-latency",
+                      "unit": "ms"
                     },
                     {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_TINY-total-memory-usage",
-                      "unit": "MB"
+                      "name": "DISTILBART-CNN-12-6_BIG-decoding-latency",
+                      "unit": "ms"
                     },
                     {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_SMALL-total-memory-usage",
-                      "unit": "MB"
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-latency",
+                      "unit": "ms"
                     },
                     {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_MEDIUM-total-memory-usage",
-                      "unit": "MB"
+                      "name": "DISTILBART-CNN-12-6_BIG-decoding-tokenSpeed",
+                      "unit": "ms"
                     },
                     {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-total-memory-usage",
-                      "unit": "MB"
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-tokenSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_BIG-decoding-charactersSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-charactersSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_BIG-prompt-tokenSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-prompt-tokenSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "DISTILBART-CNN-12-6_BIG-prompt-charactersSpeed",
+                      "unit": "ms"
+                    },
+                    {
+                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-prompt-charactersSpeed",
+                      "unit": "ms"
                     },
                 ]
               },
@@ -285,38 +254,13 @@
                         "unit": "ms"
                       },
                       {
-                        "name": "total-memory-usage",
+                        "name": "residual-memory-usage",
+                        "unit": "MB"
+                      },
+                      {
+                        "name": "peak-memory-usage",
                         "unit": "MB"
                       }
-                  ]
-                },
-                {
-                  "name": "Basic ML Perf",
-                  "tests": [
-                      {
-                        "name": "initialization-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "initialization-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "model-run-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "model-run-memory",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "pipeline-ready-memory",
-                        "unit": "MB"
-                      },
                   ]
                 }
     ];
