@@ -244,12 +244,25 @@ function fixupMLNaming() {
       const prefix = fields.shift();
       const test = fields.join('-');
 
-      if (prefix.includes('intent')) {
-        row.suite = 'Intent';
-      } else if (prefix.includes('suggest')) {
+      // We use browser_ml_suggest_feature_perf.js for suggest feature
+      // so skipping the intent and suggest models here
+      if (prefix.includes('intent') || prefix.includes('suggest')) {
+        return;
+      }
+      row.test = test;
+    }
+
+    if (row.suite === 'browser_ml_suggest_feature_perf.js') {
+      const fields = row.test.split('-');
+      const prefix = fields.shift();
+      const test = fields.join('-');
+
+      if (prefix.includes('INTENT') && !test.includes('model-run-latency')) {
+        row.suite = 'Suggest';
+      } else if (prefix.includes('SUGGEST')) {
         row.suite = 'Suggest';
       } else{
-        row.suite = prefix;
+        return;
       }
       row.test = test;
     }
