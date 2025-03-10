@@ -259,6 +259,10 @@ function fixupStartupTests(data) {
     } else if (row.suite === 'AndroidStartup:chrome-m') {
       row.suite = 'AndroidStartup';
       row.application = 'chrome-m';
+    } else if (row.test === 'applink_startup' && row.suite === 'newssite-applink-startup') {
+      row.test = 'newssite-applink-startup';
+    } else if (row.test === 'applink_startup' && row.suite === 'shopify-applink-startup') {
+      row.test = 'shopify-applink-startup';
     }
   });
 }

@@ -76,8 +76,13 @@
   <script>
       window.tests = [
         {
-          name: "applink_startup",
-          metric: ["applink_startup"],
+          name: "newssite-applink-startup",
+          metric: ["newssite-applink-startup"],
+          unit: "ms"
+        },
+        {
+          name: "shopify-applink-startup",
+          metric: ["shopify-applink-startup"],
           unit: "ms"
         },
         {
@@ -108,17 +113,17 @@
         {
           name: "background-main-cpuTime",
           metric: ["cpuTime-main-geomean"],
-          unit: "s"
+          unit: "ms"
         },
         {
           name: "background-gpu-cpuTime",
           metric: ["cpuTime-gpu-geomean"],
-          unit: "s"
+          unit: "ms"
         },
         {
           name: "background-tab-cpuTime",
           metric: ["cpuTime-tab-geomean"],
-          unit: "s"
+          unit: "ms"
         },
         {
           name: "background-main-rss",
