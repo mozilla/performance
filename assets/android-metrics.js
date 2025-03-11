@@ -181,9 +181,38 @@ function getAppColor(app) {
   return "green";
 }
 
-function displayChartForMetric(data, metric, unit) {
+function displayChartForMetric(data, metric, name, unit) {
   const filteredData = data.filter(row => row.test === metric);
   const groupedData = {};
+
+  let url="https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&replicates=1&timerange=2592000"
+
+  const signatureIds = new Set()
+  filteredData.forEach(row => {
+    if (url !== undefined && !signatureIds.has(row.signature_id)) {
+      let signature_id  = row.signature_id;
+      let framework_id  = row.framework_id;
+      let repository_id = row.repository_id;
+      if (signature_id && framework_id && repository_id) {
+        url += `&series=mozilla-central,${signature_id},${repository_id},${framework_id}`
+      } else {
+        url = undefined;
+      }
+      signatureIds.add(signature_id);
+    }
+  });
+
+  // Update the title to a link to the perfherder page.
+  if (url) {
+    const title = document.getElementById(name+"-section");
+    if (title) {
+      let link = document.createElement("a");
+      link.href = url;
+      link.style.textDecoration = "none";
+      title.parentNode.insertBefore(link, title);
+      link.appendChild(title);
+    }
+  }
 
   // Group data by application
   filteredData.forEach(item => {
@@ -237,7 +266,7 @@ function displayCharts() {
 
   window.tests.forEach(test => {
     test.metric.forEach(metric => {
-      displayChartForMetric(filteredData, metric, test.unit);
+      displayChartForMetric(filteredData, metric, test.name, test.unit);
     });
   });
 }
@@ -519,31 +548,6 @@ function createChartsContent(tests) {
     chartsHTML += `
             </div> 
     `;
-  });
-  document.querySelector('.charts-content').innerHTML = chartsHTML;
-}
-
-function createChartsContent2(tests) {
-  var chartsHTML = '';
-  tests.forEach(function(test) {
-    chartsHTML += `
-            <div class="row-title" id="${test.name}-section">${test.name}</div>
-            <div class="row">
-                <div class="content-row"> 
-                    <div class="sub-row">
-                        <div class="content-row">
-                            <div class="canvas-column">
-                                <div id="${test.metric[0]}-metrics" class="metric-container"></div> 
-                                <canvas id="${test.metric[0]}-canvas"></canvas> 
-                                <button onclick="window.allCharts.forEach(chart => chart.resetZoom())"> 
-                                    Reset Zoom
-                                </button> 
-                            </div> 
-                        </div> 
-                    </div>
-                </div> 
-            </div>
-        `;
   });
   document.querySelector('.charts-content').innerHTML = chartsHTML;
 }
