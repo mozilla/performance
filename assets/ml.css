@@ -1,0 +1,91 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #f4f4f4;
+  text-align: center;
+}
+h1 {
+  color: #333;
+}
+.nav-buttons {
+  margin-bottom: 20px;
+}
+.nav-buttons button {
+  background-color: #0078d7;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  margin: 5px;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.nav-buttons button.active {
+  background-color: #004a90;
+  font-weight: bold;
+}
+.platform-description {
+  font-size: 16px;
+  color: #666;
+  margin-bottom: 20px;
+}
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+  max-width: 800px;
+  margin: auto;
+}
+.feature-group {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  text-align: center;
+}
+.feature-title {
+  font-size: 22px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+.chart-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 45%;
+  height: 250px; /* Ensures a fixed height */
+}
+
+canvas {
+  max-width: 100%;
+  height: 100% !important; /* Forces Chart.js to respect the container */
+}
+
+.chart-description {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+}
+.feature-description {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 15px;
+  font-style: italic;
+}
+.more-info {
+  margin: 15px;
+  color: black;
+}
+
+.more-info a {
+  color: black;
+}
+
+.more-info a:visited {
+  color: black;
+}

@@ -1,250 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ML Metrics</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
-
-<link rel="stylesheet" href="assets/ml-style.css">
-
-<script src="assets/ml-metrics.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/ml-data.json';
-      generateContent(dataUrl);
-  });
-</script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Firefox AI Runtime</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+  <link rel="stylesheet" href="assets/ml.css">
+  <script src="assets/ml.js"></script>
 </head>
-<body>
-  <div class="sidebar">
-    <div class="dropdown">
-      <label for="history-select">History (days):</label>
-      <select id="history-select" onchange="setHistory(this.value)">
-        <option value=14>14</option>
-        <option value=30>30</option>
-        <option value=60>60</option>
-        <option value=90>90</option>
-      </select>
-    </div>
-    <div class="dropdown">
-      <label for="platform-select">Platform:</label>
-      <select id="platform-select" onchange="setPlatform(this.value)">
-        <option value="windows11-64-shippable-qr">Windows</option>
-        <option value="linux1804-64-shippable">Linux</option>
-        <option value="macosx1015-64-shippable-qr">Mac</option>
-      </select>
-    </div>
 
-    <div class="sections">
-    </div>
+<body onload="loadPlatformData('windows11Ref')">
+  <h1>Firefox AI Runtime</h1>
+
+  <div class="nav-buttons">
+    <button id="windows11Ref" onclick="loadPlatformData('windows11Ref')">Windows 11 Reference</button>
+    <button id="windows11" onclick="loadPlatformData('windows11')">Windows 11</button>
+    <button id="linuxHPE" onclick="loadPlatformData('linuxHPE')">Linux</button>
+    <button id="macOS" onclick="loadPlatformData('macOS')">macOS</button>
   </div>
 
-  <div class="content">
-    <div class="row-title" id="summary-section">Summary</div>
-    <div class="table-container">
-      <div class="table-content">
-        <table id="summary-table">
-          <thead>
-            <tr>
-              <th>Suite</th>
-              <th>Test</th>
-              <th style="border-left: 1px solid #ddd;">Latest</th>
-              <th>1 week ago</th>
-              <th>Difference (%)</th>
-              <th style="border-left: 1px solid #ddd;">4 weeks ago</th>
-              <th>Difference (%)</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+  <div id="platformDescription" class="platform-description"></div>
+
+  <div class="grid-container">
+    <div class="feature-group">
+      <div class="feature-title">Smart Tab Grouping - Suggest</div>
+      <div class="feature-description">Suggests similar tabs with ~10 tabs in the window.</div>
+      <div class="chart-container">
+        <div class="chart-wrapper">
+          <div class="chart-description">Latency in ms (cold start)</div>
+          <canvas id="smartTabSuggestChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+          <div class="chart-description">Peak RAM usage in MiB</div>
+          <canvas id="ramSmartTabSuggestChart"></canvas>
+        </div>
       </div>
     </div>
-
-    <div class="charts-content">
+    <div class="feature-group">
+      <div class="feature-title">Smart Tab Grouping - Topic</div>
+      <div class="feature-description">Generates a group label for ~5 tabs.</div>
+      <div class="chart-container">
+        <div class="chart-wrapper">
+          <div class="chart-description">Latency in ms (cold start)</div>
+          <canvas id="smartTabTopicChart"></canvas>
+        </div>
+        <div class="chart-wrapper">
+          <div class="chart-description">Peak RAM usage in MiB</div>
+          <canvas id="ramSmartTabTopicChart"></canvas>
+        </div>
+      </div>
     </div>
   </div>
 
-  <script>
-    // List of test suites and their tests
-    window.suites = [
-            {
-                "name": "Suggest",
-                "tests": [
-                   {
-                      "name": "initialization-latency",
-                      "unit": "ms"
-                   },
-
-                   {
-                      "name": "model-run-latency",
-                      "unit": "ms"
-                   },
-                   {
-                      "name": "residual-memory-usage",
-                      "unit": "MB"
-                   },
-                ]
-            },
-            {
-                "name": "Smart Tab Grouping",
-                "tests": [
-                    {
-                      "name": "Topic-cold-start-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Topic-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Topic-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Topic-residual-memory-usage",
-                      "unit": "MB"
-                    },
-                    {
-                      "name": "Topic-peak-memory-usage",
-                      "unit": "MB"
-                    },
-                    {
-                      "name": "Embedding-cold-start-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Embedding-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Embedding-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "Embedding-residual-memory-usage",
-                      "unit": "MB"
-                    },
-                    {
-                      "name": "Embedding-peak-memory-usage",
-                      "unit": "MB"
-                    }
-                ]
-            },
-            {
-                "name": "Summarizer",
-                "tests": [
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-initialization-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-model-run-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-residual-memory-usage",
-                      "unit": "MB"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-residual-memory-usage",
-                      "unit": "MB"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-1st-token-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-1st-token-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-decoding-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-latency",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-decoding-tokenSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-tokenSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-decoding-charactersSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-decoding-charactersSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-prompt-tokenSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-prompt-tokenSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "DISTILBART-CNN-12-6_BIG-prompt-charactersSpeed",
-                      "unit": "ms"
-                    },
-                    {
-                      "name": "QWEN2.5-0.5B-INSTRUCT_BIG-prompt-charactersSpeed",
-                      "unit": "ms"
-                    },
-                ]
-              },
-              {
-                  "name": "Autofill",
-                  "tests": [
-                      {
-                        "name": "pipeline-ready-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "initialization-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "model-run-latency",
-                        "unit": "ms"
-                      },
-                      {
-                        "name": "residual-memory-usage",
-                        "unit": "MB"
-                      },
-                      {
-                        "name": "peak-memory-usage",
-                        "unit": "MB"
-                      }
-                  ]
-                }
-    ];
-
-    // Create sidebar sections
-    createSidebarSections();
-
-    // Create charts content
-    createChartsContent();
-  </script>
+  <div class="more-info">
+    <a href="https://wiki.mozilla.org/Performance/Platforms">More info on CI hardware</a> |
+    <a href="https://firefox-source-docs.mozilla.org/toolkit/components/ml/index.html">
+      Runtime Documentation
+    </a> |
+    <a href="https://blog.mozilla.org/en/mozilla/ai/ai-tech">
+      Blog posts
+    </a> | 
+    <a href="/ml-dev.html">
+      Dev Dashboard
+    </a>
+  </div>
 </body>
+
 </html>
