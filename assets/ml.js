@@ -16,8 +16,6 @@ const platformDescriptions = {
 const charts = {};
 
 function clearChart(ctx) {
-  console.log(charts);
-
   if (charts[ctx.id]) {
     charts[ctx.id].destroy(); // Destroy the existing chart
     delete charts[ctx.id]; // Remove reference
@@ -31,14 +29,11 @@ function clearChart(ctx) {
     return newCanvas; // Return the new canvas element
   }
 
-  console.log(ctx.id);
-
   return ctx; // If no chart existed, return the original canvas
 }
 
 function createChart(ctx, dataPoints, unit) {
   ctx = clearChart(ctx);
-  console.log("some id", ctx.id);
 
   charts[ctx.id] = new Chart(ctx, {
     type: "bar",
@@ -125,6 +120,8 @@ async function loadPlatformData(platform) {
   document
     .querySelectorAll(".nav-buttons button")
     .forEach((button) => button.classList.remove("active"));
+  console.log(platform);
+
   document.getElementById(platform).classList.add("active");
   const dataUrl =
     "https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/ml-data.json";
@@ -147,7 +144,6 @@ function indexData(data) {
     if (!index[suiteKey][testKey][platformKey])
       index[suiteKey][testKey][platformKey] = [];
 
-    //console.log(`${suiteKey}:${testKey}}`);
     index[suiteKey][testKey][platformKey].push({
       date: new Date(entry.date),
       value: entry.value

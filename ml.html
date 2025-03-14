@@ -14,14 +14,14 @@
   <script src="assets/ml.js"></script>
 </head>
 
-<body onload="loadPlatformData('windows11Ref')">
+<body>
   <h1>Firefox AI Runtime</h1>
 
   <div class="nav-buttons">
-    <button id="windows11Ref" onclick="loadPlatformData('windows11Ref')">Windows 11 Reference</button>
-    <button id="windows11" onclick="loadPlatformData('windows11')">Windows 11</button>
-    <button id="linuxHPE" onclick="loadPlatformData('linuxHPE')">Linux</button>
-    <button id="macOS" onclick="loadPlatformData('macOS')">macOS</button>
+    <button id="windows11Ref" onclick="updatePlatform('windows11Ref')">Windows 11 Reference</button>
+    <button id="windows11" onclick="updatePlatform('windows11')">Windows 11</button>
+    <button id="linuxHPE" onclick="updatePlatform('linuxHPE')">Linux</button>
+    <button id="macOS" onclick="updatePlatform('macOS')">macOS</button>
   </div>
 
   <div id="platformDescription" class="platform-description"></div>
@@ -69,6 +69,23 @@
       Dev Dashboard
     </a>
   </div>
+
+  <script>
+    function updatePlatform(platform) {
+      const params = new URLSearchParams(window.location.search);
+      params.set('platform', platform);
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+      loadPlatformData(platform);
+    }
+
+    function loadFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const platform = params.get('platform') || 'windows11Ref';
+      loadPlatformData(platform);
+    }
+
+    window.onload = loadFromURL;
+  </script>
 </body>
 
 </html>
