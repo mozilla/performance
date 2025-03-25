@@ -288,8 +288,12 @@ function fixupStartupTests(data) {
     } else if (row.suite === 'AndroidStartup:chrome-m') {
       row.suite = 'AndroidStartup';
       row.application = 'chrome-m';
-    } else if (row.test === 'applink_startup' && row.suite === 'newssite-applink-startup') {
-      row.test = 'newssite-applink-startup';
+    } else if (row.test === 'applink_startup' && row.suite === 'newssite-applink-startup' && row.platform === 'android-hw-a55-14-0-aarch64-shippable') {
+      row.test = 'newssite-applink-startup-a55';
+    } else if (row.test === 'applink_startup' && row.suite === 'newssite-applink-startup' && row.platform === 'android-hw-p6-13-0-aarch64-shippable') {
+      row.test = 'newssite-applink-startup-p6';
+    } else if (row.test === 'applink_startup' && row.suite === 'newssite-applink-startup' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
+      row.test = 'newssite-applink-startup-s24';
     } else if (row.test === 'applink_startup' && row.suite === 'shopify-applink-startup') {
       row.test = 'shopify-applink-startup';
     }
