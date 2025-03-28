@@ -18,7 +18,7 @@
       return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
     }
 
-    var platform = 'windows10-64-shippable-qr';
+    var platforms = ['windows10-64-shippable-qr'];
 
     const searchParams = new URLSearchParams(window.location.search);
 
@@ -39,43 +39,43 @@
       total_sig_firefox = 4588949;
       total_sig_chrome = 4589463;
       total_sig_car = 4836588;
-      platform = 'macosx1015-64-shippable-qr';
+      platforms = ['macosx1015-64-shippable-qr'];
     } else if (searchParams.get('os') == 'windows-new') {
       total_sig_firefox = 87472;
       total_sig_chrome = 92125;
       total_sig_car = 92557;
-      platform = 'windows11-64-shippable-qr';
+      platforms = ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'];
     } else if (searchParams.get('os') == 'osxm2') {
       total_sig_firefox = 5042783;
       total_sig_chrome = 5044184;
       total_sig_car = 5043640;
       total_sig_safari = 5045302;
       total_sig_safari_tp = 37211;
-      platform = 'macosx1400-64-shippable-qr';
+      platforms = ['macosx1400-64-shippable-qr'];
     } else if (searchParams.get('os') == 'linux') {
       total_sig_firefox = 4588786;
       total_sig_chrome = 4589789;
       total_sig_car = 4725642;
-      platform = 'linux1804-64-shippable-qr';
+      platforms = ['linux1804-64-shippable-qr'];
     } else if (searchParams.get('os') == 'android-a55') {
       total_sig_firefox = 228888;
       total_sig_chrome = 230167;
       total_sig_car = 230550;
-      platform = 'android-hw-a55-14-0-aarch64-shippable';
+      platforms = ['android-hw-a55-14-0-aarch64-shippable'];
       likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
       timeWindow = '4wk';
     } else if (searchParams.get('os') == 'android-s24') {
       total_sig_firefox = 274646;
       total_sig_chrome = 275618;
       total_sig_car = 280648;
-      platform = 'android-hw-s24-14-0-aarch64-shippable';
+      platforms = ['android-hw-s24-14-0-aarch64-shippable'];
       likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
       timeWindow = '4wk';
     } else if (searchParams.get('os') == 'android-p6') {
       total_sig_firefox = 275091;
       total_sig_chrome = 275819;
       total_sig_car = 281010;
-      platform = 'android-hw-p6-13-0-aarch64-shippable';
+      platforms = ['android-hw-p6-13-0-aarch64-shippable'];
       likelyDataURL = 'https://sql.telemetry.mozilla.org/api/queries/90959/results.json?api_key=uuoiM8Xdob1HcGB5UxdFG3TvZi6D08kfNR5pWC9O';
       timeWindow = '4wk';
     }
@@ -114,7 +114,7 @@
     }
 
     function fillData(tableId, row) {
-      if (row.platform != platform) {
+      if (!platforms.includes(row.platform)) {
         return;
       }
       diffColor = getDiffColor(row.difference);
@@ -124,7 +124,6 @@
       if (row.firefoxoldmean > 0) {
         firefoxDiff = row.firefoxdifference;
       }
-
       
       let newLine = '';
       newLine += '<tr onClick="openTestComparison(' + row.signature_id_firefox + ', ' + row.signature_id_chrome + ', ' + row.signature_id_car + ', ' + row.signature_id_safari + ', ' + row.signature_id_safari_tp + ');"><th scope="row" class="testName">' +
@@ -135,7 +134,7 @@
         newLine += '<td>' + round(row.carmean, 2) + ' ms</td>';
       }
 
-      if (platform == 'macosx1400-64-shippable-qr') {
+      if (platforms.includes('macosx1400-64-shippable-qr')) {
         newLine += '<td>' +
           round(row.safarimean, 2) + ' ms</td>';
         newLine += '<td>' +
@@ -148,7 +147,7 @@
         newLine += '<td style=\'color: ' + getDiffColor(row.cardifference) + '\'>' + Math.round(-row.cardifference * 100) + '\%</td>'
       }
 
-      if (platform == 'macosx1400-64-shippable-qr') {
+      if (platforms.includes('macosx1400-64-shippable-qr')) {
         newLine += '<td style=\'color: ' + getDiffColor(row.safaridifference) + '\'>' + Math.round(-row.safaridifference * 100) + '\%</td>'
         newLine += '<td style=\'color: ' + getDiffColor(row.safaritpdifference) + '\'>' + Math.round(-row.safaritpdifference * 100) + '\%</td>'
       }
@@ -161,9 +160,12 @@
       document.getElementById(tableId).innerHTML += newLine;
     }
 
+    // Store testData globally so it can be accessed by other functions
+    let testData = {};
+    
     function loadDataLikely(data) {
       let table = document.getElementById('tableLikely');
-      if (platform != 'macosx1400-64-shippable-qr') {
+      if (!platforms.includes('macosx1400-64-shippable-qr')) {
         table.rows[0].cells[1].colSpan = 3;
         table.rows[0].cells[2].colSpan = 2;
         table.rows[1].deleteCell(3);
@@ -171,7 +173,46 @@
         table.rows[1].deleteCell(5);
         table.rows[1].deleteCell(5);
       }
-      data.query_result.data.rows.forEach(fillData.bind(null, 'tableBodyLikely'));
+      // Process all rows directly without date filtering first
+      if (searchParams.get('os') != 'windows-new') {
+        data.query_result.data.rows.forEach(fillData.bind(null, 'tableBodyLikely'));
+      } else {
+        // For windows-new, we need special handling
+        // Group by test name to avoid duplicates
+        testData = {};
+
+        // First pass: collect all data by test name
+        data.query_result.data.rows.forEach(function(row) {
+          if (platforms.includes(row.platform)) {
+            let testName = row.test.split('/')[0];
+            if (!testData[testName]) {
+              testData[testName] = [];
+            }
+            testData[testName].push(row);
+          }
+        });
+        
+        // Second pass: for each test, select the appropriate row based on platform
+        Object.keys(testData).forEach(function(testName) {
+          let rows = testData[testName];
+
+          // Find a row from each platform
+          let oldRow = rows.find(r => r.platform === 'windows11-64-shippable-qr');
+          let newRow = rows.find(r => r.platform === 'windows11-64-24h2-shippable');
+
+          // If we have both, use the 24h2 row (newer platform)
+          if (oldRow && newRow) {
+            fillData('tableBodyLikely', newRow);
+          }
+          // If we only have one, use that
+          else if (oldRow) {
+            fillData('tableBodyLikely', oldRow);
+          }
+          else if (newRow) {
+            fillData('tableBodyLikely', newRow);
+          }
+        });
+      }
 
       document.getElementById('timewindow').innerHTML = timeWindow + ' prior';
 
@@ -184,20 +225,43 @@
       let arithmeticMeanOfLogsSafariTP = 0;
       let numValues = 0;
       let numValuesOld = 0;
-      data.query_result.data.rows.forEach(function (row) {
-        if ((row.platform != platform)) {
-          return;
+      
+      // Calculate totals based on the rows that were actually displayed
+      // Get all rows that were added to the table
+      const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
+      console.log("Table rows for calculation:", tableRows.length);
+      
+      // For each row in the table, find the corresponding data row
+      tableRows.forEach(function(tableRow) {
+        const testName = tableRow.querySelector('.testName').textContent;
+        
+        // Find the data row for this test
+        let dataRow;
+        if (searchParams.get('os') == 'windows-new') {
+          // For windows-new, find in our testData
+          const rows = testData[testName] || [];
+          const newRow = rows.find(r => r.platform === 'windows11-64-24h2-shippable');
+          const oldRow = rows.find(r => r.platform === 'windows11-64-shippable-qr');
+          dataRow = newRow || oldRow;
+        } else {
+          // For other platforms, find in the original data
+          dataRow = data.query_result.data.rows.find(r => {
+            return platforms.includes(r.platform) && r.test.split('/')[0] === testName;
+          });
         }
-        numValues++;
-        arithmeticMeanOfLogsFX += Math.log(row.firefoxmean);
-        arithmeticMeanOfLogsChrome += Math.log(row.chromemean);
-        arithmeticMeanOfLogsCaR += Math.log(row.carmean);
-        arithmeticMeanOfLogsSafari += Math.log(row.safarimean);
-        arithmeticMeanOfLogsSafariTP += Math.log(row.safaritpmean);
-        if (row.firefoxoldmean > 0) {
-          numValuesOld++;
-          arithmeticMeanOfLogsFXOld += Math.log(row.firefoxoldmean);
-          arithmeticMeanOfLogsChromeOld += Math.log(row.chromeoldmean);
+        
+        if (dataRow) {
+          numValues++;
+          arithmeticMeanOfLogsFX += Math.log(dataRow.firefoxmean);
+          arithmeticMeanOfLogsChrome += Math.log(dataRow.chromemean);
+          arithmeticMeanOfLogsCaR += Math.log(dataRow.carmean);
+          arithmeticMeanOfLogsSafari += Math.log(dataRow.safarimean);
+          arithmeticMeanOfLogsSafariTP += Math.log(dataRow.safaritpmean);
+          if (dataRow.firefoxoldmean > 0) {
+            numValuesOld++;
+            arithmeticMeanOfLogsFXOld += Math.log(dataRow.firefoxoldmean);
+            arithmeticMeanOfLogsChromeOld += Math.log(dataRow.chromeoldmean);
+          }
         }
       });
       let FxGeoMean = Math.exp(arithmeticMeanOfLogsFX / numValues);
@@ -229,7 +293,7 @@
           round(CaRGeoMean, 2) + ' ms</td>';
       }
 
-      if (platform == 'macosx1400-64-shippable-qr') {
+      if (platforms.includes('macosx1400-64-shippable-qr')) {
         newLine += '<td>' +
           round(SafariGeoMean, 2) + ' ms</td>';
         newLine += '<td>' +
@@ -243,7 +307,7 @@
           round(-CaRdiff * 100, 2) + '\%</td>';
       }
 
-      if (platform == 'macosx1400-64-shippable-qr') {
+      if (platforms.includes('macosx1400-64-shippable-qr')) {
         newLine += '<td style=\'color: ' + getDiffColor(Safaridiff) + '\'>' +
           round(-Safaridiff * 100, 2) + '\%</td>';
         newLine += '<td style=\'color: ' + getDiffColor(SafariTPdiff) + '\'>' +
@@ -313,29 +377,73 @@
       let xyValuesCaR = [];
       let xyValuesSafari = [];
       let xyValuesSafariTP = [];
-      data.query_result.data.rows.forEach(function (row) {
-        if (row.platform != platform) {
-          if (!(row.platform == 'macosx1300-64-shippable-qr' && platform == 'macosx1400-64-shippable-qr')) {
+
+      // For windows-new, we need to handle multiple platforms
+      if (searchParams.get('os') == 'windows-new') {
+        // Group data points by timestamp and application to avoid duplicates
+        let dataPoints = {};
+        
+        data.query_result.data.rows.forEach(function (row) {
+          // Basic filtering
+          if (!platforms.includes(row.platform)) {
+            if (!(row.platform == 'macosx1300-64-shippable-qr' && platforms.includes('macosx1400-64-shippable-qr'))) {
+              return;
+            }
+          }
+          
+          if (row.geomean > 130 && !(platforms.includes('android-hw-s24-14-0-aarch64-shippable') ||
+                                     platforms.includes('android-hw-p6-13-0-aarch64-shippable') ||
+                                     platforms.includes('android-hw-a55-14-0-aarch64-shippable'))) {
             return;
           }
-        }
-
-        if (row.geomean > 130 && !(platform == 'android-hw-s24-14-0-aarch64-shippable' ||
-                                   platform == 'android-hw-p6-13-0-aarch64-shippable' ||
-                                   platform == 'android-hw-a55-14-0-aarch64-shippable')) {
-          return;
-        }
-
-        if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
-          return;
-        }
-
-        if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
-        if (row.application == 'chrome' || row.application == 'chrome-m') { xyValuesChrome.push({ x: row.push_timestamp, y: row.geomean }); }
-        if (row.application == 'custom-car' || row.application == 'cstm-car-m') { xyValuesCaR.push({ x: row.push_timestamp, y: row.geomean }); }
-        if (row.application == 'safari') { xyValuesSafari.push({ x: row.push_timestamp, y: row.geomean }); }
-        if (row.application == 'safari-tp') { xyValuesSafariTP.push({ x: row.push_timestamp, y: row.geomean }); }
-      });
+          
+          if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
+            return;
+          }
+          
+          // Create a key combining timestamp and application
+          const key = `${row.push_timestamp}_${row.application}`;
+          
+          // Prefer 24h2 platform over shippable-qr when both exist for the same timestamp
+          if (!dataPoints[key] || row.platform === 'windows11-64-24h2-shippable') {
+            dataPoints[key] = row;
+          }
+        });
+        
+        // Process the filtered data points
+        Object.values(dataPoints).forEach(function(row) {
+          if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'chrome' || row.application == 'chrome-m') { xyValuesChrome.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'custom-car' || row.application == 'cstm-car-m') { xyValuesCaR.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'safari') { xyValuesSafari.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'safari-tp') { xyValuesSafariTP.push({ x: row.push_timestamp, y: row.geomean }); }
+        });
+      } else {
+        // For other platforms, use the original approach
+        data.query_result.data.rows.forEach(function (row) {
+          if (!platforms.includes(row.platform)) {
+            if (!(row.platform == 'macosx1300-64-shippable-qr' && platforms.includes('macosx1400-64-shippable-qr'))) {
+              return;
+            }
+          }
+          
+          if (row.geomean > 130 && !(platforms.includes('android-hw-s24-14-0-aarch64-shippable') ||
+                                     platforms.includes('android-hw-p6-13-0-aarch64-shippable') ||
+                                     platforms.includes('android-hw-a55-14-0-aarch64-shippable'))) {
+            return;
+          }
+          
+          if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
+            return;
+          }
+          
+          if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'chrome' || row.application == 'chrome-m') { xyValuesChrome.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'custom-car' || row.application == 'cstm-car-m') { xyValuesCaR.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'safari') { xyValuesSafari.push({ x: row.push_timestamp, y: row.geomean }); }
+          if (row.application == 'safari-tp') { xyValuesSafariTP.push({ x: row.push_timestamp, y: row.geomean }); }
+        });
+      }
 
       let cfg = {
         type: "scatter",
@@ -367,15 +475,35 @@
           plugins: {
             annotation: {
               annotations: {
+                speedometer31Line: {
+                  type: 'line',
+                  xMin: '2025-03-21',
+                  xMax: '2025-03-21',
+                  borderColor: 'rgba(65, 105, 225, 0.7)',
+                  borderWidth: 2,
+                  label: {
+                    display: true,
+                    content: 'Speedometer 3.1 Update',
+                    position: 'start',
+                    backgroundColor: 'rgba(65, 105, 225, 0.7)',
+                    font: {
+                      weight: 'bold',
+                      size: 16
+                    },
+                    padding: {
+                      top: 6,
+                      bottom: 6,
+                      left: 8,
+                      right: 8
+                    }
+                  }
+                }
               }
             }
           }
         }
       };
 
-      if (platform == 'android-hw-s24-14-0-aarch64-shippable' || platform == 'android-hw-p6-13-0-aarch64-shippable' || platform == 'android-hw-a55-14-0-aarch64-shippable') {
-        cfg.options.plugins = {};
-      }
 
       cfg.data.datasets.push({
         label: 'Chrome',
@@ -397,7 +525,7 @@
         });
       }
 
-      if (platform == 'macosx1400-64-shippable-qr') {
+      if (platforms.includes('macosx1400-64-shippable-qr')) {
         cfg.data.datasets.push({
           label: 'Safari',
           pointRadius: 3,
@@ -422,7 +550,7 @@
 
     function changeRange(newRange) {
       if (newRange == 'all') {
-        if (platform != 'macosx1400-64-shippable-qr') {
+        if (!platforms.includes('macosx1400-64-shippable-qr')) {
           timeChart.options.scales.x.min = '';
         } else {
           timeChart.options.scales.x.min = '2023-12-01';
@@ -541,6 +669,7 @@
 
         <h3>Current Status (lower is better)</h3>
 
+        <br>
         <div style="width:100%;max-width:900px">
           <canvas id="myChart" style="width:100%;max-width:900px"></canvas>
           <table class="buttons">
@@ -548,6 +677,7 @@
           </table>
         </div>
 
+        <br>
         <h3>Breakdown: Speedometer 3 Likely Candidates</h3>
         <table class="styled-table" id="tableLikely">
           <col>
