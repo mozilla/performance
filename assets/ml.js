@@ -114,6 +114,77 @@ function createLineChart(ctx, dataPoints, unit) {
   });
 }
 
+function createTwoLineChart(ctx, dataRows, unit) {
+  ctx = clearChart(ctx);
+
+  // For the x-axis labels, we'll convert the date string into something readable
+  const labels = dataRows.map(row => {
+    const d = new Date(row.date);
+    // e.g. "26 Mar"
+    return d.toLocaleDateString("en-US", { day: "numeric", month: "short" });
+  });
+
+  // Prepare the two data arrays:
+  // 1) Engine Creation p50
+  // 2) Inference p50
+  const engineCreationData = dataRows.map(row => row.engine_creation_p50);
+  const inferenceData = dataRows.map(row => row.inference_p50);
+
+  charts[ctx.id] = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Engine Creation p50 (ms)",
+          data: engineCreationData,
+          borderColor: "rgba(54, 162, 235, 1)",
+          backgroundColor: "rgba(54, 162, 235, 0.2)",
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: "Inference p50 (ms)",
+          data: inferenceData,
+          borderColor: "rgba(255, 99, 132, 1)",
+          backgroundColor: "rgba(255, 99, 132, 0.2)",
+          fill: true,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: "category",
+          ticks: {
+            autoSkip: true,
+            maxTicksLimit: 10
+          }
+        },
+        y: {
+          beginAtZero: true
+        }
+      },
+      plugins: {
+        legend: {
+          display: true // Show which line is which
+        },
+        tooltip: {
+          callbacks: {
+            // Show e.g. "1.17 ms" in the tooltip
+            label: function(tooltipItem) {
+              return tooltipItem.raw + " " + unit;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
 async function loadPlatformData(platform) {
   document.getElementById("platformDescription").innerText =
     platformDescriptions[platform];
@@ -130,6 +201,7 @@ async function loadPlatformData(platform) {
 }
 
 var data = null;
+var engineData = null;
 
 function indexData(data) {
   const index = {};
@@ -365,4 +437,120 @@ function getValues(suite, test, platform) {
     data[suite.toLowerCase()]?.[test.toLowerCase()]?.[platform.toLowerCase()] ||
     []
   );
+}
+
+
+function getEngineIdData(engineId) {
+  return engineData.filter(e => e.engine_id === engineId).sort(e => e.date);
+}
+
+function createEngineStats(engineId, engineData) {
+  let totalEngineSuccess = 0;
+  let totalEngineFailure = 0;
+  let totalInferenceSuccess = 0;
+  let totalInferenceFailure = 0;
+
+  engineData.forEach(entry => {
+    totalEngineSuccess += (entry.engine_creation_success_count || 0);
+    totalEngineFailure += (entry.engine_creation_failure_count || 0);
+    totalInferenceSuccess += (entry.inference_success_count || 0);
+    totalInferenceFailure += (entry.inference_failure_count || 0);
+  });
+
+  // 2) Populate the grid with totals
+  document.getElementById(`${engineId}-engineSuccessCount`).textContent = totalEngineSuccess;
+  document.getElementById(`${engineId}-engineFailureCount`).textContent = totalEngineFailure;
+  document.getElementById(`${engineId}-inferenceSuccessCount`).textContent = totalInferenceSuccess;
+  document.getElementById(`${engineId}-inferenceFailureCount`).textContent = totalInferenceFailure;
+}
+
+function createEngineRow(engineId) {
+  const engineData = getEngineIdData(engineId);
+  const featureContainer = document.getElementById("gridContainer");
+  const htmlBlock = `
+    <div class="feature-group-${engineId}">
+          <div class="feature-title">${engineId}</div>
+          <div class="chart-container">
+              <!-- Chart Section -->
+              <div class="chart-wrapper">
+                  <canvas id="${engineId}-chart"></canvas>
+              </div>
+              <!-- Stats Section -->
+              <div class="stats-section">
+                  <!-- Engine Creation Stats Card -->
+                  <div class="stats-card">
+                      <div class="stats-title">Engine Creation Stats</div>
+                      <div class="stats-grid">
+                          <!-- Row 1: Labels -->
+                          <div>Success Count</div>
+                          <div>Failure Count</div>
+                          <!-- Row 2: Values -->
+                          <div id="${engineId}-engineSuccessCount"></div>
+                          <div id="${engineId}-engineFailureCount"></div>
+                      </div>
+                  </div>
+  
+                  <!-- Inference Stats Card -->
+                  <div class="stats-card">
+                      <div class="stats-title">Inference Stats</div>
+                      <div class="stats-grid">
+                          <!-- Row 1: Labels -->
+                          <div>Success Count</div>
+                          <div>Failure Count</div>
+                          <!-- Row 2: Values -->
+                          <div id="${engineId}-inferenceSuccessCount"></div>
+                          <div id="${engineId}-inferenceFailureCount"></div>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+    `
+  featureContainer.insertAdjacentHTML("beforeend", htmlBlock);
+  createTwoLineChart(
+      document.getElementById(`${engineId}-chart`),
+      engineData,
+      "ms"
+  );
+  createEngineStats(engineId, engineData);
+}
+
+function createFeatureSelect(engineIds) {
+  const selectContainer = document.getElementById("featureSelect");
+
+  const htmlBlockAll = `
+    <option value="all" selected>All</option>
+  `
+  selectContainer.insertAdjacentHTML("beforeend", htmlBlockAll);
+
+  for (let engineId of engineIds) {
+    const htmlBlock = `
+        <option value="feature-group-${engineId}">${engineId}</option>
+    `;
+    selectContainer.insertAdjacentHTML("beforeend", htmlBlock);
+  }
+}
+
+function renderEngineData(engineData) {
+  const engineIds = [...new Set(engineData.map(e => e.engine_id))].sort();
+  createFeatureSelect(engineIds);
+  for (let engineId of engineIds) {
+    createEngineRow(engineId);
+  }
+}
+
+async function loadEngineData() {
+  const dataUrl =
+      "https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/ml-engine-data.json";
+
+  if (!engineData) {
+    try {
+      const response = await fetch(dataUrl);
+      engineData = await response.json();
+      engineData = engineData.query_result.data.rows;
+      renderEngineData(engineData);
+    } catch (error) {
+      console.error("Error fetching or processing data:", error);
+    }
+  }
 }
