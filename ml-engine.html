@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firefox AI Runtime Engines</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <link rel="stylesheet" href="assets/ml.css">
+    <script src="assets/ml.js"></script>
+    <style>
+        /* Base Styling */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+
+        .feature-group {
+            max-width: 1200px;
+            margin: 2rem auto; /* Centers content, adds vertical space */
+            padding: 0 1rem;   /* Horizontal padding for narrower screens */
+        }
+
+        /* Title styling */
+        .feature-title {
+            font-size: 1.75rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            margin-top: 1rem;
+        }
+
+        /* Container for chart + stats side by side */
+        .chart-container {
+            display: flex;
+            flex-wrap: wrap;    /* Allows wrapping on smaller screens */
+            gap: 1rem;          /* Space between chart and stats column */
+            background-color: #ffffff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Chart Area */
+        .chart-wrapper {
+            flex: 1 1 600px;   /* Grows/shrinks; minimum width ~600px */
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #fff;
+            border-radius: 0.25rem;
+            padding: 1rem;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            display: flex;       /* Place cards on same row */
+            flex-direction: row; /* Ensures horizontal layout */
+            gap: 1rem;
+        }
+
+        /* Card styling for each stats group */
+        .stats-card {
+            flex: 1 1 0;       /* Each tile shares available space equally */
+            background-color: #ffffff;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Stats titles */
+        .stats-title {
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        /* 2x2 Grid for labels and values */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: auto auto;
+            grid-template-rows: auto auto;
+            gap: 0.5rem 1.5rem; /* row gap, column gap */
+        }
+
+        /* Make the top row (labels) bolder */
+        .stats-grid > div:nth-child(1),
+        .stats-grid > div:nth-child(2) {
+            font-weight: 600;
+        }
+        .select-label {
+            font-weight: bold;
+            margin-right: 0.5em;
+        }
+
+        .styled-select {
+            padding: 0.5em 1em;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f8f8f8;
+            color: #333;
+            cursor: pointer;
+            outline: none;
+            margin-bottom: 1em;
+        }
+
+        /* Optional hover/focus effects */
+        .styled-select:hover {
+            border-color: #888; /* Slightly darker border on hover */
+        }
+        .styled-select:focus {
+            border-color: #555; /* Darker border color on focus */
+            outline: none;      /* Remove default outline */
+        }
+    </style>
+</head>
+
+<body>
+<h1>Firefox AI Runtime Engines</h1>
+<label for="featureSelect">Filter by EngineId:</label>
+<select id="featureSelect" class="styled-select">
+</select>
+<div id="gridContainer"class="grid-container">
+</div>
+
+
+<script>
+    document.getElementById("featureSelect").addEventListener("change", function(e) {
+        var selected = e.target.value;
+        // Select all divs inside #gridContainer whose class begins with "feature-group-"
+        var groups = document.querySelectorAll("#gridContainer > div[class^='feature-group-']");
+
+        groups.forEach(function(group) {
+            // If user selects 'all' or the group's class matches the selected value, show it;
+            // otherwise, hide it
+            if (selected === "all" || group.classList.contains(selected)) {
+                group.style.display = "block";
+            } else {
+                group.style.display = "none";
+            }
+        });
+    });
+    window.onload = loadEngineData;
+</script>
+</body>
+
+</html>
