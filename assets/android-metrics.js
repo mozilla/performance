@@ -185,7 +185,7 @@ function displayChartForMetric(data, metric, name, unit) {
   const filteredData = data.filter(row => row.test === metric);
   const groupedData = {};
 
-  let url="https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&replicates=1&timerange=2592000"
+  let url="https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=2592000"
 
   const signatureIds = new Set()
   filteredData.forEach(row => {
