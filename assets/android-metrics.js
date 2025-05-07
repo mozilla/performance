@@ -124,31 +124,6 @@ function plotChart(id, dataset, unit) {
           title: { display: true, text: `${unit}` }
         }
       },
-      plugins: {
-        zoom : {
-            pan: {
-                enabled: false,
-            },
-            zoom: {
-                mode: 'xy',
-                drag: {
-                    enabled: true,
-                    borderColor: 'rgb(54, 162, 235)',
-                    borderWidth: 1,
-                    backgroundColor: 'rgba(54, 162, 235, 0.3)'
-                },
-                onZoom({ chart }) {
-                  window.allCharts.forEach(c => {
-                    c.zoomScale(
-                      'x',
-                      { min: Math.trunc(chart.scales.x.min), max: Math.trunc(chart.scales.x.max) },
-                      'none'
-                    );
-                  });
-                },
-            },
-        },
-      }
     },
     plugins: [backgroundColorPlugin]
   });
@@ -542,9 +517,6 @@ function createChartsContent(tests) {
                 <div class="canvas-column">
                     <div id="${metric}-metrics" class="metric-container"></div> 
                     <canvas id="${metric}-canvas"></canvas> 
-                    <button onclick="window.allCharts.forEach(chart => chart.resetZoom())"> 
-                        Reset Zoom
-                    </button> 
                 </div> 
           `;
     });
