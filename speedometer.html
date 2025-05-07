@@ -58,7 +58,7 @@
       total_sig_car = 5380083;
       total_sig_safari = 5361588;
       total_sig_safari_tp = 5361588;
-      platforms = ['macosx1500-64-shippable-qr'];
+      platforms = ['macosx1500-aarch64-shippable'];
     } else if (searchParams.get('os') == 'linux') {
       total_sig_firefox = 4588786;
       total_sig_chrome = 4589789;
@@ -141,7 +141,7 @@
         newLine += '<td>' + round(row.carmean, 2) + ' ms</td>';
       }
 
-      if (platforms.includes('macosx1400-64-shippable-qr')) {
+      if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         newLine += '<td>' +
           round(row.safarimean, 2) + ' ms</td>';
         newLine += '<td>' +
@@ -154,7 +154,7 @@
         newLine += '<td style=\'color: ' + getDiffColor(row.cardifference) + '\'>' + Math.round(-row.cardifference * 100) + '\%</td>'
       }
 
-      if (platforms.includes('macosx1400-64-shippable-qr')) {
+      if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         newLine += '<td style=\'color: ' + getDiffColor(row.safaridifference) + '\'>' + Math.round(-row.safaridifference * 100) + '\%</td>'
         newLine += '<td style=\'color: ' + getDiffColor(row.safaritpdifference) + '\'>' + Math.round(-row.safaritpdifference * 100) + '\%</td>'
       }
@@ -172,7 +172,7 @@
     
     function loadDataLikely(data) {
       let table = document.getElementById('tableLikely');
-      if (!platforms.includes('macosx1400-64-shippable-qr')) {
+      if (!platforms.includes('macosx1400-64-shippable-qr') && !platforms.includes('macosx1500-aarch64-shippable')) {
         table.rows[0].cells[1].colSpan = 3;
         table.rows[0].cells[2].colSpan = 2;
         table.rows[1].deleteCell(3);
@@ -300,7 +300,7 @@
           round(CaRGeoMean, 2) + ' ms</td>';
       }
 
-      if (platforms.includes('macosx1400-64-shippable-qr')) {
+      if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         newLine += '<td>' +
           round(SafariGeoMean, 2) + ' ms</td>';
         newLine += '<td>' +
@@ -314,7 +314,7 @@
           round(-CaRdiff * 100, 2) + '\%</td>';
       }
 
-      if (platforms.includes('macosx1400-64-shippable-qr')) {
+      if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         newLine += '<td style=\'color: ' + getDiffColor(Safaridiff) + '\'>' +
           round(-Safaridiff * 100, 2) + '\%</td>';
         newLine += '<td style=\'color: ' + getDiffColor(SafariTPdiff) + '\'>' +
@@ -513,7 +513,6 @@
         }
       };
 
-
       cfg.data.datasets.push({
         label: 'Chrome',
         pointRadius: 3,
@@ -534,7 +533,7 @@
         });
       }
 
-      if (platforms.includes('macosx1400-64-shippable-qr')) {
+      if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         cfg.data.datasets.push({
           label: 'Safari',
           pointRadius: 3,
@@ -551,7 +550,6 @@
           pointBorderWidth: 0.5,
           data: xyValuesSafariTP
         });
-        cfg.options.scales.x.min = '2023-12-01';
       }
 
       timeChart = new Chart("myChart", cfg);
@@ -559,11 +557,7 @@
 
     function changeRange(newRange) {
       if (newRange == 'all') {
-        if (!platforms.includes('macosx1400-64-shippable-qr')) {
-          timeChart.options.scales.x.min = '';
-        } else {
-          timeChart.options.scales.x.min = '2023-12-01';
-        }
+        timeChart.options.scales.x.min = '';
       } else {
         var d = new Date();
         d.setMonth(d.getMonth() - newRange);
