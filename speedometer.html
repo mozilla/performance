@@ -52,6 +52,13 @@
       total_sig_safari = 5045302;
       total_sig_safari_tp = 37211;
       platforms = ['macosx1400-64-shippable-qr'];
+    } else if (searchParams.get('os') == 'osxm4') {
+      total_sig_firefox = 5353492;
+      total_sig_chrome = 5353692;
+      total_sig_car = 5380083;
+      total_sig_safari = 5361588;
+      total_sig_safari_tp = 5361588;
+      platforms = ['macosx1500-64-shippable-qr'];
     } else if (searchParams.get('os') == 'linux') {
       total_sig_firefox = 4588786;
       total_sig_chrome = 4589789;
@@ -355,6 +362,8 @@
         document.getElementById("mobilebutton3").style.backgroundColor = "gray";
       } else if (searchParams.get('os') == 'osxm2') {
         document.getElementById("osxm2button").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'osxm4') {
+        document.getElementById("osxm4button").style.backgroundColor = "gray";
       } else {
         document.getElementById("windowsbutton").style = "background-color:gray;";
       }
@@ -663,7 +672,7 @@
       <center>
         <table class="buttons">
           <tr><td colspan="2" style="height:50px;"><a href="speedometer.html" id="windowsbutton">Windows 10</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=windows-new" id="winnewbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=linux" id="linuxbutton">Linux</a></td></tr>
-          <td colspan="6" style="height:50px;"><a href="speedometer.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+          <td colspan="3" style="height:50px;"><a href="speedometer.html?os=osxm4" id="osxm4button">Mac OSX (M4)</a></td><td colspan="3" style="height:50px;"><a href="speedometer.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
           <tr><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td></tr>
         </table>
 
