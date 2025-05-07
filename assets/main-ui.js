@@ -34,7 +34,7 @@ if (sidebar !== null) {
      </a>
     </li>
 
-      <!-- Pageload menu -->
+      <!-- Pageload menu
     <li class="sub-menu">
      <a href="pageload.html">
       <i class="fa-regular fa-window-maximize"></i>
@@ -43,8 +43,9 @@ if (sidebar !== null) {
       </span>
      </a>
     </li>
+    -->
 
-      <!-- JS menu -->
+      <!-- JS menu
     <li class="sub-menu">
      <a href="js.html">
       <i class="fa-brands fa-js">
@@ -54,8 +55,9 @@ if (sidebar !== null) {
       </span>
      </a>
     </li>
+    -->
 
-      <!-- Networking menu -->
+      <!-- Networking menu
     <li class="sub-menu">
      <a href="networking.html">
       <i class="fa-solid fa-bars-progress"></i>
@@ -64,6 +66,7 @@ if (sidebar !== null) {
       </span>
      </a>
     </li>
+    -->
 
       <!-- ML menu -->
     <li class="sub-menu">
