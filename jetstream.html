@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Jetstream 3 Status Dashboard</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
+  <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <link rel="stylesheet" href="assets/main-ui-style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+
+  <script>
+    function round(number, decimals) {
+      return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
+    }
+
+    // Set default platform here.
+    var platform = 'windows11-64-24h2-shippable';
+
+    const searchParams = new URLSearchParams(window.location.search);
+
+    let timeWindow = '6wk';
+    let supportsCaR = true;
+
+    let range = '';
+
+    var timeChart;
+
+    // Initialize platforms array with current platform
+    var platforms = [];
+
+    if (searchParams.get('os') == 'windows') {
+      platform = 'windows11-64-24h2-shippable';
+    } else if (searchParams.get('os') == 'osx') {
+      platform = 'macosx1500-aarch64-shippable';
+    } else if (searchParams.get('os') == 'linux') {
+      platform = 'linux1804-64-shippable-qr';
+    } else if (searchParams.get('os') == 'android-a55') {
+      platform = 'android-hw-a55-14-0-aarch64-shippable';
+    } else if (searchParams.get('os') == 'android-s24') {
+      platform = 'android-hw-s24-14-0-aarch64-shippable';
+    } else if (searchParams.get('os') == 'android-p6') {
+      platform = 'android-hw-p6-13-0-aarch64-shippable';
+    }
+    platforms = [platform];
+
+    function getDiffColor(diff) {
+      if (diff < -5) {
+        return 'red'
+      } else if (diff > 5) {
+        return 'green'
+      } else {
+        return 'black'
+      }
+    }
+
+    function getSelfDiffColor(diff) {
+      if (diff <= 0.98) {
+        return 'green';
+      } else if (diff >= 1.02) {
+        return 'red';
+      } else {
+        return 'black';
+      }
+    }
+
+    // Global variable to store table data for sorting
+    let globalTableData = [];
+
+    // Current sort state
+    let currentSortColumn = 'testName';
+    let currentSortDirection = 'asc';
+    
+    // Function to sort table by column
+    function sortTable(column) {
+      // Toggle sort direction if clicking the same column
+      if (column === currentSortColumn) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSortColumn = column;
+        currentSortDirection = 'asc';
+      }
+      
+      // Separate score row from other data
+      const scoreRow = globalTableData.find(row => row.testName === 'score');
+      const otherRows = globalTableData.filter(row => row.testName !== 'score');
+      
+      // Sort the data (excluding score)
+      otherRows.sort((a, b) => {
+        let valueA = a[column];
+        let valueB = b[column];
+        
+        // Handle string comparison for test name
+        if (column === 'testName') {
+          return currentSortDirection === 'asc'
+            ? valueA.localeCompare(valueB) 
+            : valueB.localeCompare(valueA);
+        }
+        
+        // Handle numeric comparison for other columns
+        return currentSortDirection === 'asc'
+          ? valueA - valueB 
+          : valueB - valueA;
+      });
+      
+      // Combine score row with sorted data
+      globalTableData = scoreRow ? [scoreRow, ...otherRows] : otherRows;
+      
+      // Update the table
+      const tableBody = document.getElementById('tableBodyLikely');
+      tableBody.innerHTML = '';
+      
+      // Add rows to table
+      globalTableData.forEach(row => {
+        tableBody.innerHTML += row.html;
+      });
+      
+      // Add total score row back
+      if (document.getElementById('totalScoreRow')) {
+        tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
+      }
+      
+      // Update header styling to show sort direction
+      updateHeaderStyling();
+    }
+    
+    // Function to update header styling to show sort direction
+    function updateHeaderStyling() {
+      // Reset all headers
+      const headers = document.querySelectorAll('#subtestTable th');
+      headers.forEach(header => {
+        header.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      
+      // Add class to sorted header
+      const columnIndex = getColumnIndex(currentSortColumn);
+      if (columnIndex >= 0) {
+        const header = document.querySelector(`#subtestTable tr:nth-child(2) th:nth-child(${columnIndex + 1})`);
+        if (header) {
+          header.classList.add(currentSortDirection === 'asc' ? 'sorted-asc' : 'sorted-desc');
+        }
+      }
+    }
+    
+    // Function to get column index from column name
+    function getColumnIndex(column) {
+      switch(column) {
+        case 'testName': return 0;
+        case 'firefoxAvg': return 1;
+        case 'chromeAvg': return 2;
+        case 'carAvg': return 3;
+        case 'safariAvg': return platform.includes('macosx') ? 4 : -1;
+        case 'safariTpAvg': return platform.includes('macosx') ? 5 : -1;
+        case 'chromeDiff': return platform.includes('macosx') ? 6 : 4;
+        case 'carDiff': return platform.includes('macosx') ? 7 : 5;
+        case 'safariDiff': return platform.includes('macosx') ? 8 : -1;
+        case 'safariTpDiff': return platform.includes('macosx') ? 9 : -1;
+        default: return -1;
+      }
+    }
+    
+    function displayTable(data) {
+      let table = document.getElementById('subtestTable');
+      if (!platform.includes('macosx')) {
+        table.rows[0].cells[1].colSpan = 3;
+        table.rows[0].cells[2].colSpan = 2;
+        table.rows[1].deleteCell(3);
+        table.rows[1].deleteCell(3);
+        table.rows[1].deleteCell(5);
+        table.rows[1].deleteCell(5);
+      }
+
+      // Group data by test name
+      const testGroups = {};
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      data.query_result.data.rows.forEach(row => {
+        if (row.platform === platform) {
+          const testName = row.test.split('/')[0];
+          if (!testGroups[testName]) {
+            testGroups[testName] = {
+              firefox: [],
+              chrome: [],
+              car: [],
+              safari: [],
+              safaritp: []
+            };
+          }
+
+          const rowDate = new Date(row.date);
+          if (rowDate >= oneWeekAgo) {
+            if (row.application === 'firefox' || row.application === 'fenix') {
+              testGroups[testName].firefox.push(row.value);
+            } else if (row.application === 'chrome' || row.application === 'chrome-m') {
+              testGroups[testName].chrome.push(row.value);
+            } else if (row.application === 'custom-car' || row.application === 'cstm-car-m') {
+              testGroups[testName].car.push(row.value);
+            } else if (row.application === 'safari') {
+              testGroups[testName].safari.push(row.value);
+            } else if (row.application === 'safari-tp') {
+              testGroups[testName].safaritp.push(row.value);
+            }
+          }
+        }
+      });
+
+      // Calculate averages and prepare table data
+      const tableBody = document.getElementById('tableBodyLikely');
+      tableBody.innerHTML = '';
+      
+      // Create array of test data for sorting
+      let tableData = [];
+      
+      // First pass to get signature IDs
+      const signatureIds = {};
+      data.query_result.data.rows.forEach(row => {
+        if (row.platform === platform) {
+          const testName = row.test.split('/')[0];
+          if (!signatureIds[testName]) {
+            signatureIds[testName] = {
+              firefox: 0,
+              chrome: 0,
+              car: 0,
+              safari: 0,
+              safaritp: 0
+            };
+          }
+          if (row.application === 'firefox' || row.application === 'fenix') {
+            signatureIds[testName].firefox = row.signature_id;
+          } else if (row.application === 'chrome' || row.application === 'chrome-m') {
+            signatureIds[testName].chrome = row.signature_id;
+          } else if (row.application === 'custom-car' || row.application === 'cstm-car-m') {
+            signatureIds[testName].car = row.signature_id;
+          } else if (row.application === 'safari') {
+            signatureIds[testName].safari = row.signature_id;
+          } else if (row.application === 'safari-tp') {
+            signatureIds[testName].safaritp = row.signature_id;
+          }
+        }
+      });
+
+      Object.entries(testGroups).forEach(([testName, values]) => {
+        const firefoxAvg = values.firefox.length > 0 ? values.firefox.reduce((a, b) => a + b) / values.firefox.length : 0;
+        const chromeAvg = values.chrome.length > 0 ? values.chrome.reduce((a, b) => a + b) / values.chrome.length : 0;
+        const carAvg = values.car.length > 0 ? values.car.reduce((a, b) => a + b) / values.car.length : 0;
+        const safariAvg = values.safari.length > 0 ? values.safari.reduce((a, b) => a + b) / values.safari.length : 0;
+        const safariTpAvg = values.safaritp.length > 0 ? values.safaritp.reduce((a, b) => a + b) / values.safaritp.length : 0;
+
+        // Get signature IDs for this test
+        const sigs = signatureIds[testName] || {
+          firefox: 0,
+          chrome: 0,
+          car: 0,
+          safari: 0,
+          safaritp: 0
+        };
+
+        function percentDiff(other, firefox) {
+          return other > 0 ? ((other - firefox) / other) * 100 : 0;
+        }
+
+        // Calculate differences
+        let chromeDiff    = percentDiff(chromeAvg, firefoxAvg);
+        let carDiff       = percentDiff(carAvg, firefoxAvg);
+        let safariDiff    = percentDiff(safariAvg, firefoxAvg);
+        let safariTpDiff  = percentDiff(safariTpAvg, firefoxAvg);
+
+        if (testName === 'score') {
+          chromeDiff    = -chromeDiff;
+          carDiff       = -carDiff;
+          safariDiff    = -safariDiff;
+          safariTpDiff  = -safariTpDiff;
+        }
+
+        const unit = testName === 'score' ? '' : ' ms';
+        let row = '<tr onClick="openTestComparison(' + sigs.firefox + ', ' + sigs.chrome + ', ' + sigs.car + ', ' + sigs.safari + ', ' + sigs.safaritp + ')"><th scope="row" class="testName">' + testName + '</th>';
+        row += '<td>' + (firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : '') + '</td>';
+        row += '<td>' + (chromeAvg > 0 ? round(chromeAvg, 2) + unit : '') + '</td>';
+        row += '<td>' + (carAvg > 0 ? round(carAvg, 2) + unit : '') + '</td>';
+
+        if (platform.includes('macosx')) {
+          row += '<td>' + (safariAvg > 0 ? round(safariAvg, 2) + unit : '') + '</td>';
+          row += '<td>' + (safariTpAvg > 0 ? round(safariTpAvg, 2) + unit : '') + '</td>';
+        }
+
+        // For differences, negative means Firefox is worse
+        row += '<td style="color: ' + getDiffColor(chromeDiff) + '">' + (chromeAvg > 0 ? round(chromeDiff, 2) + '%' : '') + '</td>';
+        row += '<td style="color: ' + getDiffColor(carDiff) + '">' + (carAvg > 0 ? round(carDiff, 2) + '%' : '') + '</td>';
+
+        if (platform.includes('macosx')) {
+          row += '<td style="color: ' + getDiffColor(safariDiff) + '">' + (safariAvg > 0 ? round(safariDiff, 2) + '%' : '') + '</td>';
+          row += '<td style="color: ' + getDiffColor(safariTpDiff) + '">' + (safariTpAvg > 0 ? round(safariTpDiff, 2) + '%' : '') + '</td>';
+        }
+
+        row += '</tr>';
+        tableData.push({
+          html: row,
+          testName: testName,
+          firefoxAvg: firefoxAvg,
+          chromeAvg: chromeAvg,
+          carAvg: carAvg,
+          safariAvg: safariAvg,
+          safariTpAvg: safariTpAvg,
+          chromeDiff: chromeDiff,
+          carDiff: carDiff,
+          safariDiff: safariDiff,
+          safariTpDiff: safariTpDiff
+        });
+      });
+      
+      // Store data globally for sorting
+      globalTableData = tableData;
+      
+      // Sort with score at top, then alphabetically by test name
+      tableData.sort((a, b) => {
+        if (a.testName === 'score') return -1;
+        if (b.testName === 'score') return 1;
+        return a.testName.localeCompare(b.testName);
+      });
+      
+      // Add rows to table
+      tableData.forEach(row => {
+        tableBody.innerHTML += row.html;
+      });
+      
+      // Add click event listeners to table headers for sorting
+      addSortListeners();
+
+      document.getElementById('timewindow').innerHTML = timeWindow + ' prior';
+      
+      // Calculate total score using 1-week averages
+      const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
+      console.log("Table rows for calculation:", tableRows.length);
+      
+      let totalFirefox = [];
+      let totalChrome = [];
+      let totalCaR = [];
+      let totalSafari = [];
+      let totalSafariTP = [];
+
+      // Get all values from the last week for each browser
+      data.query_result.data.rows.forEach(row => {
+        if (row.platform === platform && row.test === 'score') {
+          const rowDate = new Date(row.date);
+          if (rowDate >= oneWeekAgo) {
+            if (row.application === 'firefox' || row.application === 'fenix') {
+              totalFirefox.push(row.value);
+            } else if (row.application === 'chrome' || row.application === 'chrome-m') {
+              totalChrome.push(row.value);
+            } else if (row.application === 'custom-car' || row.application === 'cstm-car-m') {
+              totalCaR.push(row.value);
+            } else if (row.application === 'safari') {
+              totalSafari.push(row.value);
+            } else if (row.application === 'safari-tp') {
+              totalSafariTP.push(row.value);
+            }
+          }
+        }
+      });
+
+      // Calculate geometric means
+      const FxGeoMean = totalFirefox.length > 0 ? 
+        Math.exp(totalFirefox.reduce((a, b) => a + Math.log(b), 0) / totalFirefox.length) : 0;
+      const ChromeGeoMean = totalChrome.length > 0 ? 
+        Math.exp(totalChrome.reduce((a, b) => a + Math.log(b), 0) / totalChrome.length) : 0;
+      const CaRGeoMean = totalCaR.length > 0 ?
+        Math.exp(totalCaR.reduce((a, b) => a + Math.log(b), 0) / totalCaR.length) : 0;
+      const SafariGeoMean = totalSafari.length > 0 ? 
+        Math.exp(totalSafari.reduce((a, b) => a + Math.log(b), 0) / totalSafari.length) : 0;
+      const SafariTPGeoMean = totalSafariTP.length > 0 ? 
+        Math.exp(totalSafariTP.reduce((a, b) => a + Math.log(b), 0) / totalSafariTP.length) : 0;
+      // Calculate differences for total score
+      const diff = ChromeGeoMean > 0 ? (FxGeoMean - ChromeGeoMean) / ChromeGeoMean * 100 : 0;
+      const CaRdiff = CaRGeoMean > 0 ? (FxGeoMean - CaRGeoMean) / CaRGeoMean * 100 : 0;
+      const Safaridiff = SafariGeoMean > 0 ? (FxGeoMean - SafariGeoMean) / SafariGeoMean * 100 : 0;
+      const SafariTPdiff = SafariTPGeoMean > 0 ? (FxGeoMean - SafariTPGeoMean) / SafariTPGeoMean * 100 : 0;
+
+      // Create total score row
+      let newLine = '<tr onClick="openTestComparison(0, 0, 0, 0, 0)" class="sumRow"><th scope="row" class="testName">Total Score</th>';
+      newLine += '<td>' + (FxGeoMean > 0 ? round(FxGeoMean, 2) : '') + '</td>';
+      newLine += '<td>' + (ChromeGeoMean > 0 ? round(ChromeGeoMean, 2) : '') + '</td>';
+      newLine += '<td>' + (CaRGeoMean > 0 ? round(CaRGeoMean, 2) : '') + '</td>';
+
+      if (platform.includes('macosx')) {
+        newLine += '<td>' + (SafariGeoMean > 0 ? round(SafariGeoMean, 2) : '') + '</td>';
+        newLine += '<td>' + (SafariTPGeoMean > 0 ? round(SafariTPGeoMean, 2) : '') + '</td>';
+      }
+
+      newLine += '<td style="color: ' + getDiffColor(diff) + '">' + (ChromeGeoMean > 0 ? round(diff, 2) + '%' : '') + '</td>';
+      newLine += '<td style="color: ' + getDiffColor(CaRdiff) + '">' + (CaRGeoMean > 0 ? round(CaRdiff, 2) + '%' : '') + '</td>';
+
+      if (platform.includes('macosx')) {
+        newLine += '<td style="color: ' + getDiffColor(Safaridiff) + '">' + (SafariGeoMean > 0 ? round(Safaridiff, 2) + '%' : '') + '</td>';
+        newLine += '<td style="color: ' + getDiffColor(SafariTPdiff) + '">' + (SafariTPGeoMean > 0 ? round(SafariTPdiff, 2) + '%' : '') + '</td>';
+      }
+
+      newLine += '</tr>';
+      
+      // Store total score row for re-adding after sorting
+      const totalScoreRow = document.createElement('div');
+      totalScoreRow.id = 'totalScoreRow';
+      totalScoreRow.innerHTML = newLine;
+      document.getElementById('totalScoreRow')?.remove();
+      document.body.appendChild(totalScoreRow);
+      totalScoreRow.style.display = 'none';
+
+      document.getElementById("tableBodyLikely").innerHTML += newLine;
+    }
+
+    function openTestComparison(signatureFirefox, signatureChrome, signatureCaR, signatureSafari, signatureSafariTP) {
+      let repoFirefox = 'mozilla-central';
+      let repoChrome = 'mozilla-central';
+
+      let linkString = "https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&series=" + repoFirefox + "," + signatureFirefox + ",1,13&series=" + repoChrome + "," + signatureChrome + ",1,13&timerange=7776000";
+      if (supportsCaR) {
+        linkString += "&series=" + repoChrome + "," + signatureCaR + ",1,13";
+      }
+      if (signatureSafari > 0) {
+        linkString += "&series=" + repoChrome + "," + signatureSafari + ",1,13";
+      }
+      if (signatureSafariTP > 0) {
+        linkString += "&series=" + repoChrome + "," + signatureSafariTP + ",1,13";
+      }
+      window.open(linkString, "_blank")
+    }
+
+    // Function to add click event listeners to table headers for sorting
+    function addSortListeners() {
+      const headers = document.querySelectorAll('#subtestTable tr:nth-child(2) th');
+      
+      headers.forEach((header, index) => {
+        header.style.cursor = 'pointer';
+        let column = null;
+
+        switch(index) {
+          case 0:
+            column = 'testName';
+            break;
+          case 1:
+            column = 'firefoxAvg';
+            break;
+          case 2:
+            column = 'chromeAvg';
+            break;
+          case 3:
+            column = 'carAvg';
+            break;
+          case 4:
+            if (platform.includes('macosx')) {
+              column = 'safariAvg';
+            } else {
+              column = 'chromeDiff';
+            }
+            break;
+          case 5:
+            if (platform.includes('macosx')) {
+              column = 'safariTpAvg';
+            } else {
+              column = 'carDiff';
+            }
+            break;
+          case 6:
+            if (platform.includes('macosx')) {
+              column = 'chromeDiff';
+            }
+            break;
+          case 7:
+            if (platform.includes('macosx')) {
+              column = 'carDiff';
+            }
+            break;
+          case 8:
+            if (platform.includes('macosx')) {
+              column = 'safariDiff';
+            }
+            break;
+          case 9:
+            if (platform.includes('macosx')) {
+              column = 'safariTpDiff';
+            }
+            break;
+        }
+        
+        if (column) {
+          header.addEventListener('click', () => {
+            sortTable(column);
+          });
+        }
+      });
+    }
+    
+    function loadChart() {
+      if (searchParams.get('os') == 'osx') {
+        document.getElementById("macbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'linux') {
+        document.getElementById("linuxbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'android-s24') {
+        document.getElementById("mobilebutton").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'android-a55') {
+        document.getElementById("mobilebutton2").style.backgroundColor = "gray";
+      } else if (searchParams.get('os') == 'android-p6') {
+        document.getElementById("mobilebutton3").style.backgroundColor = "gray";
+      } else {
+        document.getElementById("winbutton").style = "background-color:gray;";
+      }
+
+      fetch('https://sql.telemetry.mozilla.org/api/queries/107813/results.json?api_key=xJpzSw24l2M9j0ICRFdH9oCcgAWwtYRbpuosD5m8')
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          window.data = data;
+          displayChart(data);
+          displayTable(data);
+        })
+        .catch(function (err) {
+          console.log('error: ' + err);
+        });
+    }
+
+    function displayChart(data) {
+      const ctx = document.getElementById('myChart').getContext('2d');
+      let xyValuesFx = [];
+      let xyValuesChrome = [];
+      let xyValuesCaR = [];
+      let xyValuesSafari = [];
+      let xyValuesSafariTP = [];
+
+      rows = data.query_result.data.rows.filter(row => row.platform === platform && row.test === 'score');
+      rows.forEach(function (row) {
+          if (row.application == 'firefox' || row.application == 'fenix') {
+            xyValuesFx.push({ x: row.date, y: row.value }); 
+          }
+          if (row.application == 'chrome' || row.application == 'chrome-m') { 
+            xyValuesChrome.push({ x: row.date, y: row.value }); 
+          }
+          if (row.application == 'custom-car' || row.application == 'cstm-car-m') { 
+            xyValuesCaR.push({ x: row.date, y: row.value }); 
+          }
+          if (row.application == 'safari') {
+            xyValuesSafari.push({ x: row.date, y: row.value }); 
+          }
+          if (row.application == 'safari-tp') { 
+            xyValuesSafariTP.push({ x: row.date, y: row.value }); 
+          }
+      });
+
+      console.log("Firefox: ");
+      console.log(xyValuesFx);
+
+      console.log("Chrome: ");
+      console.log(xyValuesChrome);
+
+      console.log("CaR: ");
+      console.log(xyValuesCaR);
+
+      console.log("Safari: ");
+      console.log(xyValuesSafari);
+
+      let cfg = {
+        type: "scatter",
+        data: {
+          datasets: [
+            {
+              label: 'Firefox',
+              pointRadius: 3,
+              pointBackgroundColor: "#FF9500",
+              pointBorderColor: "#000000",
+              pointBorderWidth: 0.5,
+              data: xyValuesFx,
+              trendlineLinear: {
+                colorMin: "#FF9500",
+                colorMax: "#FF9500",
+                lineStyle: "dotted",
+                width: 2
+              }
+            }
+          ]
+        },
+        options: {
+          aspectRatio: 1.5,
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'day', tooltipFormat: 'll' },
+              title: { display: true, text: 'Timestamp' }
+            },
+            y: {
+              beginAtZero: true
+            }
+          },
+        }
+      };
+
+      cfg.data.datasets.push({
+        label: 'Chrome',
+        pointRadius: 3,
+        pointBackgroundColor: "#1DA462",
+        pointBorderColor: "#000000",
+        pointBorderWidth: 0.5,
+        data: xyValuesChrome,
+        trendlineLinear: {
+          colorMin: "#1DA462",
+          colorMax: "#1DA462",
+          lineStyle: "dotted",
+          width: 2
+        }
+      });
+
+      if (xyValuesCaR.length > 0) {
+        cfg.data.datasets.push({
+          label: 'Chromium-as-Release',
+          pointRadius: 3,
+          pointBackgroundColor: "#2773da",
+          pointBorderColor: "#000000",
+          pointBorderWidth: 0.5,
+          data: xyValuesCaR,
+          trendlineLinear: {
+            colorMin: "#2773da",
+            colorMax: "#2773da",
+            lineStyle: "dotted",
+            width: 2
+          }
+        });
+      }
+
+      if (platform.includes('macosx')) {
+        cfg.data.datasets.push({
+          label: 'Safari',
+          pointRadius: 3,
+          pointBackgroundColor: "#44444444",
+          pointBorderColor: "#000000",
+          pointBorderWidth: 0.5,
+          data: xyValuesSafari,
+          trendlineLinear: {
+            colorMin: "#44444444",
+            colorMax: "#44444444",
+            lineStyle: "dotted",
+            width: 2
+          }
+        });
+        cfg.data.datasets.push({
+          label: 'Safari TP',
+          pointRadius: 3,
+          pointBackgroundColor: "#777",
+          pointBorderColor: "#44444444",
+          pointBorderWidth: 0.5,
+          data: xyValuesSafariTP,
+          trendlineLinear: {
+            colorMin: "#777",
+            colorMax: "#777",
+            lineStyle: "dotted",
+            width: 2
+          }
+        });
+      }
+
+      timeChart = new Chart("myChart", cfg);
+    }
+
+    function changeRange(newRange) {
+      if (newRange == 'all') {
+        if (!platforms.includes('macosx1400-64-shippable-qr')) {
+          timeChart.options.scales.x.min = '';
+        } else {
+          timeChart.options.scales.x.min = '2023-12-01';
+        }
+      } else {
+        var d = new Date();
+        d.setMonth(d.getMonth() - newRange);
+        timeChart.options.scales.x.min = d;
+      }
+      timeChart.update();
+    }
+
+  </script>
+  <style>
+    body {
+      background-color: #f0f0f0;
+    }
+
+    h3 {
+      font-family: sans-serif;
+    }
+
+    .styled-table {
+      border-collapse: collapse;
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: sans-serif;
+      min-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+      .styled-table thead th {
+        background-color: #3366ff;
+        color: #ffffff;
+        text-align: center;
+        padding: 8px 12px;
+      }
+
+      .styled-table th {
+        padding: 8px 12px;
+      }
+
+      .styled-table td {
+        text-align: right;
+        padding: 8px 12px;
+      }
+
+      .styled-table .testName {
+        text-align: left;
+      }
+
+    .tableBody tr {
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .tableBody .sumRow {
+      border-top: 2px solid black;
+      background-color: #dde5ff !important;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .tableBody .sumRow:hover {
+      background-color: #ccd9ff !important;
+    }
+
+    /* Score row styling */
+    .tableBody tr:first-child {
+      background-color: #e8eeff !important;
+      font-size: 1.2em !important;
+      font-weight: bold !important;
+      border-top: 2px solid #c7d1ff !important;
+      border-bottom: 2px solid #c7d1ff !important;
+    }
+
+    .tableBody tr:first-child:hover {
+      background-color: #f0f3ff !important;
+    }
+
+    /* Other rows styling */
+    .tableBody tr:not(:first-child):nth-of-type(odd) {
+      background-color: #f3f3f3;
+    }
+
+    .tableBody tr:not(:first-child):nth-of-type(even) {
+      background-color: #e3e3e3;
+    }
+
+    .tableBody tr:not(:first-child):hover {
+      background-color: #d0d0d0;
+    }
+
+    .buttons td {
+      width: 250px;
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 20px;
+    }
+
+    a {
+      padding-left: 30px;
+      padding-right: 30px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-decoration: none;
+      color: black;
+      border-radius: 5px;
+    }
+
+      a:hover {
+        background-color: lightgray;
+      }
+      
+      /* Styles for sorted columns */
+      .sorted-asc, .sorted-desc {
+        background-color: #2952cc !important;
+      }
+      
+      #subtestTable th {
+        cursor: pointer;
+      }
+  </style>
+</head>
+
+<body onload="loadChart();">
+  <div class="top">
+    <div class="top-title-container">
+      <div class="top-title">
+        <b>moz://a</b> performance portal
+      </div>
+    </div>
+    <a href="https://firefox-source-docs.mozilla.org/performance/reporting_a_performance_problem.html" class="btn" title="Report a Performance Bug">
+      <i class="fa-solid fa-bug"></i> Report Performance Issue
+    </a>
+  </div>
+  
+  <div class="main-content">
+    <aside class="main-sidebar" id="main-sidebar">
+    </aside>
+
+    <div class="content">
+      <center>
+        <table class="buttons">
+          <tr>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=windows" id="winbutton">Windows 11</a></td>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=osx" id="macbutton">Mac OSX (M4)</a></td>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=linux" id="linuxbutton">Linux</a></td>
+          </tr>
+          <!--  JS3 does not currently run on Android.
+            <tr>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-s24" id="mobilebutton">Android (S24)</a></td>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td>
+          </tr>
+          -->
+        </table>
+        <br>
+
+        <h3>Current Status (lower is better)</h3>
+
+        <br>
+        <div style="width:100%;max-width:900px">
+          <canvas id="myChart" style="width:100%;max-width:900px"></canvas>
+          <table class="buttons">
+            <tr><td><a onclick="changeRange('all')" id="allbutton">All time</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td></tr>
+          </table>
+        </div>
+
+        <br>
+        <h3>Breakdown: Jetstream3 Subtests</h3>
+        <table class="styled-table" id="subtestTable">
+          <col>
+          <col>
+          <colgroup span="2"></colgroup>
+          <col>
+          <colgroup span="2"></colgroup>
+          <col>
+          <thead>
+            <tr>
+              <th rowspan="1"></th>
+              <th colspan="5" scope="colgroup">Total time (Lower is better)<br />1wk moving average</th>
+              <th colspan="4" scope="colgroup">Difference vs Firefox</th>
+            </tr>
+            <tr>
+              <th scope="col">testName</th>
+              <th scope="col">Firefox<br />Nightly</th>
+              <th scope="col">Chrome<br />Release</th>
+              <th scope="col">Chromium-<br />As-Release</th>
+              <th scope="col">Safari<br/>Release</th>
+              <th scope="col">Safari<br />TP</th>
+              <th scope="col">Chrome<br />Release</th>
+              <th scope="col">Chromium-<br />As-Release</th>
+              <th scope="col">Safari<br/>Release</th>
+              <th scope="col">Safari<br />TP</th>
+            </tr>
+          </thead>
+          <tbody class="tableBody" id="tableBodyLikely">
+          </tbody>
+        </table>
+      </center>
+    </div> <!-- content -->
+  </div> <!-- main-content -->
+<script src="assets/main-ui.js"></script>
+</body>
+</html>

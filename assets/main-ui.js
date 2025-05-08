@@ -24,6 +24,16 @@ if (sidebar !== null) {
      </a>
     </li>
 
+      <!-- Jetstream menu -->
+    <li class="sub-menu">
+     <a href="jetstream.html">
+      <i class="fa-solid fa-wind"></i>
+      <span>
+       JetStream
+      </span>
+     </a>
+    </li>
+
       <!-- Android menu -->
     <li class="sub-menu">
      <a href="android.html">
