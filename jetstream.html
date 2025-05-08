@@ -13,8 +13,13 @@
   <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
 
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      generateContent();
+    });
+
     function round(number, decimals) {
       return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
     }
@@ -336,7 +341,6 @@
       
       // Calculate total score using 1-week averages
       const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
-      console.log("Table rows for calculation:", tableRows.length);
       
       let totalFirefox = [];
       let totalChrome = [];
@@ -494,8 +498,8 @@
         }
       });
     }
-    
-    function loadChart() {
+
+    async function generateContent() {
       if (searchParams.get('os') == 'osx') {
         document.getElementById("macbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
@@ -510,18 +514,25 @@
         document.getElementById("winbutton").style = "background-color:gray;";
       }
 
-      fetch('https://sql.telemetry.mozilla.org/api/queries/107813/results.json?api_key=xJpzSw24l2M9j0ICRFdH9oCcgAWwtYRbpuosD5m8')
-        .then(function (response) {
-          return response.json();
-        })
-        .then(function (data) {
-          window.data = data;
-          displayChart(data);
-          displayTable(data);
-        })
-        .catch(function (err) {
-          console.log('error: ' + err);
-        });
+      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/jetstream-data.json.gz';
+      try {
+        // Fetch the gzipped file as a binary array buffer
+        const response = await fetch(dataUrl);
+        const compressedData = await response.arrayBuffer();
+
+        // Decompress the data using pako
+        const decompressedData = pako.inflate(new Uint8Array(compressedData), { to: 'string' });
+
+        // Parse the decompressed string as JSON
+        let data = JSON.parse(decompressedData);
+
+        // Generate output.
+        displayChart(data);
+        displayTable(data);
+
+      } catch (error) {
+        console.error('Error loading the JSON file:', error);
+      }
     }
 
     function displayChart(data) {
@@ -550,18 +561,6 @@
             xyValuesSafariTP.push({ x: row.date, y: row.value }); 
           }
       });
-
-      console.log("Firefox: ");
-      console.log(xyValuesFx);
-
-      console.log("Chrome: ");
-      console.log(xyValuesChrome);
-
-      console.log("CaR: ");
-      console.log(xyValuesCaR);
-
-      console.log("Safari: ");
-      console.log(xyValuesSafari);
 
       let cfg = {
         type: "scatter",
@@ -791,7 +790,7 @@
   </style>
 </head>
 
-<body onload="loadChart();">
+<body>
   <div class="top">
     <div class="top-title-container">
       <div class="top-title">
