@@ -2,7 +2,7 @@ window.telemetryData = [];
 
 // Set some defaults.
 window.platformStatus = 'Android';
-window.historyStatus = 30;
+window.historyStatus = 90;
 window.allCharts = [];
 
 function sortTable(columnIndex, tableId) {
