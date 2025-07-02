@@ -47,10 +47,6 @@
       platform = 'linux1804-64-shippable-qr';
     } else if (searchParams.get('os') == 'android-a55') {
       platform = 'android-hw-a55-14-0-aarch64-shippable';
-    } else if (searchParams.get('os') == 'android-s24') {
-      platform = 'android-hw-s24-14-0-aarch64-shippable';
-    } else if (searchParams.get('os') == 'android-p6') {
-      platform = 'android-hw-p6-13-0-aarch64-shippable';
     }
     platforms = [platform];
 
@@ -504,12 +500,8 @@
         document.getElementById("macbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
-      } else if (searchParams.get('os') == 'android-s24') {
-        document.getElementById("mobilebutton").style.backgroundColor = "gray";
       } else if (searchParams.get('os') == 'android-a55') {
-        document.getElementById("mobilebutton2").style.backgroundColor = "gray";
-      } else if (searchParams.get('os') == 'android-p6') {
-        document.getElementById("mobilebutton3").style.backgroundColor = "gray";
+        document.getElementById("a55button").style = "background-color:gray;";
       } else {
         document.getElementById("winbutton").style = "background-color:gray;";
       }
@@ -814,14 +806,8 @@
             <td colspan="2" style="height:50px;"><a href="jetstream.html?os=windows" id="winbutton">Windows 11</a></td>
             <td colspan="2" style="height:50px;"><a href="jetstream.html?os=osx" id="macbutton">Mac OSX (M4)</a></td>
             <td colspan="2" style="height:50px;"><a href="jetstream.html?os=linux" id="linuxbutton">Linux</a></td>
+            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-a55" id="a55button">Android (A55)</a></td>
           </tr>
-          <!--  JS3 does not currently run on Android.
-            <tr>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-s24" id="mobilebutton">Android (S24)</a></td>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td>
-          </tr>
-          -->
         </table>
         <br>
 
