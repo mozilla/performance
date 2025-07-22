@@ -77,7 +77,7 @@
     // Current sort state
     let currentSortColumn = 'testName';
     let currentSortDirection = 'asc';
-    
+
     // Function to sort table by column
     function sortTable(column) {
       // Toggle sort direction if clicking the same column
@@ -87,50 +87,50 @@
         currentSortColumn = column;
         currentSortDirection = 'asc';
       }
-      
+
       // Separate score row from other data
       const scoreRow = globalTableData.find(row => row.testName === 'score');
       const otherRows = globalTableData.filter(row => row.testName !== 'score');
-      
+
       // Sort the data (excluding score)
       otherRows.sort((a, b) => {
         let valueA = a[column];
         let valueB = b[column];
-        
+
         // Handle string comparison for test name
         if (column === 'testName') {
           return currentSortDirection === 'asc'
-            ? valueA.localeCompare(valueB) 
+            ? valueA.localeCompare(valueB)
             : valueB.localeCompare(valueA);
         }
-        
+
         // Handle numeric comparison for other columns
         return currentSortDirection === 'asc'
-          ? valueA - valueB 
+          ? valueA - valueB
           : valueB - valueA;
       });
-      
+
       // Combine score row with sorted data
       globalTableData = scoreRow ? [scoreRow, ...otherRows] : otherRows;
-      
+
       // Update the table
       const tableBody = document.getElementById('tableBodyLikely');
       tableBody.innerHTML = '';
-      
+
       // Add rows to table
       globalTableData.forEach(row => {
         tableBody.innerHTML += row.html;
       });
-      
+
       // Add total score row back
       if (document.getElementById('totalScoreRow')) {
         tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
       }
-      
+
       // Update header styling to show sort direction
       updateHeaderStyling();
     }
-    
+
     // Function to update header styling to show sort direction
     function updateHeaderStyling() {
       // Reset all headers
@@ -138,7 +138,7 @@
       headers.forEach(header => {
         header.classList.remove('sorted-asc', 'sorted-desc');
       });
-      
+
       // Add class to sorted header
       const columnIndex = getColumnIndex(currentSortColumn);
       if (columnIndex >= 0) {
@@ -148,7 +148,7 @@
         }
       }
     }
-    
+
     // Function to get column index from column name
     function getColumnIndex(column) {
       switch(column) {
@@ -165,7 +165,7 @@
         default: return -1;
       }
     }
-    
+
     function displayTable(data) {
       let table = document.getElementById('subtestTable');
       if (!platform.includes('macosx')) {
@@ -215,10 +215,10 @@
       // Calculate averages and prepare table data
       const tableBody = document.getElementById('tableBodyLikely');
       tableBody.innerHTML = '';
-      
+
       // Create array of test data for sorting
       let tableData = [];
-      
+
       // First pass to get signature IDs
       const signatureIds = {};
       data.query_result.data.rows.forEach(row => {
@@ -315,30 +315,30 @@
           safariTpDiff: safariTpDiff
         });
       });
-      
+
       // Store data globally for sorting
       globalTableData = tableData;
-      
+
       // Sort with score at top, then alphabetically by test name
       tableData.sort((a, b) => {
         if (a.testName === 'score') return -1;
         if (b.testName === 'score') return 1;
         return a.testName.localeCompare(b.testName);
       });
-      
+
       // Add rows to table
       tableData.forEach(row => {
         tableBody.innerHTML += row.html;
       });
-      
+
       // Add click event listeners to table headers for sorting
       addSortListeners();
 
       document.getElementById('timewindow').innerHTML = timeWindow + ' prior';
-      
+
       // Calculate total score using 1-week averages
       const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
-      
+
       let totalFirefox = [];
       let totalChrome = [];
       let totalCaR = [];
@@ -366,15 +366,15 @@
       });
 
       // Calculate geometric means
-      const FxGeoMean = totalFirefox.length > 0 ? 
+      const FxGeoMean = totalFirefox.length > 0 ?
         Math.exp(totalFirefox.reduce((a, b) => a + Math.log(b), 0) / totalFirefox.length) : 0;
-      const ChromeGeoMean = totalChrome.length > 0 ? 
+      const ChromeGeoMean = totalChrome.length > 0 ?
         Math.exp(totalChrome.reduce((a, b) => a + Math.log(b), 0) / totalChrome.length) : 0;
       const CaRGeoMean = totalCaR.length > 0 ?
         Math.exp(totalCaR.reduce((a, b) => a + Math.log(b), 0) / totalCaR.length) : 0;
-      const SafariGeoMean = totalSafari.length > 0 ? 
+      const SafariGeoMean = totalSafari.length > 0 ?
         Math.exp(totalSafari.reduce((a, b) => a + Math.log(b), 0) / totalSafari.length) : 0;
-      const SafariTPGeoMean = totalSafariTP.length > 0 ? 
+      const SafariTPGeoMean = totalSafariTP.length > 0 ?
         Math.exp(totalSafariTP.reduce((a, b) => a + Math.log(b), 0) / totalSafariTP.length) : 0;
       // Calculate differences for total score
       const diff = ChromeGeoMean > 0 ? (FxGeoMean - ChromeGeoMean) / ChromeGeoMean * 100 : 0;
@@ -402,7 +402,7 @@
       }
 
       newLine += '</tr>';
-      
+
       // Store total score row for re-adding after sorting
       const totalScoreRow = document.createElement('div');
       totalScoreRow.id = 'totalScoreRow';
@@ -434,7 +434,7 @@
     // Function to add click event listeners to table headers for sorting
     function addSortListeners() {
       const headers = document.querySelectorAll('#subtestTable tr:nth-child(2) th');
-      
+
       headers.forEach((header, index) => {
         header.style.cursor = 'pointer';
         let column = null;
@@ -487,7 +487,7 @@
             }
             break;
         }
-        
+
         if (column) {
           header.addEventListener('click', () => {
             sortTable(column);
@@ -539,19 +539,19 @@
       rows = data.query_result.data.rows.filter(row => row.platform === platform && row.test === 'score');
       rows.forEach(function (row) {
           if (row.application == 'firefox' || row.application == 'fenix') {
-            xyValuesFx.push({ x: row.date, y: row.value }); 
+            xyValuesFx.push({ x: row.date, y: row.value });
           }
-          if (row.application == 'chrome' || row.application == 'chrome-m') { 
-            xyValuesChrome.push({ x: row.date, y: row.value }); 
+          if (row.application == 'chrome' || row.application == 'chrome-m') {
+            xyValuesChrome.push({ x: row.date, y: row.value });
           }
-          if (row.application == 'custom-car' || row.application == 'cstm-car-m') { 
-            xyValuesCaR.push({ x: row.date, y: row.value }); 
+          if (row.application == 'custom-car' || row.application == 'cstm-car-m') {
+            xyValuesCaR.push({ x: row.date, y: row.value });
           }
           if (row.application == 'safari') {
-            xyValuesSafari.push({ x: row.date, y: row.value }); 
+            xyValuesSafari.push({ x: row.date, y: row.value });
           }
-          if (row.application == 'safari-tp') { 
-            xyValuesSafariTP.push({ x: row.date, y: row.value }); 
+          if (row.application == 'safari-tp') {
+            xyValuesSafariTP.push({ x: row.date, y: row.value });
           }
       });
 
@@ -562,8 +562,8 @@
             {
               label: 'Firefox',
               pointRadius: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return 8; // Larger radius for reference point
                 }
@@ -571,16 +571,16 @@
               },
               pointBackgroundColor: "#FF9500",
               pointBorderColor: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return "#FFFFFF"; // White border for reference point
                 }
                 return "#000000";
               },
               pointBorderWidth: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return 3; // Thicker border for reference point
                 }
@@ -614,7 +614,7 @@
               const element = elements[0];
               const dataset = timeChart.data.datasets[element.datasetIndex];
               const dataPoint = dataset.data[element.index];
-              
+
               // Store the reference point
               referencePoint = {
                 x: dataPoint.x,
@@ -623,7 +623,7 @@
                 datasetIndex: element.datasetIndex,
                 index: element.index
               };
-              
+
               // Update the chart to show the reference point
               timeChart.update();
             }
@@ -640,7 +640,7 @@
                     label += ': ';
                   }
                   label += context.parsed.y.toFixed(2);
-                  
+
                   // Add delta if reference point is set
                   if (referencePoint) {
                     const currentValue = context.parsed.y;
@@ -649,7 +649,7 @@
                     const percentDelta = ((currentValue / referenceValue) - 1) * 100;
                     label += ` (${delta > 0 ? '+' : ''}${percentDelta.toFixed(1)}%)`;
                   }
-                  
+
                   return label;
                 }
               }
@@ -661,8 +661,8 @@
       cfg.data.datasets.push({
         label: 'Chrome',
         pointRadius: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return 8;
           }
@@ -670,16 +670,16 @@
         },
         pointBackgroundColor: "#1DA462",
         pointBorderColor: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return "#FFFFFF";
           }
           return "#000000";
         },
         pointBorderWidth: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return 3;
           }
@@ -698,8 +698,8 @@
         cfg.data.datasets.push({
           label: 'Chromium-as-Release',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -707,16 +707,16 @@
           },
           pointBackgroundColor: "#2773da",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#000000";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -736,8 +736,8 @@
         cfg.data.datasets.push({
           label: 'Safari',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -745,16 +745,16 @@
           },
           pointBackgroundColor: "#44444444",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#000000";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -771,8 +771,8 @@
         cfg.data.datasets.push({
           label: 'Safari TP',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -780,16 +780,16 @@
           },
           pointBackgroundColor: "#777",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#44444444";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -925,12 +925,12 @@
       a:hover {
         background-color: lightgray;
       }
-      
+
       /* Styles for sorted columns */
       .sorted-asc, .sorted-desc {
         background-color: #2952cc !important;
       }
-      
+
       #subtestTable th {
         cursor: pointer;
       }
@@ -948,7 +948,7 @@
       <i class="fa-solid fa-bug"></i> Report Performance Issue
     </a>
   </div>
-  
+
   <div class="main-content">
     <aside class="main-sidebar" id="main-sidebar">
     </aside>

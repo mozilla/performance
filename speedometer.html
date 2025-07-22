@@ -132,7 +132,7 @@
       if (row.firefoxoldmean > 0) {
         firefoxDiff = row.firefoxdifference;
       }
-      
+
       let newLine = '';
       newLine += '<tr onClick="openTestComparison(' + row.signature_id_firefox + ', ' + row.signature_id_chrome + ', ' + row.signature_id_car + ', ' + row.signature_id_safari + ', ' + row.signature_id_safari_tp + ');"><th scope="row" class="testName">' +
         row.test.split('/')[0] + '</th><td>' +
@@ -170,7 +170,7 @@
 
     // Store testData globally so it can be accessed by other functions
     let testData = {};
-    
+
     function loadDataLikely(data) {
       let table = document.getElementById('tableLikely');
       if (!platforms.includes('macosx1400-64-shippable-qr') && !platforms.includes('macosx1500-aarch64-shippable')) {
@@ -199,7 +199,7 @@
             testData[testName].push(row);
           }
         });
-        
+
         // Second pass: for each test, select the appropriate row based on platform
         Object.keys(testData).forEach(function(testName) {
           let rows = testData[testName];
@@ -233,16 +233,16 @@
       let arithmeticMeanOfLogsSafariTP = 0;
       let numValues = 0;
       let numValuesOld = 0;
-      
+
       // Calculate totals based on the rows that were actually displayed
       // Get all rows that were added to the table
       const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
       console.log("Table rows for calculation:", tableRows.length);
-      
+
       // For each row in the table, find the corresponding data row
       tableRows.forEach(function(tableRow) {
         const testName = tableRow.querySelector('.testName').textContent;
-        
+
         // Find the data row for this test
         let dataRow;
         if (searchParams.get('os') == 'windows-new') {
@@ -257,7 +257,7 @@
             return platforms.includes(r.platform) && r.test.split('/')[0] === testName;
           });
         }
-        
+
         if (dataRow) {
           numValues++;
           arithmeticMeanOfLogsFX += Math.log(dataRow.firefoxmean);
@@ -392,7 +392,7 @@
       if (searchParams.get('os') == 'windows-new') {
         // Group data points by timestamp and application to avoid duplicates
         let dataPoints = {};
-        
+
         data.query_result.data.rows.forEach(function (row) {
           // Basic filtering
           if (!platforms.includes(row.platform)) {
@@ -400,26 +400,26 @@
               return;
             }
           }
-          
+
           if (row.geomean > 130 && !(platforms.includes('android-hw-s24-14-0-aarch64-shippable') ||
                                      platforms.includes('android-hw-p6-13-0-aarch64-shippable') ||
                                      platforms.includes('android-hw-a55-14-0-aarch64-shippable'))) {
             return;
           }
-          
+
           if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
             return;
           }
-          
+
           // Create a key combining timestamp and application
           const key = `${row.push_timestamp}_${row.application}`;
-          
+
           // Prefer 24h2 platform over shippable-qr when both exist for the same timestamp
           if (!dataPoints[key] || row.platform === 'windows11-64-24h2-shippable') {
             dataPoints[key] = row;
           }
         });
-        
+
         // Process the filtered data points
         Object.values(dataPoints).forEach(function(row) {
           if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
@@ -436,17 +436,17 @@
               return;
             }
           }
-          
+
           if (row.geomean > 130 && !(platforms.includes('android-hw-s24-14-0-aarch64-shippable') ||
                                      platforms.includes('android-hw-p6-13-0-aarch64-shippable') ||
                                      platforms.includes('android-hw-a55-14-0-aarch64-shippable'))) {
             return;
           }
-          
+
           if (row.platform == 'macosx1300-64-shippable-qr' && row.application == 'chrome' && new Date(row.push_timestamp) < new Date('2024-01-24 00:00')) {
             return;
           }
-          
+
           if (row.application == 'firefox' || row.application == 'fenix') { xyValuesFx.push({ x: row.push_timestamp, y: row.geomean }); }
           if (row.application == 'chrome' || row.application == 'chrome-m') { xyValuesChrome.push({ x: row.push_timestamp, y: row.geomean }); }
           if (row.application == 'custom-car' || row.application == 'cstm-car-m') { xyValuesCaR.push({ x: row.push_timestamp, y: row.geomean }); }
@@ -462,8 +462,8 @@
             {
               label: 'Firefox',
               pointRadius: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return 8; // Larger radius for reference point
                 }
@@ -471,16 +471,16 @@
               },
               pointBackgroundColor: "#FF9500",
               pointBorderColor: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return "#FFFFFF"; // White border for reference point
                 }
                 return "#000000";
               },
               pointBorderWidth: function(context) {
-                if (referencePoint && 
-                    context.datasetIndex === referencePoint.datasetIndex && 
+                if (referencePoint &&
+                    context.datasetIndex === referencePoint.datasetIndex &&
                     context.dataIndex === referencePoint.index) {
                   return 3; // Thicker border for reference point
                 }
@@ -508,7 +508,7 @@
               const element = elements[0];
               const dataset = timeChart.data.datasets[element.datasetIndex];
               const dataPoint = dataset.data[element.index];
-              
+
               // Store the reference point
               referencePoint = {
                 x: dataPoint.x,
@@ -517,7 +517,7 @@
                 datasetIndex: element.datasetIndex,
                 index: element.index
               };
-              
+
               // Update the chart to show the reference point
               timeChart.update();
             }
@@ -534,7 +534,7 @@
                     label += ': ';
                   }
                   label += context.parsed.y.toFixed(2) + ' ms';
-                  
+
                   // Add delta if reference point is set
                   if (referencePoint) {
                     const currentValue = context.parsed.y;
@@ -543,7 +543,7 @@
                     const percentDelta = ((currentValue / referenceValue) - 1) * 100;
                     label += ` (${delta > 0 ? '+' : ''}${percentDelta.toFixed(1)}%)`;
                   }
-                  
+
                   return label;
                 }
               }
@@ -582,8 +582,8 @@
       cfg.data.datasets.push({
         label: 'Chrome',
         pointRadius: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return 8;
           }
@@ -591,16 +591,16 @@
         },
         pointBackgroundColor: "#1DA462",
         pointBorderColor: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return "#FFFFFF";
           }
           return "#000000";
         },
         pointBorderWidth: function(context) {
-          if (referencePoint && 
-              context.datasetIndex === referencePoint.datasetIndex && 
+          if (referencePoint &&
+              context.datasetIndex === referencePoint.datasetIndex &&
               context.dataIndex === referencePoint.index) {
             return 3;
           }
@@ -613,8 +613,8 @@
         cfg.data.datasets.push({
           label: 'Chromium-as-Release',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -622,16 +622,16 @@
           },
           pointBackgroundColor: "#2773da",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#000000";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -645,8 +645,8 @@
         cfg.data.datasets.push({
           label: 'Safari',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -654,16 +654,16 @@
           },
           pointBackgroundColor: "#44444444",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#000000";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -674,8 +674,8 @@
         cfg.data.datasets.push({
           label: 'Safari TP',
           pointRadius: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 8;
             }
@@ -683,16 +683,16 @@
           },
           pointBackgroundColor: "#777",
           pointBorderColor: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return "#FFFFFF";
             }
             return "#44444444";
           },
           pointBorderWidth: function(context) {
-            if (referencePoint && 
-                context.datasetIndex === referencePoint.datasetIndex && 
+            if (referencePoint &&
+                context.datasetIndex === referencePoint.datasetIndex &&
                 context.dataIndex === referencePoint.index) {
               return 3;
             }
@@ -809,7 +809,7 @@
       <i class="fa-solid fa-bug"></i> Report Performance Issue
     </a>
   </div>
-  
+
   <div class="main-content">
     <aside class="main-sidebar" id="main-sidebar">
     </aside>
