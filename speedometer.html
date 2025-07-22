@@ -29,6 +29,7 @@
     let range = '';
 
     var timeChart;
+    var referencePoint = null; // Store the clicked reference point
 
     var total_sig_firefox = 4591185;
     var total_sig_chrome = 4592500;
@@ -460,10 +461,31 @@
           datasets: [
             {
               label: 'Firefox',
-              pointRadius: 3,
+              pointRadius: function(context) {
+                if (referencePoint && 
+                    context.datasetIndex === referencePoint.datasetIndex && 
+                    context.dataIndex === referencePoint.index) {
+                  return 8; // Larger radius for reference point
+                }
+                return 3;
+              },
               pointBackgroundColor: "#FF9500",
-              pointBorderColor: "#000000",
-              pointBorderWidth: 0.5,
+              pointBorderColor: function(context) {
+                if (referencePoint && 
+                    context.datasetIndex === referencePoint.datasetIndex && 
+                    context.dataIndex === referencePoint.index) {
+                  return "#FFFFFF"; // White border for reference point
+                }
+                return "#000000";
+              },
+              pointBorderWidth: function(context) {
+                if (referencePoint && 
+                    context.datasetIndex === referencePoint.datasetIndex && 
+                    context.dataIndex === referencePoint.index) {
+                  return 3; // Thicker border for reference point
+                }
+                return 0.5;
+              },
               data: xyValuesFx
             }
           ]
@@ -481,7 +503,51 @@
               beginAtZero: true
             }
           },
+          onClick: (event, elements) => {
+            if (elements && elements.length > 0) {
+              const element = elements[0];
+              const dataset = timeChart.data.datasets[element.datasetIndex];
+              const dataPoint = dataset.data[element.index];
+              
+              // Store the reference point
+              referencePoint = {
+                x: dataPoint.x,
+                y: dataPoint.y,
+                label: dataset.label,
+                datasetIndex: element.datasetIndex,
+                index: element.index
+              };
+              
+              // Update the chart to show the reference point
+              timeChart.update();
+            }
+          },
+          onHover: (event, activeElements) => {
+            event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+          },
           plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) {
+                    label += ': ';
+                  }
+                  label += context.parsed.y.toFixed(2) + ' ms';
+                  
+                  // Add delta if reference point is set
+                  if (referencePoint) {
+                    const currentValue = context.parsed.y;
+                    const referenceValue = referencePoint.y;
+                    const delta = currentValue - referenceValue;
+                    const percentDelta = ((currentValue / referenceValue) - 1) * 100;
+                    label += ` (${delta > 0 ? '+' : ''}${percentDelta.toFixed(1)}%)`;
+                  }
+                  
+                  return label;
+                }
+              }
+            },
             annotation: {
               annotations: {
                 speedometer31Line: {
@@ -515,20 +581,62 @@
 
       cfg.data.datasets.push({
         label: 'Chrome',
-        pointRadius: 3,
+        pointRadius: function(context) {
+          if (referencePoint && 
+              context.datasetIndex === referencePoint.datasetIndex && 
+              context.dataIndex === referencePoint.index) {
+            return 8;
+          }
+          return 3;
+        },
         pointBackgroundColor: "#1DA462",
-        pointBorderColor: "#000000",
-        pointBorderWidth: 0.5,
+        pointBorderColor: function(context) {
+          if (referencePoint && 
+              context.datasetIndex === referencePoint.datasetIndex && 
+              context.dataIndex === referencePoint.index) {
+            return "#FFFFFF";
+          }
+          return "#000000";
+        },
+        pointBorderWidth: function(context) {
+          if (referencePoint && 
+              context.datasetIndex === referencePoint.datasetIndex && 
+              context.dataIndex === referencePoint.index) {
+            return 3;
+          }
+          return 0.5;
+        },
         data: xyValuesChrome
       });
 
       if (xyValuesCaR.length > 0) {
         cfg.data.datasets.push({
           label: 'Chromium-as-Release',
-          pointRadius: 3,
+          pointRadius: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 8;
+            }
+            return 3;
+          },
           pointBackgroundColor: "#2773da",
-          pointBorderColor: "#000000",
-          pointBorderWidth: 0.5,
+          pointBorderColor: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return "#FFFFFF";
+            }
+            return "#000000";
+          },
+          pointBorderWidth: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 3;
+            }
+            return 0.5;
+          },
           data: xyValuesCaR
         });
       }
@@ -536,18 +644,60 @@
       if (platforms.includes('macosx1400-64-shippable-qr') || platforms.includes('macosx1500-aarch64-shippable')) {
         cfg.data.datasets.push({
           label: 'Safari',
-          pointRadius: 3,
+          pointRadius: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 8;
+            }
+            return 3;
+          },
           pointBackgroundColor: "#44444444",
-          pointBorderColor: "#000000",
-          pointBorderWidth: 0.5,
+          pointBorderColor: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return "#FFFFFF";
+            }
+            return "#000000";
+          },
+          pointBorderWidth: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 3;
+            }
+            return 0.5;
+          },
           data: xyValuesSafari
         });
         cfg.data.datasets.push({
           label: 'Safari TP',
-          pointRadius: 3,
+          pointRadius: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 8;
+            }
+            return 3;
+          },
           pointBackgroundColor: "#777",
-          pointBorderColor: "#44444444",
-          pointBorderWidth: 0.5,
+          pointBorderColor: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return "#FFFFFF";
+            }
+            return "#44444444";
+          },
+          pointBorderWidth: function(context) {
+            if (referencePoint && 
+                context.datasetIndex === referencePoint.datasetIndex && 
+                context.dataIndex === referencePoint.index) {
+              return 3;
+            }
+            return 0.5;
+          },
           data: xyValuesSafariTP
         });
       }
@@ -563,6 +713,8 @@
         d.setMonth(d.getMonth() - newRange);
         timeChart.options.scales.x.min = d;
       }
+      // Reset reference point when changing range
+      referencePoint = null;
       timeChart.update();
     }
 
