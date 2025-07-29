@@ -463,15 +463,15 @@ function displayResultsInTable(results) {
     let recentClass = "";
     if (result.difference < -5) {
       recentClass='negative-difference';
-    } else if (result.difference > 5) {
-      recentClass='negative-positive';
+    } else if (result.difference > 10) {
+      recentClass='positive-difference';
     }
 
     let monthAgoClass= "";
     if (result.monthAgoDifference < -5) {
       monthAgoClass='negative-difference';
-    } else if (result.difference > 5) {
-      monthAgoClass='negative-positive';
+    } else if (result.monthAgoDifference > 10) {
+      monthAgoClass='positive-difference';
     }
 
     row.onclick = () => {
