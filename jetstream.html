@@ -78,6 +78,9 @@
     let currentSortColumn = 'testName';
     let currentSortDirection = 'asc';
 
+    // Current filter state
+    let currentFilterText = ''; // Text field content for filtering
+
     // Function to sort table by column
     function sortTable(column) {
       // Toggle sort direction if clicking the same column
@@ -113,19 +116,9 @@
       // Combine score row with sorted data
       globalTableData = scoreRow ? [scoreRow, ...otherRows] : otherRows;
 
-      // Update the table
-      const tableBody = document.getElementById('tableBodyLikely');
-      tableBody.innerHTML = '';
+      // Filter and update the table
+      applyFilterAndUpdateTable();
 
-      // Add rows to table
-      globalTableData.forEach(row => {
-        tableBody.innerHTML += row.html;
-      });
-
-      // Add total score row back
-      if (document.getElementById('totalScoreRow')) {
-        tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
-      }
 
       // Update header styling to show sort direction
       updateHeaderStyling();
@@ -164,6 +157,89 @@
         case 'safariTpDiff': return platform.includes('macosx') ? 9 : -1;
         default: return -1;
       }
+    }
+
+    // Function to filter table data based on current filter text
+    function getFilteredData() {
+      const scoreRow = globalTableData.find(row => row.testName === 'score');
+      const otherRows = globalTableData.filter(row => row.testName !== 'score');
+      
+      let filteredRows = otherRows;
+      
+      if (currentFilterText.trim()) {
+        filteredRows = filterByText(otherRows, currentFilterText);
+      }
+      
+      return scoreRow ? [scoreRow, ...filteredRows] : filteredRows;
+    }
+
+    // Function to filter rows based on text input with include/exclude logic
+    function filterByText(rows, filterText) {
+      if (!filterText.trim()) return rows;
+      
+      // Split by comma and trim whitespace
+      const terms = filterText.split(',').map(term => term.trim()).filter(term => term);
+      
+      // Separate include and exclude terms
+      const includeTerms = terms.filter(term => !term.startsWith('-')).map(term => term.toLowerCase());
+      const excludeTerms = terms.filter(term => term.startsWith('-')).map(term => term.substring(1).toLowerCase()).filter(term => term);
+      
+      return rows.filter(row => {
+        const testName = row.testName.toLowerCase();
+        
+        // Check exclude terms first - if any match, exclude the row
+        for (const excludeTerm of excludeTerms) {
+          if (testName.includes(excludeTerm)) {
+            return false;
+          }
+        }
+        
+        // If no include terms, row passes (only exclusions apply)
+        if (includeTerms.length === 0) {
+          return true;
+        }
+        
+        // Check include terms - row must match ALL include terms
+        for (const includeTerm of includeTerms) {
+          if (!testName.includes(includeTerm)) {
+            return false;
+          }
+        }
+        
+        return true; // Row passes all filters
+      });
+    }
+
+    // Function to apply current filter and update table
+    function applyFilterAndUpdateTable() {
+      const filteredData = getFilteredData();
+      const tableBody = document.getElementById('tableBodyLikely');
+      tableBody.innerHTML = '';
+
+      // Add filtered rows to table
+      filteredData.forEach(row => {
+        tableBody.innerHTML += row.html;
+      });
+
+      // Add total score row back if it exists
+      if (document.getElementById('totalScoreRow')) {
+        tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
+      }
+    }
+
+    // Function to handle filter text input changes
+    function onFilterTextChange() {
+      const filterInput = document.getElementById('filterInput');
+      currentFilterText = filterInput.value;
+      applyFilterAndUpdateTable();
+    }
+
+    // Function to set filter text (used by preset buttons)
+    function setFilterText(text) {
+      const filterInput = document.getElementById('filterInput');
+      filterInput.value = text;
+      currentFilterText = text;
+      applyFilterAndUpdateTable();
     }
 
     function displayTable(data) {
@@ -213,9 +289,6 @@
       });
 
       // Calculate averages and prepare table data
-      const tableBody = document.getElementById('tableBodyLikely');
-      tableBody.innerHTML = '';
-
       // Create array of test data for sorting
       let tableData = [];
 
@@ -316,9 +389,6 @@
         });
       });
 
-      // Store data globally for sorting
-      globalTableData = tableData;
-
       // Sort with score at top, then alphabetically by test name
       tableData.sort((a, b) => {
         if (a.testName === 'score') return -1;
@@ -326,10 +396,11 @@
         return a.testName.localeCompare(b.testName);
       });
 
-      // Add rows to table
-      tableData.forEach(row => {
-        tableBody.innerHTML += row.html;
-      });
+      // Store data globally for sorting and filtering
+      globalTableData = tableData;
+
+      // Apply initial filtering and add rows to table
+      applyFilterAndUpdateTable();
 
       // Add click event listeners to table headers for sorting
       addSortListeners();
@@ -934,6 +1005,40 @@
       #subtestTable th {
         cursor: pointer;
       }
+
+      /* Filter button styles */
+      .filter-button {
+        padding: 8px 16px;
+        margin: 0 5px;
+        border: 1px solid #ccc;
+        background-color: #f8f8f8;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: sans-serif;
+        font-size: 14px;
+        transition: background-color 0.2s;
+      }
+
+      .filter-button:hover {
+        background-color: #e8e8e8;
+      }
+
+      /* Filter input styles */
+      .filter-input {
+        padding: 8px 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: sans-serif;
+        font-size: 14px;
+        width: 300px;
+        margin-left: 10px;
+      }
+
+      .filter-input:focus {
+        outline: none;
+        border-color: #3366ff;
+        box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.2);
+      }
   </style>
 </head>
 
@@ -977,6 +1082,20 @@
 
         <br>
         <h3>Breakdown: Jetstream3 Subtests</h3>
+        <div style="margin-bottom: 15px;">
+          <div style="margin-bottom: 10px;">
+            <strong>Filter tests: </strong>
+            <input type="text" id="filterInput" placeholder="e.g. wasm, crypto, -wasm" 
+                   oninput="onFilterTextChange()" class="filter-input" 
+                   title="Use comma-separated terms. Prefix with '-' to exclude (e.g., 'wasm, -regex' shows WebAssembly tests but excludes regex tests)">
+          </div>
+          <div>
+            <strong>Presets: </strong>
+            <button onclick="setFilterText('')" class="filter-button">All Tests</button>
+            <button onclick="setFilterText('wasm')" class="filter-button">WebAssembly Only</button>
+            <button onclick="setFilterText('-wasm')" class="filter-button">Exclude WebAssembly</button>
+          </div>
+        </div>
         <table class="styled-table" id="subtestTable">
           <col>
           <col>
