@@ -280,7 +280,7 @@
           safariTpDiff  = -safariTpDiff;
         }
 
-        const unit = testName === 'score' ? '' : ' ms';
+        const unit = (testName === 'score' || testName.endsWith("Geometric")) ? '' : ' ms';
         let row = '<tr onClick="openTestComparison(' + sigs.firefox + ', ' + sigs.chrome + ', ' + sigs.car + ', ' + sigs.safari + ', ' + sigs.safaritp + ')"><th scope="row" class="testName">' + testName + '</th>';
         row += '<td>' + (firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (chromeAvg > 0 ? round(chromeAvg, 2) + unit : '') + '</td>';
@@ -987,7 +987,7 @@
           <thead>
             <tr>
               <th rowspan="1"></th>
-              <th colspan="5" scope="colgroup">Total time (Lower is better)<br />1wk moving average</th>
+              <th colspan="5" scope="colgroup">Total Score (Higher is better)<br />1wk moving average</th>
               <th colspan="4" scope="colgroup">Difference vs Firefox</th>
             </tr>
             <tr>
