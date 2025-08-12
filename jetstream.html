@@ -273,7 +273,7 @@
         let safariDiff    = percentDiff(safariAvg, firefoxAvg);
         let safariTpDiff  = percentDiff(safariTpAvg, firefoxAvg);
 
-        if (testName === 'score') {
+        if (testName === 'score' || testName.endsWith("Geometric")) {
           chromeDiff    = -chromeDiff;
           carDiff       = -carDiff;
           safariDiff    = -safariDiff;
