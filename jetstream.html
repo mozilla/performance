@@ -161,16 +161,13 @@
 
     // Function to filter table data based on current filter text
     function getFilteredData() {
-      const scoreRow = globalTableData.find(row => row.testName === 'score');
-      const otherRows = globalTableData.filter(row => row.testName !== 'score');
-      
-      let filteredRows = otherRows;
-      
-      if (currentFilterText.trim()) {
-        filteredRows = filterByText(otherRows, currentFilterText);
+      if (!currentFilterText.trim()) {
+        return globalTableData;
       }
       
-      return scoreRow ? [scoreRow, ...filteredRows] : filteredRows;
+      // When filtering, exclude the score row
+      const otherRows = globalTableData.filter(row => row.testName !== 'score');
+      return filterByText(otherRows, currentFilterText);
     }
 
     // Function to filter rows based on text input with include/exclude logic
@@ -221,8 +218,8 @@
         tableBody.innerHTML += row.html;
       });
 
-      // Add total score row back if it exists
-      if (document.getElementById('totalScoreRow')) {
+      // Only add total score row if no filter is active
+      if (!currentFilterText.trim() && document.getElementById('totalScoreRow')) {
         tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
       }
     }
@@ -354,7 +351,8 @@
         }
 
         const unit = (testName === 'score' || testName.endsWith("Geometric")) ? '' : ' ms';
-        let row = '<tr onClick="openTestComparison(' + sigs.firefox + ', ' + sigs.chrome + ', ' + sigs.car + ', ' + sigs.safari + ', ' + sigs.safaritp + ')"><th scope="row" class="testName">' + testName + '</th>';
+        const scoreClass = testName === 'score' ? ' class="scoreRow"' : '';
+        let row = '<tr' + scoreClass + ' onClick="openTestComparison(' + sigs.firefox + ', ' + sigs.chrome + ', ' + sigs.car + ', ' + sigs.safari + ', ' + sigs.safaritp + ')"><th scope="row" class="testName">' + testName + '</th>';
         row += '<td>' + (firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (chromeAvg > 0 ? round(chromeAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (carAvg > 0 ? round(carAvg, 2) + unit : '') + '</td>';
@@ -951,7 +949,7 @@
     }
 
     /* Score row styling */
-    .tableBody tr:first-child {
+    .tableBody tr.scoreRow {
       background-color: #e8eeff !important;
       font-size: 1.2em !important;
       font-weight: bold !important;
@@ -959,20 +957,20 @@
       border-bottom: 2px solid #c7d1ff !important;
     }
 
-    .tableBody tr:first-child:hover {
+    .tableBody tr.scoreRow:hover {
       background-color: #f0f3ff !important;
     }
 
     /* Other rows styling */
-    .tableBody tr:not(:first-child):nth-of-type(odd) {
+    .tableBody tr:not(.scoreRow):not(.sumRow):nth-of-type(odd) {
       background-color: #f3f3f3;
     }
 
-    .tableBody tr:not(:first-child):nth-of-type(even) {
+    .tableBody tr:not(.scoreRow):not(.sumRow):nth-of-type(even) {
       background-color: #e3e3e3;
     }
 
-    .tableBody tr:not(:first-child):hover {
+    .tableBody tr:not(.scoreRow):not(.sumRow):hover {
       background-color: #d0d0d0;
     }
 
