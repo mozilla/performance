@@ -177,7 +177,7 @@
     function filterByText(rows, filterText) {
       if (!filterText.trim()) return rows;
       
-      // Split by comma and trim whitespace
+      // Split by comma and trim whitespace, dropping empty terms. 
       const terms = filterText.split(',').map(term => term.trim()).filter(term => term);
       
       // Separate include and exclude terms
