@@ -281,6 +281,12 @@ function fixupStartupTests(data) {
       row.test = 'homeview-startup-p6';
     } else if ( row.test === 'homeview_startup' && row.suite === 'homeview-startup' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
       row.test = 'homeview-startup-s24';
+    } else if ( row.test === 'tab_restore' && row.suite === 'tab-restore-shopify' && row.platform === 'android-hw-a55-14-0-aarch64-shippable') {
+      row.test = 'restore-startup-a55';
+    } else if ( row.test === 'tab_restore' && row.suite === 'tab-restore-shopify' && row.platform === 'android-hw-p6-13-0-aarch64-shippable') {
+      row.test = 'restore-startup-p6';
+    } else if ( row.test === 'tab_restore' && row.suite === 'tab-restore-shopify' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
+      row.test = 'restore-startup-s24';
     }
   });
 }
