@@ -528,6 +528,15 @@
           plugins: {
             tooltip: {
               callbacks: {
+                title: function(context) {
+                  // Format the date for the tooltip title
+                  const date = new Date(context[0].parsed.x);
+                  return date.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: 'short', 
+                    day: 'numeric' 
+                  });
+                },
                 label: function(context) {
                   let label = context.dataset.label || '';
                   if (label) {
@@ -542,6 +551,11 @@
                     const delta = currentValue - referenceValue;
                     const percentDelta = ((currentValue / referenceValue) - 1) * 100;
                     label += ` (${delta > 0 ? '+' : ''}${percentDelta.toFixed(1)}%)`;
+                    
+                    // Add reference date info
+                    const refDate = new Date(referencePoint.x);
+                    label += '\n';
+                    label += `Reference: ${refDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
                   }
 
                   return label;
