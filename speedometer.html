@@ -18,7 +18,7 @@
       return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
     }
 
-    var platforms = ['windows10-64-shippable-qr'];
+    var platforms = ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'];
 
     const searchParams = new URLSearchParams(window.location.search);
 
@@ -31,9 +31,9 @@
     var timeChart;
     var referencePoint = null; // Store the clicked reference point
 
-    var total_sig_firefox = 4591185;
-    var total_sig_chrome = 4592500;
-    var total_sig_car = 4781109;
+    var total_sig_firefox = 87472;
+    var total_sig_chrome = 92125;
+    var total_sig_car = 92557;
     var total_sig_safari = 0;
     var total_sig_safari_tp = 0;
     if (searchParams.get('os') == 'osx') {
@@ -41,18 +41,11 @@
       total_sig_chrome = 4589463;
       total_sig_car = 4836588;
       platforms = ['macosx1015-64-shippable-qr'];
-    } else if (searchParams.get('os') == 'windows-new') {
+    } else if (searchParams.get('os') == 'windows') {
       total_sig_firefox = 87472;
       total_sig_chrome = 92125;
       total_sig_car = 92557;
       platforms = ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'];
-    } else if (searchParams.get('os') == 'osxm2') {
-      total_sig_firefox = 5042783;
-      total_sig_chrome = 5044184;
-      total_sig_car = 5043640;
-      total_sig_safari = 5045302;
-      total_sig_safari_tp = 37211;
-      platforms = ['macosx1400-64-shippable-qr'];
     } else if (searchParams.get('os') == 'osxm4') {
       total_sig_firefox = 5353492;
       total_sig_chrome = 5353692;
@@ -182,10 +175,10 @@
         table.rows[1].deleteCell(5);
       }
       // Process all rows directly without date filtering first
-      if (searchParams.get('os') != 'windows-new') {
+      if (searchParams.get('os') != 'windows' && searchParams.get('os') != null) {
         data.query_result.data.rows.forEach(fillData.bind(null, 'tableBodyLikely'));
       } else {
-        // For windows-new, we need special handling
+        // For windows, we need special handling
         // Group by test name to avoid duplicates
         testData = {};
 
@@ -245,8 +238,8 @@
 
         // Find the data row for this test
         let dataRow;
-        if (searchParams.get('os') == 'windows-new') {
-          // For windows-new, find in our testData
+        if (searchParams.get('os') == 'windows' || searchParams.get('os') == null) {
+          // For windows or default, find in our testData
           const rows = testData[testName] || [];
           const newRow = rows.find(r => r.platform === 'windows11-64-24h2-shippable');
           const oldRow = rows.find(r => r.platform === 'windows11-64-shippable-qr');
@@ -351,8 +344,8 @@
     function loadChart() {
       if (searchParams.get('os') == 'osx') {
         document.getElementById("macbutton").style = "background-color:gray;";
-      } else if (searchParams.get('os') == 'windows-new') {
-        document.getElementById("winnewbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'windows') {
+        document.getElementById("windowsbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'android-s24') {
@@ -361,8 +354,6 @@
         document.getElementById("mobilebutton2").style.backgroundColor = "gray";
       } else if (searchParams.get('os') == 'android-p6') {
         document.getElementById("mobilebutton3").style.backgroundColor = "gray";
-      } else if (searchParams.get('os') == 'osxm2') {
-        document.getElementById("osxm2button").style.backgroundColor = "gray";
       } else if (searchParams.get('os') == 'osxm4') {
         document.getElementById("osxm4button").style.backgroundColor = "gray";
       } else {
@@ -388,8 +379,8 @@
       let xyValuesSafari = [];
       let xyValuesSafariTP = [];
 
-      // For windows-new, we need to handle multiple platforms
-      if (searchParams.get('os') == 'windows-new') {
+      // For windows or default, we need to handle multiple platforms
+      if (searchParams.get('os') == 'windows' || searchParams.get('os') == null) {
         // Group data points by timestamp and application to avoid duplicates
         let dataPoints = {};
 
@@ -831,8 +822,7 @@
     <div class="content">
       <center>
         <table class="buttons">
-          <tr><td colspan="2" style="height:50px;"><a href="speedometer.html" id="windowsbutton">Windows 10</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=windows-new" id="winnewbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=linux" id="linuxbutton">Linux</a></td></tr>
-          <td colspan="3" style="height:50px;"><a href="speedometer.html?os=osxm4" id="osxm4button">Mac OSX (M4)</a></td><td colspan="3" style="height:50px;"><a href="speedometer.html?os=osxm2" id="osxm2button">Mac OSX (M2)</a></td></tr>
+          <tr><td colspan="2" style="height:50px;"><a href="speedometer.html" id="windowsbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=linux" id="linuxbutton">Linux</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=osxm4" id="osxm4button">Mac</a></td></tr>
           <tr><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td></tr>
         </table>
 
