@@ -36,6 +36,27 @@
   color: white;
 }
 
+.video-container-top {
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 30px;
+  background: #ececec;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.video-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.video-header button:hover {
+  color: #000;
+}
+
 .main-chart-container {
   width: 100%;
   max-width: 900px;

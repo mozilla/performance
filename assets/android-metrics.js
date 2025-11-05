@@ -6,6 +6,175 @@ window.historyStatus = 90;
 window.allCharts = [];
 window.selectedDevice = 'a55';
 window.mainChart = null;
+window.currentSuiteName = null;
+window.currentVideos = {};
+window.currentReplicates = [];
+
+async function loadAndDisplayVideo(taskId, retryId, suiteName, browser, date, value, revision, workerId) {
+  try {
+    const videoContainer = document.getElementById('video-container');
+    const videoElement = document.getElementById('perf-video');
+    const videoInfo = document.getElementById('video-info');
+    const videoLoading = document.getElementById('video-loading');
+    const replicateSelect = document.getElementById('replicate-select');
+    const dataPointInfo = document.getElementById('data-point-info');
+    const jobLink = document.getElementById('job-link');
+
+    // Show container and loading spinner, hide video
+    videoContainer.style.display = 'block';
+    videoLoading.style.display = 'block';
+    videoElement.style.display = 'none';
+    videoElement.src = '';
+    videoElement.pause();
+
+    // Update data point information
+    const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const workerInfo = workerId ? ` | Worker: ${workerId}` : '';
+    dataPointInfo.innerHTML = `<strong>${browser}</strong> | ${dateStr} | <strong>${value.toFixed(2)} ms</strong>${workerInfo}`;
+
+    // Update job link with revision
+    jobLink.href = `https://treeherder.mozilla.org/jobs?repo=mozilla-central&revision=${revision}&group_state=expanded&selectedTaskRun=${taskId}.${retryId}`;
+
+    videoInfo.textContent = '';
+    replicateSelect.innerHTML = '<option>Loading...</option>';
+
+    // First, fetch perfherder-data.json to get replicate values
+    const perfherderUrl = `https://firefoxci.taskcluster-artifacts.net/${taskId}/${retryId}/public/build/perfherder-data.json`;
+    const perfherderResponse = await fetch(perfherderUrl);
+
+    if (!perfherderResponse.ok) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'Perfherder data not available';
+      return;
+    }
+
+    const perfherderData = await perfherderResponse.json();
+    const suite = perfherderData.suites.find(s => s.name === suiteName);
+
+    if (!suite || !suite.subtests) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'No replicate data found';
+      return;
+    }
+
+    // Find the main test metric
+    let mainTest = suite.subtests.find(t => t.name === 'applink_startup');
+    if (!mainTest) {
+      mainTest = suite.subtests.find(t => t.name === 'homeview_startup');
+    }
+    if (!mainTest) {
+      mainTest = suite.subtests.find(t => t.name === 'tab_restore');
+    }
+    if (!mainTest) {
+      // For other tests, use the suite value
+      mainTest = suite;
+    }
+
+    const replicates = mainTest.replicates || [];
+
+    if (replicates.length === 0) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'No replicate values found';
+      return;
+    }
+
+    window.currentReplicates = replicates;
+
+    // Now fetch and extract the .tgz file
+    const tgzUrl = `https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts/public/build/${suiteName}.tgz`;
+
+    const tgzResponse = await fetch(tgzUrl);
+
+    if (!tgzResponse.ok) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'Video archive not available (status: ' + tgzResponse.status + ')';
+      return;
+    }
+
+    const arrayBuffer = await tgzResponse.arrayBuffer();
+    const decompressed = pako.ungzip(new Uint8Array(arrayBuffer));
+    const extractedFiles = await untar(decompressed.buffer);
+
+    // Filter for video files
+    const videos = {};
+    for (const file of extractedFiles) {
+      if (file.name.endsWith('.mp4') || file.name.endsWith('.webm')) {
+        videos[file.name] = file.buffer;
+      }
+    }
+
+    window.currentVideos = videos;
+
+    // Populate dropdown with replicates
+    replicateSelect.innerHTML = '';
+    replicates.forEach((value, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `Replicate ${index + 1}: ${value.toFixed(2)} ms`;
+      replicateSelect.appendChild(option);
+    });
+
+    // Hide loading spinner, show video
+    videoLoading.style.display = 'none';
+    videoElement.style.display = 'block';
+
+    // Display first video by default
+    if (Object.keys(videos).length > 0) {
+      selectReplicate(0);
+    } else {
+      videoInfo.textContent = 'No video files found in archive';
+    }
+
+  } catch (error) {
+    console.error('Error loading video:', error);
+    const videoLoading = document.getElementById('video-loading');
+    const videoElement = document.getElementById('perf-video');
+    if (videoLoading) videoLoading.style.display = 'none';
+    if (videoElement) videoElement.style.display = 'block';
+    document.getElementById('video-info').textContent = 'Error loading video: ' + error.message;
+  }
+}
+
+function selectReplicate(index) {
+  const videoElement = document.getElementById('perf-video');
+  const videoInfo = document.getElementById('video-info');
+
+  // Update URL parameter
+  updateUrlParams({ replicate: index.toString() });
+
+  const videoFiles = Object.keys(window.currentVideos).sort();
+
+  if (videoFiles[index]) {
+    const filename = videoFiles[index];
+    const fileData = window.currentVideos[filename];
+    const videoBlob = new Blob([fileData], { type: 'video/mp4' });
+    const videoUrl = URL.createObjectURL(videoBlob);
+
+    videoElement.src = videoUrl;
+    videoElement.load();
+
+    videoElement.onloadedmetadata = () => {
+      videoElement.currentTime = 0;
+    };
+
+    const replicateValue = window.currentReplicates[index];
+    videoInfo.textContent = `Replicate ${parseInt(index) + 1}: ${replicateValue.toFixed(2)} ms`;
+  } else {
+    videoInfo.textContent = 'Video not found for this replicate';
+  }
+}
+
+function closeVideo() {
+  const videoContainer = document.getElementById('video-container');
+  const videoElement = document.getElementById('perf-video');
+
+  videoContainer.style.display = 'none';
+  videoElement.pause();
+  videoElement.src = '';
+
+  window.currentVideos = {};
+  window.currentReplicates = [];
+}
 
 function setHistory(history) {
   // Find max number of days.
@@ -330,14 +499,10 @@ function fixupResourceTests(data) {
 
 async function loadData(dataUrl) {
   try {
-    // Fetch the gzipped file as a binary array buffer
     const response = await fetch(dataUrl);
     const compressedData = await response.arrayBuffer();
 
-    // Decompress the data using pako
     const decompressedData = pako.inflate(new Uint8Array(compressedData), { to: 'string' });
-
-    // Parse the decompressed string as JSON
     let data = JSON.parse(decompressedData).query_result.data.rows;
 
     fixupStartupTests(data);
@@ -346,8 +511,47 @@ async function loadData(dataUrl) {
 
     window.data = data;
     window.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-    displayMainChart();
-    displayTable();
+
+    // Check for URL parameters to restore state
+    const urlParams = getUrlParams();
+
+    // Set device from URL if present
+    if (urlParams.device && ['a55', 'p6', 's24'].includes(urlParams.device)) {
+      selectDevice(urlParams.device);
+    } else {
+      displayMainChart();
+      displayTable();
+    }
+
+    // Restore selected data point and video if present
+    if (urlParams.taskId && urlParams.test) {
+      // Find the data point with this taskId
+      const dataPoint = window.data.find(d => d.task_id === urlParams.taskId);
+      if (dataPoint) {
+        const retryId = parseInt(urlParams.retryId) || 0;
+        const browser = dataPoint.application === 'fenix' ? 'Firefox' : 'Chrome';
+
+        await loadAndDisplayVideo(
+          urlParams.taskId,
+          retryId,
+          urlParams.test,
+          browser,
+          dataPoint.date,
+          dataPoint.value,
+          dataPoint.revision,
+          dataPoint.worker_id
+        );
+
+        // Select specific replicate if provided
+        if (urlParams.replicate) {
+          const replicateIndex = parseInt(urlParams.replicate);
+          setTimeout(() => {
+            document.getElementById('replicate-select').value = replicateIndex;
+            selectReplicate(replicateIndex);
+          }, 1000);
+        }
+      }
+    }
 
   } catch (error) {
     console.error('Error loading the JSON file:', error);
@@ -361,6 +565,16 @@ function generateContent(dataUrl) {
 function selectDevice(device) {
   window.selectedDevice = device;
 
+  // Close video and clear task parameters
+  closeVideo();
+  updateUrlParams({
+    device: device,
+    test: null,
+    taskId: null,
+    retryId: null,
+    replicate: null
+  });
+
   // Update button states
   document.querySelectorAll('.device-button').forEach(btn => {
     btn.classList.remove('active');
@@ -372,12 +586,38 @@ function selectDevice(device) {
   displayTable();
 }
 
-function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSigId, frameworkId) {
+function updateUrlParams(params) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      url.searchParams.set(key, value);
+    } else {
+      url.searchParams.delete(key);
+    }
+  }
+  window.history.replaceState({}, '', url);
+}
+
+function getUrlParams() {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    device: params.get('device'),
+    test: params.get('test'),
+    taskId: params.get('taskId'),
+    retryId: params.get('retryId'),
+    replicate: params.get('replicate')
+  };
+}
+
+function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSigId, frameworkId, suiteName) {
   // Default to newssite-applink-startup if not specified
   if (!testMetric) {
     testMetric = 'newssite-applink-startup-' + window.selectedDevice;
     testName = 'newssite-applink-startup (' + window.selectedDevice.toUpperCase() + ')';
+    suiteName = 'newssite-applink-startup';
   }
+
+  window.currentSuiteName = suiteName;
 
   const firefoxData = window.data.filter(
     item => item.test === testMetric && (item.application === 'firefox' || item.application === 'fenix')
@@ -390,7 +630,6 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
   );
 
   if (firefoxData.length === 0) {
-    console.log('No Firefox data found for metric:', testMetric);
     return;
   }
 
@@ -437,7 +676,14 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
       datasets: [
         {
           label: 'Firefox',
-          data: filteredFirefoxData.map(item => ({ x: item.date, y: item.value })),
+          data: filteredFirefoxData.map(item => ({
+            x: item.date,
+            y: item.value,
+            task_id: item.task_id,
+            retry_id: item.retry_id,
+            revision: item.revision,
+            worker_id: item.worker_id
+          })),
           pointBackgroundColor: '#FF9500',
           pointBorderColor: '#000000',
           pointBorderWidth: 1,
@@ -448,7 +694,14 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
         },
         {
           label: 'Chrome',
-          data: filteredChromeData.map(item => ({ x: item.date, y: item.value })),
+          data: filteredChromeData.map(item => ({
+            x: item.date,
+            y: item.value,
+            task_id: item.task_id,
+            retry_id: item.retry_id,
+            revision: item.revision,
+            worker_id: item.worker_id
+          })),
           pointBackgroundColor: '#1DA462',
           pointBorderColor: '#000000',
           pointBorderWidth: 1,
@@ -462,6 +715,48 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: async (event, elements, chart) => {
+        // Only enable video for specific tests
+        const videoEnabledTests = [
+          'newssite-applink-startup',
+          'shopify-applink-startup',
+          'homeview-startup',
+          'tab-restore-shopify'
+        ];
+
+        if (!videoEnabledTests.includes(window.currentSuiteName)) {
+          return;
+        }
+
+        if (elements.length > 0) {
+          const element = elements[0];
+          const dataPoint = chart.data.datasets[element.datasetIndex].data[element.index];
+          const datasetLabel = chart.data.datasets[element.datasetIndex].label;
+
+          if (dataPoint && dataPoint.task_id) {
+            const retryId = dataPoint.retry_id || 0;
+
+            // Update URL with selected data point
+            updateUrlParams({
+              device: window.selectedDevice,
+              test: window.currentSuiteName,
+              taskId: dataPoint.task_id,
+              retryId: retryId.toString()
+            });
+
+            await loadAndDisplayVideo(
+              dataPoint.task_id,
+              retryId,
+              window.currentSuiteName,
+              datasetLabel,
+              dataPoint.x,
+              dataPoint.y,
+              dataPoint.revision,
+              dataPoint.worker_id
+            );
+          }
+        }
+      },
       plugins: {
         legend: {
           position: 'top',
@@ -475,6 +770,21 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
         tooltip: {
           mode: 'nearest',
           intersect: false,
+          callbacks: {
+            footer: function(context) {
+              const videoEnabledTests = [
+                'newssite-applink-startup',
+                'shopify-applink-startup',
+                'homeview-startup',
+                'tab-restore-shopify'
+              ];
+
+              if (context.length > 0 && videoEnabledTests.includes(window.currentSuiteName)) {
+                return 'Click to view video';
+              }
+              return '';
+            }
+          }
         }
       },
       scales: {
@@ -555,10 +865,14 @@ function displayTable() {
       const carSigId = carData.length > 0 ? carData[0].signature_id : null;
       const carFrameworkId = carData.length > 0 ? carData[0].framework_id : null;
 
+      // Get suite name from the data
+      const suiteName = firefoxData.length > 0 ? firefoxData[0].suite : null;
+
       results.push({
         name: test.name,
         unit: test.unit,
         test: metric,
+        suite: suiteName,
         firefoxAvg: firefoxAvg,
         chromeAvg: chromeAvg,
         difference: difference.toFixed(1),
@@ -637,13 +951,23 @@ function renderTable() {
     const row = document.createElement('tr');
 
     row.onclick = () => {
+      // Close video and update URL with selected test
+      closeVideo();
+      updateUrlParams({
+        test: result.suite,
+        taskId: null,
+        retryId: null,
+        replicate: null
+      });
+
       displayMainChart(
         result.test,
         result.name,
         result.firefoxSigId,
         result.chromeSigId,
         result.carSigId,
-        result.firefoxFrameworkId
+        result.firefoxFrameworkId,
+        result.suite
       );
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
