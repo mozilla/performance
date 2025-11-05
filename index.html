@@ -132,13 +132,17 @@
 </style>
   <script>
     function displayMetrics() {
-      const regressionCount = window.regressions.length;
-      const untriagedCount = window.untriaged.length;
-      const highImpactCount = window.highImpact.length;
+      const triageGeneralCount = window.triageGeneral.length;
+      const triageMemoryCount = window.triageMemory.length;
+      const triageNavigationCount = window.triageNavigation.length;
+      const triageResponsivenessCount = window.triageResponsiveness.length;
+      const triageStartupCount = window.triageStartup.length;
 
-      document.getElementById('regression-count').textContent = regressionCount;
-      document.getElementById('untriaged-count').textContent = untriagedCount;
-      document.getElementById('high-impact-count').textContent = highImpactCount;
+      document.getElementById('triage-general-count').textContent = triageGeneralCount;
+      document.getElementById('triage-memory-count').textContent = triageMemoryCount;
+      document.getElementById('triage-navigation-count').textContent = triageNavigationCount;
+      document.getElementById('triage-responsiveness-count').textContent = triageResponsivenessCount;
+      document.getElementById('triage-startup-count').textContent = triageStartupCount;
     }
 
     function sortTable(columnIndex, tableId) {
@@ -590,6 +594,11 @@
           window.untriaged = data.untriaged.bugs.reverse();
           window.needinfo = data.needinfo.bugs.reverse();
           window.regressions = data.regressions.bugs.reverse();
+          window.triageGeneral = data.triageGeneral.bugs.reverse();
+          window.triageMemory = data.triageMemory.bugs.reverse();
+          window.triageNavigation = data.triageNavigation.bugs.reverse();
+          window.triageResponsiveness = data.triageResponsiveness.bugs.reverse();
+          window.triageStartup = data.triageStartup.bugs.reverse();
 
           window.allBugs = [...window.highImpact, ...window.medImpact, ...window.lowImpact, ...window.needinfo, ...window.regressions];
           window.allBugs.sort((a, b) => (new Date(b.last_change_time)) - (new Date(a.last_change_time)));
@@ -646,21 +655,28 @@
 
   <div class="content">
     <div class="row">
-      <div class="row-title">Current Bug Status</div>
+      <div class="row-title">Untriaged Bugs</div>
       <div class="metrics-container">
         <div class="metrics">
-          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_based_on=Performance%20Triage&query_format=advanced&resolution=---&f1=OP&f2=cf_performance_impact&o2=equals&v2=%3F&f3=CP&f4=OP&f5=product&o5=equals&v5=Core&f6=component&o6=equals&v6=Performance&f7=keywords&o7=notsubstring&v7=meta&f8=cf_performance_impact&o8=isempty&f9=CP&f10=OP&f11=cf_performance_impact&o11=equals&v11=pending-needinfo&f12=flagtypes.name&o12=notsubstring&v12=needinfo&f13=CP&j_top=OR&order=Bug%20Number&include_fields=id&include_fields=summary&include_fields=status'">
-            <div class="metric-title">Untriaged</div>
-            <div class="metric-number" id="untriaged-count">0</div>
+          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_based_on=General+Performance+Triage&query_format=advanced&resolution=---&f1=OP&f2=cf_performance_impact&o2=equals&v2=%3F&f3=CP&f4=OP&f5=product&o5=equals&v5=Core&f6=component&o6=equals&v6=Performance%3A+General&f7=keywords&o7=notsubstring&v7=meta&f8=cf_performance_impact&o8=isempty&f9=CP&f10=OP&f11=product&o11=equals&v11=Core&f12=component&o12=equals&v12=Performance%3A+General&f13=cf_performance_impact&o13=equals&v13=pending-needinfo&f14=flagtypes.name&o14=notsubstring&v14=needinfo&f15=CP&j_top=OR&order=Bug+Number&include_fields=id&include_fields=summary&include_fields=status'">
+            <div class="metric-title">General</div>
+            <div class="metric-number" id="triage-general-count">0</div>
           </div>
-          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_format=advanced&o1=substring&f1=keywords&classification=Client%20Software&classification=Developer%20Infrastructure&classification=Components&classification=Server%20Software&classification=Other&o2=anywordssubstr&f2=keywords&v2=perf-alert&v1=regression&resolution=---'">
-            <div class="metric-title">Regressions</div>
-            <div class="metric-number" id="regression-count">0</div>
-            </a>
+          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_based_on=Memory+Performance+Triage&query_format=advanced&resolution=---&f1=OP&f2=product&o2=equals&v2=Core&f3=component&o3=equals&v3=Performance%3A+Memory&f4=keywords&o4=notsubstring&v4=meta&f5=cf_performance_impact&o5=isempty&f6=CP&f7=OP&f8=product&o8=equals&v8=Core&f9=component&o9=equals&v9=Performance%3A+Memory&f10=cf_performance_impact&o10=equals&v10=pending-needinfo&f11=flagtypes.name&o11=notsubstring&v11=needinfo&f12=CP&j_top=OR&order=Bug+Number&include_fields=id&include_fields=summary&include_fields=status'">
+            <div class="metric-title">Memory</div>
+            <div class="metric-number" id="triage-memory-count">0</div>
           </div>
-          <div class="metric-column" onclick="window.top.location.href=`https://bugzilla.mozilla.org/buglist.cgi?f1=cf_performance_impact&o1=equals&v1=high&query_format=advanced&bug_status=__open__`">
-            <div class="metric-title">High Impact</div>
-            <div class="metric-number" id="high-impact-count">0</div>
+          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_format=advanced&resolution=---&f1=OP&f2=product&o2=equals&v2=Core&f3=component&o3=equals&v3=Performance%3A+Navigation&f4=keywords&o4=notsubstring&v4=meta&f5=cf_performance_impact&o5=isempty&f6=CP&f7=OP&f8=product&o8=equals&v8=Core&f9=component&o9=equals&v9=Performance%3A+Navigation&f10=cf_performance_impact&o10=equals&v10=pending-needinfo&f11=flagtypes.name&o11=notsubstring&v11=needinfo&f12=CP&j_top=OR&order=Bug+Number&include_fields=id&include_fields=summary&include_fields=status'">
+            <div class="metric-title">Navigation</div>
+            <div class="metric-number" id="triage-navigation-count">0</div>
+          </div>
+          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_based_on=Responsiveness+Performance+Triage&query_format=advanced&resolution=---&f1=OP&f2=product&o2=equals&v2=Core&f3=component&o3=equals&v3=Performance%3A+Responsiveness&f4=keywords&o4=notsubstring&v4=meta&f5=cf_performance_impact&o5=isempty&f6=CP&f7=OP&f8=product&o8=equals&v8=Core&f9=component&o9=equals&v9=Performance%3A+Responsiveness&f10=cf_performance_impact&o10=equals&v10=pending-needinfo&f11=flagtypes.name&o11=notsubstring&v11=needinfo&f12=CP&j_top=OR&order=Bug+Number&include_fields=id&include_fields=summary&include_fields=status'">
+            <div class="metric-title">Responsiveness</div>
+            <div class="metric-number" id="triage-responsiveness-count">0</div>
+          </div>
+          <div class="metric-column" onclick="window.top.location.href='https://bugzilla.mozilla.org/buglist.cgi?query_based_on=Startup+Performance+Triage&query_format=advanced&resolution=---&f1=OP&f2=product&o2=equals&v2=Core&f3=component&o3=equals&v3=Performance%3A+Startup&f4=keywords&o4=notsubstring&v4=meta&f5=cf_performance_impact&o5=isempty&f6=CP&f7=OP&f8=product&o8=equals&v8=Core&f9=component&o9=equals&v9=Performance%3A+Startup&f10=cf_performance_impact&o10=equals&v10=pending-needinfo&f11=flagtypes.name&o11=notsubstring&v11=needinfo&f12=CP&j_top=OR&order=Bug+Number&include_fields=id&include_fields=summary&include_fields=status'">
+            <div class="metric-title">Startup</div>
+            <div class="metric-number" id="triage-startup-count">0</div>
           </div>
         </div>
       </div>
