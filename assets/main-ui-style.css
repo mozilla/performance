@@ -27,6 +27,16 @@ body {
     margin-right: 5px;
 }
 
+.back-btn {
+    margin-left: 0;
+    margin-right: auto;
+    color: #000000;
+}
+
+.back-btn:hover {
+    color: #1abc9c;
+}
+
 .top {
     height: 60px;
     width: 100%;
@@ -72,6 +82,12 @@ body {
     overflow-y: scroll;
     transition: all .3s ease-in-out;
     z-index: 100;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.main-sidebar::-webkit-scrollbar {
+    display: none;
 }
 
 .content {

@@ -4,32 +4,8 @@ window.telemetryData = [];
 window.platformStatus = 'Android';
 window.historyStatus = 90;
 window.allCharts = [];
-
-function sortTable(columnIndex, tableId) {
-  const table = document.getElementById(tableId);
-  const tbody = table.getElementsByTagName('tbody')[0];
-  const rows = Array.from(tbody.getElementsByTagName('tr'));
-
-  const isAscending = table.getAttribute('data-sort-direction') === 'asc';
-  const direction = isAscending ? 1 : -1;
-
-  rows.sort((a, b) => {
-    const cellA = a.getElementsByTagName('td')[columnIndex].innerText.toLowerCase();
-    const cellB = b.getElementsByTagName('td')[columnIndex].innerText.toLowerCase();
-
-    if (!isNaN(cellA) && !isNaN(cellB)) {
-      return direction * (parseFloat(cellA) - parseFloat(cellB));
-    } else {
-      return direction * cellA.localeCompare(cellB);
-    }
-  });
-
-  while (tbody.firstChild) {
-    tbody.removeChild(tbody.firstChild);
-  }
-  rows.forEach(row => tbody.appendChild(row));
-  table.setAttribute('data-sort-direction', isAscending ? 'desc' : 'asc');
-}
+window.selectedDevice = 'a55';
+window.mainChart = null;
 
 function setHistory(history) {
   // Find max number of days.
@@ -42,8 +18,6 @@ function setHistory(history) {
   }
 
   window.historyStatus = history;
-  const input = document.getElementById('history-select');
-  input.value = history;
 
   displayCharts();
 }
@@ -239,7 +213,13 @@ function displayCharts() {
 
   const filteredData = window.data.filter(row => row.date >= cutoffDate);
 
-  window.tests.forEach(test => {
+  // Filter tests by selected device
+  const deviceSuffix = window.selectedDevice.toUpperCase();
+  const filteredTests = window.tests.filter(test => {
+    return test.name.includes(`(${deviceSuffix})`) || !test.name.match(/\((A55|P6|S24)\)/);
+  });
+
+  filteredTests.forEach(test => {
     test.metric.forEach(metric => {
       displayChartForMetric(filteredData, metric, test.name, test.unit);
     });
@@ -366,7 +346,7 @@ async function loadData(dataUrl) {
 
     window.data = data;
     window.data.sort((a, b) => new Date(a.date) - new Date(b.date));
-    displayCharts();
+    displayMainChart();
     displayTable();
 
   } catch (error) {
@@ -375,9 +355,158 @@ async function loadData(dataUrl) {
 }
 
 function generateContent(dataUrl) {
-  const historyInput = document.getElementById('history-select');
-  historyInput.value = window.historyStatus;
   loadData(dataUrl);
+}
+
+function selectDevice(device) {
+  window.selectedDevice = device;
+
+  // Update button states
+  document.querySelectorAll('.device-button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  document.getElementById(device + '-button').classList.add('active');
+
+  // Refresh the display
+  displayMainChart();
+  displayTable();
+}
+
+function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSigId, frameworkId) {
+  // Default to newssite-applink-startup if not specified
+  if (!testMetric) {
+    testMetric = 'newssite-applink-startup-' + window.selectedDevice;
+    testName = 'newssite-applink-startup (' + window.selectedDevice.toUpperCase() + ')';
+  }
+
+  const firefoxData = window.data.filter(
+    item => item.test === testMetric && (item.application === 'firefox' || item.application === 'fenix')
+  );
+  const chromeData = window.data.filter(
+    item => item.test === testMetric && item.application === 'chrome-m'
+  );
+  const carData = window.data.filter(
+    item => item.test === testMetric && item.application === 'cstm-car-m'
+  );
+
+  if (firefoxData.length === 0) {
+    console.log('No Firefox data found for metric:', testMetric);
+    return;
+  }
+
+  // Get signature IDs if not provided
+  if (!firefoxSigId) firefoxSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
+  if (!chromeSigId) chromeSigId = chromeData.length > 0 ? chromeData[0].signature_id : null;
+  if (!carSigId) carSigId = carData.length > 0 ? carData[0].signature_id : null;
+  if (!frameworkId) frameworkId = firefoxData.length > 0 ? firefoxData[0].framework_id : 15;
+
+  // Update the title link
+  const titleElement = document.getElementById('main-chart-title');
+  if (titleElement) {
+    titleElement.textContent = testName;
+
+    // Build Perfherder URL
+    const series = [];
+    if (carSigId) series.push(`mozilla-central,${carSigId},1,${frameworkId}`);
+    if (firefoxSigId) series.push(`mozilla-central,${firefoxSigId},1,${frameworkId}`);
+    if (chromeSigId) series.push(`mozilla-central,${chromeSigId},1,${frameworkId}`);
+
+    if (series.length > 0) {
+      const seriesParam = series.join('&series=');
+      titleElement.href = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=2592000&series=${seriesParam}`;
+    }
+  }
+
+  const ctx = document.getElementById('main-chart');
+  if (!ctx) return;
+
+  if (window.mainChart) {
+    window.mainChart.destroy();
+  }
+
+  // For cpuTime, use chrome-m; otherwise prefer CaR
+  const chromeDataToUse = (testMetric === 'cpuTime') ? chromeData : (carData.length > 0 ? carData : chromeData);
+
+  const history = window.historyStatus;
+  const filteredFirefoxData = firefoxData.slice(-history);
+  const filteredChromeData = chromeDataToUse.slice(-history);
+
+  window.mainChart = new Chart(ctx, {
+    type: 'scatter',
+    data: {
+      datasets: [
+        {
+          label: 'Firefox',
+          data: filteredFirefoxData.map(item => ({ x: item.date, y: item.value })),
+          pointBackgroundColor: '#FF9500',
+          pointBorderColor: '#000000',
+          pointBorderWidth: 1,
+          pointRadius: 3,
+          pointHoverRadius: 8,
+          pointHoverBorderWidth: 2,
+          showLine: false
+        },
+        {
+          label: 'Chrome',
+          data: filteredChromeData.map(item => ({ x: item.date, y: item.value })),
+          pointBackgroundColor: '#1DA462',
+          pointBorderColor: '#000000',
+          pointBorderWidth: 1,
+          pointRadius: 3,
+          pointHoverRadius: 8,
+          pointHoverBorderWidth: 2,
+          showLine: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }
+        },
+        tooltip: {
+          mode: 'nearest',
+          intersect: false,
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day'
+          },
+          display: true,
+          title: {
+            display: true,
+            text: 'Date',
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }
+        },
+        y: {
+          display: true,
+          title: {
+            display: true,
+            text: 'Time (ms)',
+            font: {
+              size: 14,
+              weight: 'bold'
+            }
+          }
+        }
+      }
+    }
+  });
 }
 
 // Calculate the differences between firefox & chrome for each test and
@@ -386,7 +515,13 @@ function generateContent(dataUrl) {
 function displayTable() {
   const results = [];
 
-  window.tests.forEach(test => {
+  // Filter tests by selected device
+  const deviceSuffix = window.selectedDevice.toUpperCase();
+  const filteredTests = window.tests.filter(test => {
+    return test.name.includes(`(${deviceSuffix})`) || !test.name.match(/\((A55|P6|S24)\)/);
+  });
+
+  filteredTests.forEach(test => {
     metric = test.metric[0];
 
     const firefoxData = window.data.filter(
@@ -399,15 +534,27 @@ function displayTable() {
       item => item.test === metric && item.application === 'cstm-car-m'
     );
 
+    // For sp3-cpuTime, use chrome-m; otherwise prefer CaR data
+    const chromeDataToUse = (metric === 'cpuTime') ? chromeData : (carData.length > 0 ? carData : chromeData);
+
     const firefoxAvg = calculateRecentAverage(firefoxData);
-    const chromeAvg = calculateRecentAverage(carData.length > 0 ? carData : chromeData);
+    const chromeAvg = calculateRecentAverage(chromeDataToUse);
     const difference = ((chromeAvg - firefoxAvg) / firefoxAvg) * 100;
 
     const monthAgoFirefoxAvg = calculateMonthAgoAverage(firefoxData);
-    const monthAgoChromeAvg = calculateMonthAgoAverage(carData.length > 0 ? carData : chromeData);
+    const monthAgoChromeAvg = calculateMonthAgoAverage(chromeDataToUse);
     const monthAgoDifference = ((monthAgoChromeAvg - monthAgoFirefoxAvg) / monthAgoFirefoxAvg) * 100;
 
-    if (chromeAvg !== 0) {
+    // Include test if we have Firefox data and at least some Chrome data (even if average is 0)
+    if (firefoxAvg !== 0 && (chromeData.length > 0 || carData.length > 0)) {
+      // Get signature IDs and framework IDs for Perfherder links
+      const firefoxSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
+      const firefoxFrameworkId = firefoxData.length > 0 ? firefoxData[0].framework_id : null;
+      const chromeSigId = chromeData.length > 0 ? chromeData[0].signature_id : null;
+      const chromeFrameworkId = chromeData.length > 0 ? chromeData[0].framework_id : null;
+      const carSigId = carData.length > 0 ? carData[0].signature_id : null;
+      const carFrameworkId = carData.length > 0 ? carData[0].framework_id : null;
+
       results.push({
         name: test.name,
         unit: test.unit,
@@ -417,7 +564,13 @@ function displayTable() {
         difference: difference.toFixed(1),
         monthAgoFirefoxAvg: monthAgoFirefoxAvg,
         monthAgoChromeAvg: monthAgoChromeAvg,
-        monthAgoDifference: monthAgoDifference.toFixed(1)
+        monthAgoDifference: monthAgoDifference.toFixed(1),
+        firefoxSigId: firefoxSigId,
+        firefoxFrameworkId: firefoxFrameworkId,
+        chromeSigId: chromeSigId,
+        chromeFrameworkId: chromeFrameworkId,
+        carSigId: carSigId,
+        carFrameworkId: carFrameworkId
       });
     }
   });
@@ -465,46 +618,84 @@ function calculateMonthAgoAverage(data) {
   return last7DaysData.length > 0 ? total / last7DaysData.length : 0;
 }
 
+// Store results for sorting
+window.tableResults = [];
+window.currentSortColumn = 'testName';
+window.currentSortDirection = 'asc';
+
 // Display results in the summary table.
 function displayResultsInTable(results) {
-  const table = document.querySelector('#summary-table tbody');
-  results.forEach(result => {
+  window.tableResults = results;
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.querySelector('#tableBody');
+  tbody.innerHTML = '';
+
+  window.tableResults.forEach(result => {
     const row = document.createElement('tr');
 
-    if (result.unit.includes('score')) {
-      result.difference = -result.difference;
-      result.monthAgoDifference = -result.monthAgoDifference;
-    }
-
-    let recentClass = "";
-    if (result.difference < -5) {
-      recentClass='negative-difference';
-    } else if (result.difference > 10) {
-      recentClass='positive-difference';
-    }
-
-    let monthAgoClass= "";
-    if (result.monthAgoDifference < -5) {
-      monthAgoClass='negative-difference';
-    } else if (result.monthAgoDifference > 10) {
-      monthAgoClass='positive-difference';
-    }
-
     row.onclick = () => {
-      window.location.hash = `${result.name}-section`;
+      displayMainChart(
+        result.test,
+        result.name,
+        result.firefoxSigId,
+        result.chromeSigId,
+        result.carSigId,
+        result.firefoxFrameworkId
+      );
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Calculate difference percentage
+    const diff = ((result.chromeAvg - result.firefoxAvg) / result.firefoxAvg) * 100;
+    let diffColor = '';
+    let diffSign = diff > 0 ? '+' : '';
+
+    if (result.unit.includes('score')) {
+      // For scores, higher is better (Chrome > Firefox is bad for us)
+      if (diff > 5) diffColor = 'style="color: red;"';
+      else if (diff < -5) diffColor = 'style="color: green;"';
+    } else {
+      // For times, lower is better (Chrome < Firefox is bad for us)
+      if (diff < -5) diffColor = 'style="color: red;"';
+      else if (diff > 5) diffColor = 'style="color: green;"';
+    }
+
     row.innerHTML = `
-      <td class="${recentClass}" >${result.name} (${result.unit})</td>
-      <td class="${recentClass}" style="border-left: 1px solid #ddd;">${result.firefoxAvg.toFixed(2)}</td>
-      <td class="${recentClass}" >${result.chromeAvg.toFixed(2)}</td>
-      <td class="${recentClass}" >${result.difference}</td>
-      <td class="${monthAgoClass}" style="border-left: 1px solid #ddd;">${result.monthAgoFirefoxAvg.toFixed(2)}</td>
-      <td class="${monthAgoClass}" >${result.monthAgoChromeAvg.toFixed(2)}</td>
-      <td class="${monthAgoClass}" >${result.monthAgoDifference}</td>
+      <td class="testName">${result.name}</td>
+      <td>${result.firefoxAvg.toFixed(2)} ${result.unit}</td>
+      <td>${result.chromeAvg.toFixed(2)} ${result.unit}</td>
+      <td ${diffColor}>${diffSign}${diff.toFixed(1)}%</td>
     `;
-    table.appendChild(row);
+    tbody.appendChild(row);
   });
+}
+
+function sortTable(column) {
+  if (window.currentSortColumn === column) {
+    window.currentSortDirection = window.currentSortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    window.currentSortColumn = column;
+    window.currentSortDirection = 'asc';
+  }
+
+  window.tableResults.sort((a, b) => {
+    let valA = a[column];
+    let valB = b[column];
+
+    if (typeof valA === 'string') {
+      valA = valA.toLowerCase();
+      valB = valB.toLowerCase();
+    }
+
+    if (valA < valB) return window.currentSortDirection === 'asc' ? -1 : 1;
+    if (valA > valB) return window.currentSortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  renderTable();
 }
 
 function createSummaryTable(tests) {
