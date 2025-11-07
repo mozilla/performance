@@ -36,6 +36,29 @@
   color: white;
 }
 
+select.device-button {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3e%3cpath fill='%23667eea' d='M0 0l6 8 6-8z'/%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding: 8px 28px 8px 16px;
+  font-size: 13px;
+}
+
+select.device-button:hover {
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3e%3cpath fill='%23667eea' d='M0 0l6 8 6-8z'/%3e%3c/svg%3e");
+}
+
+.controls-container {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+  justify-content: center;
+  align-items: center;
+}
+
 .video-container-top {
   width: 100%;
   max-width: 900px;

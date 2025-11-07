@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="assets/main-ui-style.css">
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
 <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
@@ -20,9 +21,17 @@
 
 <script src="assets/android-metrics.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", () => {
-      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/android-data.json.gz';
-      generateContent(dataUrl);
+  document.addEventListener("DOMContentLoaded", async () => {
+      // Check URL parameters for timeline
+      const urlParams = new URLSearchParams(window.location.search);
+      const timeline = urlParams.get('timeline') || '90';
+
+      // Always use mozilla-central for data
+      window.selectedRepository = 'mozilla-central';
+      window.selectedTimeline = parseInt(timeline);
+
+      // Load data from Treeherder API
+      await loadDataFromTreeherder();
   });
 </script>
 
@@ -52,6 +61,7 @@
       <button id="p6-button" class="device-button" onclick="selectDevice('p6')">P6</button>
       <button id="s24-button" class="device-button" onclick="selectDevice('s24')">S24</button>
     </div>
+
 
     <div id="video-container" class="video-container-top" style="display: none;">
       <div class="video-header">
@@ -88,14 +98,32 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+      .main-chart-container a:hover {
+        background-color: lightgray;
+      }
     </style>
 
     <div class="row-title" id="main-chart-section">
       <a id="main-chart-title" href="#" target="_blank">newssite-applink-startup (A55)</a>
     </div>
 
-    <div class="main-chart-container">
+    <div style="width: 100%; max-width: 900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
+      <div id="hide-alerts-container-android" style="display: block; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+        <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+          <input type="checkbox" id="hide-alerts-android" onchange="toggleHideAlertsAndroid(this.checked)" style="cursor: pointer;">
+          <span>Hide alerts</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="main-chart-container" style="margin: 0 auto;">
       <canvas id="main-chart"></canvas>
+      <div style="text-align: center; margin-top: 10px;">
+        <a onclick="changeTimelineAndroid(365)" style="padding: 10px 30px; margin: 0 5px; cursor: pointer; text-decoration: none; color: black; border-radius: 5px; display: inline-block;">1 year</a>
+        <a onclick="changeTimelineAndroid(90)" style="padding: 10px 30px; margin: 0 5px; cursor: pointer; text-decoration: none; color: black; border-radius: 5px; display: inline-block;">3 months</a>
+        <a onclick="changeTimelineAndroid(30)" style="padding: 10px 30px; margin: 0 5px; cursor: pointer; text-decoration: none; color: black; border-radius: 5px; display: inline-block;">1 month</a>
+      </div>
     </div>
 
     <div class="row-title" id="summary-section">Test Results</div>

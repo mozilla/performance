@@ -7,8 +7,15 @@ window.allCharts = [];
 window.selectedDevice = 'a55';
 window.mainChart = null;
 window.currentSuiteName = null;
+window.currentTestMetric = null;
 window.currentVideos = {};
 window.currentReplicates = [];
+window.selectedDataPoint = null;
+window.selectedRepository = 'mozilla-central';
+window.selectedTimeline = 90;
+window.alerts = {};
+window.alertSummaries = {};
+window.hideAlerts = false;
 
 async function loadAndDisplayVideo(taskId, retryId, suiteName, browser, date, value, revision, workerId) {
   try {
@@ -562,6 +569,286 @@ function generateContent(dataUrl) {
   loadData(dataUrl);
 }
 
+async function loadDataFromTreeherder() {
+  try {
+    showChartLoadingAndroid();
+
+    const repository = window.selectedRepository;
+    const timelineDays = window.selectedTimeline;
+    const intervalSeconds = timelineDays * 24 * 60 * 60;
+
+    console.log(`Loading data from ${repository} for past ${timelineDays} days...`);
+
+    // Define platforms to fetch
+    const platforms = [
+      'android-hw-a55-14-0-aarch64-shippable',
+      'android-hw-p6-13-0-aarch64-shippable',
+      'android-hw-s24-14-0-aarch64-shippable'
+    ];
+
+    // Define the suites/tests we care about
+    const relevantSuites = new Set([
+      'newssite-applink-startup',
+      'shopify-applink-startup',
+      'homeview-startup',
+      'tab-restore-shopify',
+      'speedometer3',
+      'startup'
+    ]);
+
+    const relevantTests = new Set([
+      'applink_startup',
+      'homeview_startup',
+      'tab_restore',
+      'score',
+      'cpuTime',
+      'powerUsage',
+      'cold_view_nav_start.mean',
+      'cold_main_first_frame.mean'
+    ]);
+
+    // Fetch signatures for all platforms
+    const allSignatures = {};
+    for (const platform of platforms) {
+      const sigUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/signatures/?framework=15&platform=${platform}`;
+      const sigResponse = await fetch(sigUrl);
+      const signatures = await sigResponse.json();
+
+      // Filter to only relevant signatures
+      for (const [hash, sig] of Object.entries(signatures)) {
+        if (relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) {
+          allSignatures[hash] = sig;
+        }
+      }
+    }
+
+    console.log(`Found ${Object.keys(allSignatures).length} relevant signatures`);
+
+    // Fetch performance data for all signatures in parallel
+    const allData = [];
+    const fetchPromises = [];
+
+    for (const [signatureHash, sig] of Object.entries(allSignatures)) {
+      const dataUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/data/?framework=15&interval=${intervalSeconds}&signature_id=${sig.id}`;
+
+      const fetchPromise = fetch(dataUrl)
+        .then(response => response.json())
+        .then(perfData => {
+          const dataPoints = [];
+          if (perfData[sig.signature_hash]) {
+            for (const point of perfData[sig.signature_hash]) {
+              dataPoints.push({
+                date: new Date(point.push_timestamp * 1000).toISOString(),
+                test: sig.test,
+                suite: sig.suite,
+                platform: sig.machine_platform,
+                application: sig.application,
+                signature_id: sig.id,
+                framework_id: sig.framework_id,
+                repository_id: repository === 'mozilla-central' ? 1 : 4,
+                value: point.value,
+                job_id: point.job_id,
+                task_id: null,
+                retry_id: point.retry_id || 0,
+                revision: point.revision,
+                worker_id: null
+              });
+            }
+          }
+          return dataPoints;
+        })
+        .catch(error => {
+          console.error(`Error fetching signature ${sig.id}:`, error);
+          return [];
+        });
+
+      fetchPromises.push(fetchPromise);
+    }
+
+    const results = await Promise.all(fetchPromises);
+    results.forEach(dataPoints => allData.push(...dataPoints));
+
+    console.log(`Loaded ${allData.length} data points from ${fetchPromises.length} signatures`);
+
+    // Apply the same fixups as before
+    fixupStartupTests(allData);
+    fixupPageloadTests(allData);
+
+    window.data = allData;
+    window.data.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    // Display the charts and table
+    displayMainChart();
+    displayTable();
+
+  } catch (error) {
+    console.error('Error loading data from Treeherder:', error);
+  } finally {
+    hideChartLoadingAndroid();
+  }
+}
+
+function showChartLoadingAndroid() {
+  const chartContainer = document.querySelector('.main-chart-container');
+  if (!chartContainer) return;
+
+  let loader = document.getElementById('chart-loader-android');
+
+  if (!loader) {
+    loader = document.createElement('div');
+    loader.id = 'chart-loader-android';
+    loader.style.cssText = 'position: absolute; top: 120px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 1000;';
+    loader.innerHTML = `
+      <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #ddd; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="margin-top: 15px; font-size: 14px; color: #666; font-weight: 600;">Loading data...</div>
+    `;
+    chartContainer.style.position = 'relative';
+    chartContainer.appendChild(loader);
+  }
+
+  loader.style.display = 'block';
+
+  const chartCanvas = document.getElementById('main-chart');
+  if (chartCanvas) {
+    chartCanvas.style.opacity = '0.3';
+  }
+}
+
+function hideChartLoadingAndroid() {
+  const loader = document.getElementById('chart-loader-android');
+  const chartCanvas = document.getElementById('main-chart');
+
+  if (loader) {
+    loader.style.display = 'none';
+  }
+  if (chartCanvas) {
+    chartCanvas.style.opacity = '1';
+  }
+}
+
+async function fetchAlertsForTest(testMetric, platform, suiteName) {
+  try {
+    console.log(`Fetching alerts for suite ${suiteName} on ${platform}...`);
+
+    // Get autoland signature ID for this test/platform (framework 15 for Android)
+    const sigUrl = `https://treeherder.mozilla.org/api/project/autoland/performance/signatures/?framework=15&platform=${platform}`;
+    const sigResponse = await fetch(sigUrl);
+    const signatures = await sigResponse.json();
+
+    // Find signature by suite name and test name (applink_startup, homeview_startup, etc.)
+    let autolandSigId = null;
+    const baseTestNames = ['applink_startup', 'homeview_startup', 'tab_restore', 'score', 'cpuTime', 'powerUsage'];
+
+    for (const [sigId, sig] of Object.entries(signatures)) {
+      if (sig.suite === suiteName &&
+          baseTestNames.includes(sig.test) &&
+          (sig.application === 'firefox' || sig.application === 'fenix')) {
+        autolandSigId = sig.id;
+        console.log(`Matched signature ${autolandSigId} for suite ${suiteName}, test ${sig.test}`);
+        break;
+      }
+    }
+
+    if (!autolandSigId) {
+      console.log(`No autoland signature found for suite ${suiteName}`);
+      window.alerts[testMetric] = [];
+      return;
+    }
+
+    // Fetch alerts from autoland (repository 77)
+    const timerangeSeconds = window.selectedTimeline * 24 * 60 * 60;
+    const summaryUrl = `https://treeherder.mozilla.org/api/performance/alertsummary/?alerts__series_signature=${autolandSigId}&repository=77&limit=100&timerange=${timerangeSeconds}`;
+
+    const summaryResponse = await fetch(summaryUrl);
+    const summaryData = await summaryResponse.json();
+
+    const allAlerts = [];
+    const relatedSummariesToFetch = new Set();
+
+    if (summaryData.results) {
+      for (const summary of summaryData.results) {
+        for (const alert of summary.alerts) {
+          if (alert.series_signature.id === autolandSigId && alert.status !== 3) {
+            allAlerts.push({
+              ...alert,
+              push_timestamp: summary.push_timestamp,
+              summary_id: summary.id,
+              repository: 'autoland'
+            });
+
+            if (!window.alertSummaries[summary.id]) {
+              window.alertSummaries[summary.id] = summary;
+            }
+
+            // Track reassignments
+            if (alert.related_summary_id) {
+              relatedSummariesToFetch.add(alert.related_summary_id);
+            }
+          }
+        }
+      }
+    }
+
+    // Fetch reassigned-to summaries
+    for (const relatedId of relatedSummariesToFetch) {
+      if (!window.alertSummaries[relatedId]) {
+        try {
+          const relatedUrl = `https://treeherder.mozilla.org/api/performance/alertsummary/${relatedId}/`;
+          const relatedResponse = await fetch(relatedUrl);
+          const relatedData = await relatedResponse.json();
+          window.alertSummaries[relatedId] = relatedData;
+
+          // Find the alert for this test in the reassigned summary
+          console.log(`Checking reassigned summary ${relatedId} for suite ${suiteName}`);
+          const reassignedAlert = relatedData.alerts.find(a =>
+            a.series_signature.suite === suiteName &&
+            baseTestNames.includes(a.series_signature.test)
+          );
+
+          if (reassignedAlert) {
+            allAlerts.push({
+              ...reassignedAlert,
+              push_timestamp: relatedData.push_timestamp,
+              summary_id: relatedId,
+              repository: 'autoland'
+            });
+            console.log(`Found reassigned alert in summary ${relatedId}`);
+          } else {
+            console.log(`No matching alert found in summary ${relatedId} for suite ${suiteName}`);
+            console.log(`Available suites in ${relatedId}:`, relatedData.alerts.map(a => a.series_signature.suite).slice(0, 5));
+          }
+        } catch (err) {
+          console.error(`Error fetching related summary ${relatedId}:`, err);
+        }
+      }
+    }
+
+    window.alerts[testMetric] = allAlerts;
+    console.log(`Loaded ${allAlerts.length} alerts for ${suiteName}`);
+  } catch (error) {
+    console.error(`Error fetching alerts for ${suiteName}:`, error);
+  }
+}
+
+function toggleHideAlertsAndroid(checked) {
+  window.hideAlerts = checked;
+
+  // Redraw chart with updated annotations
+  if (window.mainChart && window.currentTestMetric) {
+    window.mainChart.options.plugins.annotation.annotations = getAlertAnnotationsAndroid(window.currentTestMetric);
+    window.mainChart.update();
+  }
+}
+
+function changeTimelineAndroid(days) {
+  window.selectedTimeline = days;
+  updateUrlParams({ timeline: days });
+
+  // Close video and reload data
+  closeVideo();
+  loadDataFromTreeherder();
+}
+
 function selectDevice(device) {
   window.selectedDevice = device;
 
@@ -609,7 +896,109 @@ function getUrlParams() {
   };
 }
 
-function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSigId, frameworkId, suiteName) {
+function getAlertAnnotationsAndroid(testMetric) {
+  const annotations = {};
+
+  if (!testMetric || window.hideAlerts) {
+    return annotations;
+  }
+
+  const alertsToShow = window.alerts[testMetric] || [];
+
+  if (alertsToShow.length === 0) {
+    return annotations;
+  }
+
+  // Filter out only invalid alerts (status 3)
+  const alertsToDisplay = alertsToShow.filter(alert => alert.status !== 3);
+
+  alertsToDisplay.forEach((alert, index) => {
+    if (!alert.push_timestamp) return;
+
+    const alertDate = new Date(alert.push_timestamp * 1000);
+    const alertUrl = `https://treeherder.mozilla.org/perfherder/alerts?id=${alert.summary_id}`;
+    const amountPct = Math.abs(alert.amount_pct || 0).toFixed(1);
+    const hoverText = `#${alert.summary_id}: ${amountPct}%`;
+
+    // Default annotation
+    annotations[`alert_${index}_default`] = {
+      type: 'line',
+      xMin: alertDate,
+      xMax: alertDate,
+      drawTime: 'beforeDatasetsDraw',
+      borderColor: alert.is_regression ? 'rgba(255, 0, 0, 0.6)' : 'rgba(0, 200, 0, 0.6)',
+      borderWidth: 2,
+      label: {
+        display: true,
+        content: `${amountPct}%`,
+        position: 'end',
+        yAdjust: 10,
+        drawTime: 'afterDatasetsDraw',
+        backgroundColor: alert.is_regression ? 'rgba(255, 200, 200, 0.98)' : 'rgba(200, 255, 200, 0.98)',
+        borderColor: alert.is_regression ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 200, 0, 0.8)',
+        borderWidth: 1,
+        borderRadius: 4,
+        color: 'black',
+        font: {
+          size: 11,
+          weight: 'bold'
+        },
+        padding: 6
+      },
+      enter(ctx) {
+        annotations[`alert_${index}_default`].label.display = false;
+        annotations[`alert_${index}_hover`].label.display = true;
+        ctx.chart.update('none');
+        return true;
+      },
+      click() {
+        window.open(alertUrl, '_blank');
+      }
+    };
+
+    // Hover annotation
+    const yOffset = 10 + (index % 3) * 30;
+    annotations[`alert_${index}_hover`] = {
+      type: 'line',
+      xMin: alertDate,
+      xMax: alertDate,
+      drawTime: 'beforeDatasetsDraw',
+      borderColor: alert.is_regression ? 'rgba(255, 0, 0, 0.6)' : 'rgba(0, 200, 0, 0.6)',
+      borderWidth: 2,
+      z: -1,
+      label: {
+        display: false,
+        content: hoverText,
+        position: 'end',
+        yAdjust: yOffset,
+        drawTime: 'afterDatasetsDraw',
+        backgroundColor: alert.is_regression ? 'rgba(255, 200, 200, 0.98)' : 'rgba(200, 255, 200, 0.98)',
+        borderColor: alert.is_regression ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 200, 0, 0.8)',
+        borderWidth: 1,
+        borderRadius: 4,
+        color: 'black',
+        font: {
+          size: 11,
+          weight: 'bold'
+        },
+        padding: 6
+      },
+      leave(ctx) {
+        annotations[`alert_${index}_default`].label.display = true;
+        annotations[`alert_${index}_hover`].label.display = false;
+        ctx.chart.update('none');
+        return true;
+      },
+      click() {
+        window.open(alertUrl, '_blank');
+      }
+    };
+  });
+
+  return annotations;
+}
+
+async function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSigId, frameworkId, suiteName) {
   // Default to newssite-applink-startup if not specified
   if (!testMetric) {
     testMetric = 'newssite-applink-startup-' + window.selectedDevice;
@@ -618,6 +1007,11 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
   }
 
   window.currentSuiteName = suiteName;
+  window.currentTestMetric = testMetric;
+
+  // Fetch alerts for this test
+  const platform = `android-hw-${window.selectedDevice}-${window.selectedDevice === 'a55' ? '14' : window.selectedDevice === 'p6' ? '13' : '14'}-0-aarch64-shippable`;
+  await fetchAlertsForTest(testMetric, platform, suiteName);
 
   const firefoxData = window.data.filter(
     item => item.test === testMetric && (item.application === 'firefox' || item.application === 'fenix')
@@ -679,6 +1073,7 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
           data: filteredFirefoxData.map(item => ({
             x: item.date,
             y: item.value,
+            job_id: item.job_id,
             task_id: item.task_id,
             retry_id: item.retry_id,
             revision: item.revision,
@@ -697,6 +1092,7 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
           data: filteredChromeData.map(item => ({
             x: item.date,
             y: item.value,
+            job_id: item.job_id,
             task_id: item.task_id,
             retry_id: item.retry_id,
             revision: item.revision,
@@ -714,7 +1110,7 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
+      maintainAspectRatio: true,
       onClick: async (event, elements, chart) => {
         // Only enable video for specific tests
         const videoEnabledTests = [
@@ -733,19 +1129,46 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
           const dataPoint = chart.data.datasets[element.datasetIndex].data[element.index];
           const datasetLabel = chart.data.datasets[element.datasetIndex].label;
 
-          if (dataPoint && dataPoint.task_id) {
-            const retryId = dataPoint.retry_id || 0;
+          let taskId = dataPoint.task_id;
+          let retryId = dataPoint.retry_id || 0;
+
+          // If task_id is null but we have job_id, fetch the task_id from the job API
+          if (!taskId && dataPoint.job_id) {
+            try {
+              const jobUrl = `https://treeherder.mozilla.org/api/project/${window.selectedRepository}/jobs/?id=${dataPoint.job_id}`;
+              const jobResponse = await fetch(jobUrl);
+              const jobData = await jobResponse.json();
+
+              if (jobData.results && jobData.results.length > 0) {
+                taskId = jobData.results[0].task_id;
+                retryId = jobData.results[0].retry_id || 0;
+              }
+            } catch (error) {
+              console.error('Error fetching job details:', error);
+              return;
+            }
+          }
+
+          if (taskId) {
+            // Store selected data point for highlighting
+            window.selectedDataPoint = {
+              task_id: taskId,
+              retry_id: retryId
+            };
 
             // Update URL with selected data point
             updateUrlParams({
               device: window.selectedDevice,
               test: window.currentSuiteName,
-              taskId: dataPoint.task_id,
+              taskId: taskId,
               retryId: retryId.toString()
             });
 
+            // Refresh chart to show highlighting
+            chart.update();
+
             await loadAndDisplayVideo(
-              dataPoint.task_id,
+              taskId,
               retryId,
               window.currentSuiteName,
               datasetLabel,
@@ -785,6 +1208,9 @@ function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId, carSi
               return '';
             }
           }
+        },
+        annotation: {
+          annotations: getAlertAnnotationsAndroid(testMetric)
         }
       },
       scales: {
@@ -950,7 +1376,7 @@ function renderTable() {
   window.tableResults.forEach(result => {
     const row = document.createElement('tr');
 
-    row.onclick = () => {
+    row.onclick = async () => {
       // Close video and update URL with selected test
       closeVideo();
       updateUrlParams({
@@ -960,7 +1386,7 @@ function renderTable() {
         replicate: null
       });
 
-      displayMainChart(
+      await displayMainChart(
         result.test,
         result.name,
         result.firefoxSigId,
