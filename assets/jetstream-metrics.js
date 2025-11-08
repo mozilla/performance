@@ -381,6 +381,13 @@ function displayChartFromTreeherder(data, testName) {
     timeChart.destroy();
   }
 
+  // Update chart title
+  const displayName = testName === 'score' ? 'Overall Score' : testName;
+  const chartTitleElement = document.getElementById('chart-title-jetstream');
+  if (chartTitleElement) {
+    chartTitleElement.innerHTML = `<a id="chart-title-link-jetstream" href="#" target="_blank" style="text-decoration: none; color: inherit;">${displayName} (higher is better)</a>`;
+  }
+
   // Show/hide the all alerts checkbox
   const alertsContainer = document.getElementById('all-alerts-container-jetstream');
   if (alertsContainer) {
@@ -393,6 +400,29 @@ function displayChartFromTreeherder(data, testName) {
   const carData = data.filter(d => d.application === 'custom-car' || d.application === 'cstm-car-m');
   const safariData = data.filter(d => d.application === 'safari');
   const safariTPData = data.filter(d => d.application === 'safari-tp');
+
+  // Build Perfherder link
+  const firefoxSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
+  const chromeSigId = chromeData.length > 0 ? chromeData[0].signature_id : null;
+  const carSigId = carData.length > 0 ? carData[0].signature_id : null;
+  const safariSigId = safariData.length > 0 ? safariData[0].signature_id : null;
+  const safariTPSigId = safariTPData.length > 0 ? safariTPData[0].signature_id : null;
+
+  const series = [];
+  if (firefoxSigId) series.push(`mozilla-central,${firefoxSigId},1,13`);
+  if (chromeSigId) series.push(`mozilla-central,${chromeSigId},1,13`);
+  if (carSigId) series.push(`mozilla-central,${carSigId},1,13`);
+  if (safariSigId) series.push(`mozilla-central,${safariSigId},1,13`);
+  if (safariTPSigId) series.push(`mozilla-central,${safariTPSigId},1,13`);
+
+  if (series.length > 0) {
+    const seriesParam = series.join('&series=');
+    const perfherderUrl = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=${seriesParam}`;
+    const titleLink = document.getElementById('chart-title-link-jetstream');
+    if (titleLink) {
+      titleLink.href = perfherderUrl;
+    }
+  }
 
   const datasets = [
     {

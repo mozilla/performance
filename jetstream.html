@@ -15,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
 
-  <script src="assets/jetstream-hybrid.js"></script>
+  <script src="assets/jetstream-metrics.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       generateContent();
@@ -1078,7 +1078,7 @@
         </table>
         <br>
 
-        <h3>Current Status (higher is better)</h3>
+        <h3 id="chart-title-jetstream"></h3>
 
         <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
           <div id="all-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">

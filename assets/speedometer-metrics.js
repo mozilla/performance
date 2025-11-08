@@ -464,7 +464,7 @@ function displayTable() {
     row.onclick = () => selectTest(testName);
 
     // Determine display name and unit
-    const displayName = testName === 'score' ? 'Total Score' : testName.replace('/total', '');
+    const displayName = testName === 'score' ? 'Overall Score' : testName.replace('/total', '');
     const unit = testName === 'score' ? '' : ' ms';
 
     // For score, invert the color logic (positive diff is good, negative is bad)
@@ -959,7 +959,7 @@ function displayChart(data, testName) {
 
   // Update chart title
   const isScore = testName === 'score';
-  const displayName = isScore ? 'Total Score' : testName.replace('/total', '');
+  const displayName = isScore ? 'Overall Score' : testName.replace('/total', '');
   const betterDirection = isScore ? 'higher is better' : 'lower is better';
 
   const chartTitleElement = document.getElementById('chart-title');
