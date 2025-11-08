@@ -10,11 +10,12 @@
   <link rel="stylesheet" href="assets/main-ui-style.css">
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
 
+  <script src="assets/jetstream-hybrid.js"></script>
   <script>
     document.addEventListener("DOMContentLoaded", () => {
       generateContent();
@@ -27,8 +28,6 @@
     // Set default platform here.
     var platform = 'windows11-64-24h2-shippable';
 
-    const searchParams = new URLSearchParams(window.location.search);
-
     let timeWindow = '6wk';
     let supportsCaR = true;
 
@@ -38,6 +37,7 @@
     var referencePoint = null; // Store the clicked reference point
 
     // Initialize platforms array with current platform
+    // searchParams is defined in jetstream-hybrid.js
     var platforms = [];
 
     if (searchParams.get('os') == 'windows') {
@@ -352,7 +352,7 @@
 
         const unit = (testName === 'score' || testName.endsWith("Geometric")) ? '' : ' ms';
         const scoreClass = testName === 'score' ? ' class="scoreRow"' : '';
-        let row = '<tr' + scoreClass + ' onClick="openTestComparison(' + sigs.firefox + ', ' + sigs.chrome + ', ' + sigs.car + ', ' + sigs.safari + ', ' + sigs.safaritp + ')"><th scope="row" class="testName">' + testName + '</th>';
+        let row = '<tr' + scoreClass + ' onClick="loadChartFromTreeherder(\'' + testName + '\'); window.scrollTo({ top: 0, behavior: \'smooth\' });"><th scope="row" class="testName">' + testName + '</th>';
         row += '<td>' + (firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (chromeAvg > 0 ? round(chromeAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (carAvg > 0 ? round(carAvg, 2) + unit : '') + '</td>';
@@ -403,7 +403,10 @@
       // Add click event listeners to table headers for sorting
       addSortListeners();
 
-      document.getElementById('timewindow').innerHTML = timeWindow + ' prior';
+      const timewindowEl = document.getElementById('timewindow');
+      if (timewindowEl) {
+        timewindowEl.innerHTML = timeWindow + ' prior';
+      }
 
       // Calculate total score using 1-week averages
       const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
@@ -588,8 +591,7 @@
         // Parse the decompressed string as JSON
         let data = JSON.parse(decompressedData);
 
-        // Generate output.
-        displayChart(data);
+        // Generate output - only table, chart is loaded by jetstream-hybrid.js
         displayTable(data);
 
       } catch (error) {
@@ -1037,6 +1039,11 @@
         border-color: #3366ff;
         box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.2);
       }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
   </style>
 </head>
 
@@ -1073,7 +1080,14 @@
 
         <h3>Current Status (higher is better)</h3>
 
-        <br>
+        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
+          <div id="all-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+            <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+              <input type="checkbox" id="show-all-alerts-jetstream" onchange="toggleAllAlertsJetStream(this.checked)" style="cursor: pointer;">
+              <span>Show all subtest alerts</span>
+            </label>
+          </div>
+        </div>
         <div style="width:100%;max-width:900px">
           <canvas id="myChart" style="width:100%;max-width:900px"></canvas>
           <table class="buttons">
