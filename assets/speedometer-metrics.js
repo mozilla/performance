@@ -19,11 +19,11 @@ var referencePoint = null;
 // Platform configurations
 const platformConfigs = {
   'windows': {
-    platforms: ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'],
+    platforms: ['windows11-64-24h2-nightlyasrelease', 'windows11-64-24h2-shippable'],
     supportsSafari: false
   },
   'osx': {
-    platforms: ['macosx1015-64-shippable-qr'],
+    platforms: ['macosx1015-64-nightlyasrelease-qr', 'macosx1015-64-shippable-qr'],
     supportsSafari: false
   },
   'osxm4': {
@@ -31,7 +31,7 @@ const platformConfigs = {
     supportsSafari: true
   },
   'linux': {
-    platforms: ['linux1804-64-shippable-qr'],
+    platforms: ['linux1804-64-nightlyasrelease-qr', 'linux1804-64-shippable-qr'],
     supportsSafari: false
   },
   'android-a55': {
@@ -418,13 +418,17 @@ function displayTable() {
   testsToDisplay.forEach(testName => {
     const testData = window.speedometerData.allData.filter(d => d.test === testName);
 
-    const firefoxData = testData.filter(d => d.application === 'firefox' || d.application === 'fenix');
+    console.log(testData[0])
+
+    const firefoxData = testData.filter(d => (d.application === 'firefox' || d.application === 'fenix') && !d.platform.includes("nightlyasrelease"));
+    const firefoxNarData = testData.filter(d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes("nightlyasrelease"));
     const chromeData = testData.filter(d => d.application === 'chrome' || d.application === 'chrome-m');
     const carData = testData.filter(d => d.application === 'custom-car' || d.application === 'cstm-car-m');
     const safariData = testData.filter(d => d.application === 'safari');
     const safariTPData = testData.filter(d => d.application === 'safari-tp');
 
     const firefoxAvg = calculateAverage(firefoxData);
+    const firefoxNarAvg = calculateAverage(firefoxNarData);
     const chromeAvg = calculateAverage(chromeData);
     const carAvg = calculateAverage(carData);
     const safariAvg = calculateAverage(safariData);
@@ -480,6 +484,7 @@ function displayTable() {
 
     let html = `<th scope="row" class="testName">${displayName}</th>`;
     html += `<td>${firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : ''}</td>`;
+    html += `<td>${firefoxNarAvg > 0 ? round(firefoxNarAvg, 2) + unit : ''}</td>`;
     html += `<td>${chromeAvg > 0 ? round(chromeAvg, 2) + unit : 'N/A'}</td>`;
     html += `<td>${carAvg > 0 ? round(carAvg, 2) + unit : 'N/A'}</td>`;
 
@@ -979,7 +984,8 @@ function displayChart(data, testName) {
   }
 
   // Group by application
-  const firefoxData = data.filter(d => d.application === 'firefox' || d.application === 'fenix');
+  const firefoxData = data.filter(d => (d.application === 'firefox' || d.application === 'fenix') && !d.platform.includes("nightlyasrelease"));
+  const firefoxNarData = data.filter(d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes("nightlyasrelease"));
   const chromeData = data.filter(d => d.application === 'chrome' || d.application === 'chrome-m');
   const carData = data.filter(d => d.application === 'custom-car' || d.application === 'cstm-car-m');
   const safariData = data.filter(d => d.application === 'safari');
@@ -987,6 +993,8 @@ function displayChart(data, testName) {
 
   // Build Perfherder link
   const firefoxSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
+  const firefoxNarSigId = firefoxNarData.length > 0 ? firefoxNarData[0].signature_id : null;
+  const firefoxnarSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
   const chromeSigId = chromeData.length > 0 ? chromeData[0].signature_id : null;
   const carSigId = carData.length > 0 ? carData[0].signature_id : null;
   const safariSigId = safariData.length > 0 ? safariData[0].signature_id : null;
@@ -994,6 +1002,7 @@ function displayChart(data, testName) {
 
   const series = [];
   if (firefoxSigId) series.push(`mozilla-central,${firefoxSigId},1,13`);
+  if (firefoxnarSigId) series.push(`mozilla-central,${firefoxnarSigId},1,13`);
   if (chromeSigId) series.push(`mozilla-central,${chromeSigId},1,13`);
   if (carSigId) series.push(`mozilla-central,${carSigId},1,13`);
   if (safariSigId) series.push(`mozilla-central,${safariSigId},1,13`);
@@ -1068,6 +1077,38 @@ function displayChart(data, testName) {
       }
     }
   ];
+
+  if (firefoxNarData.length > 0) {
+    datasets.push({
+      label: 'Nightly-as-Release',
+      data: firefoxNarData.map(d => ({ x: d.date, y: d.value })),
+      pointRadius: function(context) {
+        if (referencePoint &&
+            context.datasetIndex === referencePoint.datasetIndex &&
+            context.dataIndex === referencePoint.index) {
+          return 8;
+        }
+        return 3;
+      },
+      pointBackgroundColor: "#dd2500",
+      pointBorderColor: function(context) {
+        if (referencePoint &&
+            context.datasetIndex === referencePoint.datasetIndex &&
+            context.dataIndex === referencePoint.index) {
+          return "#FFFFFF";
+        }
+        return "#000000";
+      },
+      pointBorderWidth: function(context) {
+        if (referencePoint &&
+            context.datasetIndex === referencePoint.datasetIndex &&
+            context.dataIndex === referencePoint.index) {
+          return 3;
+        }
+        return 0.5;
+      }
+    });
+  }
 
   if (carData.length > 0) {
     datasets.push({
@@ -1232,16 +1273,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const table = document.getElementById('tableLikely');
     if (table && table.tHead && table.tHead.rows.length > 1) {
       // Adjust column spans in first header row
-      table.tHead.rows[0].cells[1].colSpan = 3; // Value columns (Firefox, Chrome, CaR)
+      table.tHead.rows[0].cells[1].colSpan = 4; // Value columns (Firefox, NaR, Chrome, CaR)
       table.tHead.rows[0].cells[2].colSpan = 2; // Difference columns (Chrome, CaR)
 
       // Remove Safari header cells from second row
       const headerRow = table.tHead.rows[1];
       // Remove from end to beginning to avoid index shifting issues
-      headerRow.deleteCell(8); // Safari TP diff
-      headerRow.deleteCell(7); // Safari diff
-      headerRow.deleteCell(4); // Safari TP header
-      headerRow.deleteCell(3); // Safari header
+      headerRow.deleteCell(9); // Safari TP diff
+      headerRow.deleteCell(8); // Safari diff
+      headerRow.deleteCell(5); // Safari TP header
+      headerRow.deleteCell(4); // Safari header
     }
   }
 
