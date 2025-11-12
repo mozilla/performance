@@ -14,6 +14,7 @@ window.speedometerData = {
 
 const searchParams = new URLSearchParams(window.location.search);
 var timeChart;
+var bugsChart;
 var referencePoint = null;
 
 // Platform configurations
@@ -1244,6 +1245,220 @@ function displayChart(data, testName) {
   });
 }
 
+function showBugsLoading() {
+  const parent = document.getElementById('bugs-chart-container');
+  if (!parent) return;
+
+  let loader = document.getElementById('bugs-chart-loader');
+
+  if (!loader) {
+    loader = document.createElement('div');
+    loader.id = 'bugs-chart-loader';
+    loader.style.cssText = 'position: absolute; top: 200px; left: 50%; transform: translateX(-50%); text-align: center; z-index: 1000;';
+    loader.innerHTML = `
+      <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #ddd; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="margin-top: 15px; font-size: 14px; color: #666; font-weight: 600;">Loading bug data...</div>
+    `;
+    parent.appendChild(loader);
+  }
+
+  loader.style.display = 'block';
+
+  const chartCanvas = document.getElementById('bugsChart');
+  if (chartCanvas) {
+    chartCanvas.style.opacity = '0.3';
+  }
+}
+
+function hideBugsLoading() {
+  const loader = document.getElementById('bugs-chart-loader');
+  const chartContainer = document.getElementById('bugsChart');
+
+  if (loader) {
+    loader.style.display = 'none';
+  }
+  if (chartContainer) {
+    chartContainer.style.opacity = '1';
+  }
+}
+
+async function fetchBugData() {
+  const params = new URLSearchParams();
+  params.append('whiteboard', 'sp3');
+  params.append('type', 'defect');
+  params.append('type', 'enhancement');
+  params.append('type', 'task');
+  params.append('classification', 'Client Software');
+  params.append('classification', 'Developer Infrastructure');
+  params.append('classification', 'Components');
+  params.append('classification', 'Server Software');
+  params.append('classification', 'Other');
+  params.append('include_fields', 'id,status,creation_time,cf_last_resolved,type');
+
+  const url = `https://bugzilla.mozilla.org/rest/bug?${params}`;
+  const response = await fetch(url);
+  return response.json();
+}
+
+async function loadSpeedometerBugBurndown(days) {
+  showBugsLoading();
+  const bugData = await fetchBugData();
+
+  hideBugsLoading();
+
+  const ctx = document.getElementById('bugsChart');
+  if (!ctx) return;
+
+  if (bugsChart) {
+    bugsChart.destroy();
+  }
+
+  const msPerDay = 86400000;
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+
+  const dataByType = {};
+  for (let type of ["defect", "enhancement", "task"]) {
+    dataByType[type] = {};
+    dataByType[type].creationsByDay = [];
+    dataByType[type].resolutionsByDay = [];
+    for (let i = 0; i < days; i++) {
+      dataByType[type].creationsByDay.push(0);
+      dataByType[type].resolutionsByDay.push(0);
+    }
+  }
+
+  for (let bug of bugData.bugs) {
+    const data = dataByType[bug.type];
+    const creation = new Date(bug.creation_time);
+    let creationDay = Math.floor((creation - startDate) / msPerDay);
+    if (creationDay < 0) {
+      creationDay = 0;
+    }
+    data.creationsByDay[creationDay]++;
+    if (bug.status === "RESOLVED") {
+      const resolution = new Date(bug.cf_last_resolved);
+      let resolutionDay = Math.floor((resolution - startDate) / msPerDay);
+      if (resolutionDay < 0) {
+        resolutionDay = 0;
+      }
+      data.resolutionsByDay[resolutionDay]++;
+    }
+  }
+
+  const defectsByDay = [];
+  const enhancementsByDay = [];
+  const tasksByDay = [];
+  const resolvedByDay = [];
+  let defectsCurrent = 0;
+  let enhancementsCurrent = 0;
+  let tasksCurrent = 0;
+  let resolvedCurrent = 0;
+  for (let i = 0; i < days; i++) {
+    defectsCurrent += dataByType["defect"].creationsByDay[i];
+    defectsCurrent -= dataByType["defect"].resolutionsByDay[i];
+    enhancementsCurrent += dataByType["enhancement"].creationsByDay[i];
+    enhancementsCurrent -= dataByType["enhancement"].resolutionsByDay[i];
+    tasksCurrent += dataByType["task"].creationsByDay[i];
+    tasksCurrent -= dataByType["task"].resolutionsByDay[i];
+
+    resolvedCurrent += dataByType["defect"].resolutionsByDay[i];
+    resolvedCurrent += dataByType["enhancement"].resolutionsByDay[i];
+    resolvedCurrent += dataByType["task"].resolutionsByDay[i];
+
+    const dayDate = new Date(startDate);
+    dayDate.setDate(dayDate.getDate() + i);
+
+    defectsByDay.push({x: dayDate, y: defectsCurrent});
+    enhancementsByDay.push({x: dayDate, y: enhancementsCurrent});
+    tasksByDay.push({x: dayDate, y: tasksCurrent});
+    resolvedByDay.push({x: dayDate, y: resolvedCurrent});
+  }
+
+  const data = {
+    datasets: [
+      {
+        label: 'Defects',
+        data: defectsByDay,
+        borderColor: "#f09a9b",
+        backgroundColor: "#f09a9b",
+        pointRadius: 0,
+        fill: true
+      },
+      {
+        label: 'Enhancements',
+        data: enhancementsByDay,
+        borderColor: "#6fd36d",
+        backgroundColor: "#6fd36d",
+        pointRadius: 0,
+        fill: true
+      },
+      {
+        label: 'Tasks',
+        data: tasksByDay,
+        borderColor: "#7ba8db",
+        backgroundColor: "#7ba8db",
+        pointRadius: 0,
+        fill: true
+      },
+      {
+        label: 'Resolved',
+        data: resolvedByDay,
+        borderColor: "rgba(128, 128, 128, 0.2)",
+        backgroundColor: "rgba(128, 128, 128, 0.2)",
+        pointRadius: 0,
+        fill: true
+      }
+    ]
+  };
+
+  const config = {
+    type: 'line',
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: (ctx) => 'Burndown'
+        },
+        tooltip: {
+          mode: 'index'
+        },
+      },
+      interaction: {
+        mode: 'nearest',
+        axis: 'x',
+        intersect: false
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'MMM dd, yyyy'
+          },
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          stacked: true,
+          title: {
+            display: true,
+            text: 'Bug Count'
+          }
+        }
+      }
+    }
+  };
+
+  bugsChart = new Chart(ctx, config);
+
+  console.log("Created bug chart");
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
   // Highlight the selected platform button
@@ -1287,4 +1502,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   loadSpeedometerData();
+  loadSpeedometerBugBurndown(365 * 3);
 });
