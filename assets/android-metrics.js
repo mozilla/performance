@@ -677,9 +677,91 @@ async function loadDataFromTreeherder() {
     window.data = allData;
     window.data.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // Display the charts and table
-    displayMainChart();
-    displayTable();
+    // Check for URL parameters to restore state
+    const urlParams = getUrlParams();
+
+    // Set device from URL if present (already handled in loadData, but kept for completeness)
+    if (urlParams.device && ['a55', 'p6', 's24'].includes(urlParams.device)) {
+      // Device is already selected at this point, just display
+      displayMainChart();
+      displayTable();
+    } else {
+      displayMainChart();
+      displayTable();
+    }
+
+    // Restore selected data point and video if present
+    if (urlParams.taskId && urlParams.test) {
+      try {
+        const taskId = urlParams.taskId;
+        const retryId = parseInt(urlParams.retryId) || 0;
+        const suiteName = urlParams.test;
+
+        // Fetch perfherder-data.json to determine browser and other details
+        const perfherderUrl = `https://firefoxci.taskcluster-artifacts.net/${taskId}/${retryId}/public/build/perfherder-data.json`;
+        const perfherderResponse = await fetch(perfherderUrl);
+
+        if (perfherderResponse.ok) {
+          const perfherderData = await perfherderResponse.json();
+
+          // Determine browser from perfherder data
+          let browser = 'Firefox';
+          if (perfherderData.suites && perfherderData.suites.length > 0) {
+            const suite = perfherderData.suites[0];
+            if (suite.extraOptions && suite.extraOptions.includes('chrome')) {
+              browser = 'Chrome';
+            }
+          }
+
+          // Get date and value from the matching suite
+          const suite = perfherderData.suites.find(s => s.name === suiteName);
+          const date = new Date().toISOString();
+
+          // Extract the actual value from the suite
+          let value = 0;
+          if (suite) {
+            // Try to find the main test metric value
+            if (suite.subtests) {
+              const mainTest = suite.subtests.find(t =>
+                t.name === 'applink_startup' ||
+                t.name === 'homeview_startup' ||
+                t.name === 'tab_restore'
+              );
+              value = mainTest ? mainTest.value : (suite.value || 0);
+            } else {
+              value = suite.value || 0;
+            }
+          }
+
+          await loadAndDisplayVideo(
+            taskId,
+            retryId,
+            suiteName,
+            browser,
+            date,
+            value,
+            '', // revision not critical for display
+            '' // workerId not critical for display
+          );
+
+          // Select specific replicate if provided
+          if (urlParams.replicate) {
+            const replicateIndex = parseInt(urlParams.replicate);
+            setTimeout(() => {
+              const replicateSelect = document.getElementById('replicate-select');
+              if (replicateSelect) {
+                replicateSelect.value = replicateIndex;
+                selectReplicate(replicateIndex);
+              }
+            }, 1000);
+          }
+        } else {
+          console.log('Could not fetch perfherder data for task:', taskId);
+        }
+      } catch (error) {
+        console.error('Error restoring video from URL:', error);
+      }
+    }
 
   } catch (error) {
     console.error('Error loading data from Treeherder:', error);
