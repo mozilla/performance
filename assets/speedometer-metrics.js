@@ -1293,7 +1293,7 @@ async function fetchBugData() {
   params.append('classification', 'Components');
   params.append('classification', 'Server Software');
   params.append('classification', 'Other');
-  params.append('include_fields', 'id,status,creation_time,cf_last_resolved,type');
+  params.append('include_fields', 'id,status,creation_time,cf_last_resolved,component');
 
   const url = `https://bugzilla.mozilla.org/rest/bug?${params}`;
   const response = await fetch(url);
@@ -1317,19 +1317,59 @@ async function loadSpeedometerBugBurndown(days) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const dataByType = {};
-  for (let type of ["defect", "enhancement", "task"]) {
-    dataByType[type] = {};
-    dataByType[type].creationsByDay = [];
-    dataByType[type].resolutionsByDay = [];
-    for (let i = 0; i < days; i++) {
-      dataByType[type].creationsByDay.push(0);
-      dataByType[type].resolutionsByDay.push(0);
+  const buckets = {
+    "JavaScript Engine": "JS",
+    "JavaScript Engine: JIT": "JS",
+    "JavaScript: GC": "JS",
+
+    "Graphics: Canvas2D": "Graphics",
+    "Graphics: CanvasWebGL": "Graphics",
+    "Web Painting": "Graphics",
+    "Graphics: ImageLib": "Graphics",
+    "Panning and Zooming": "Graphics",
+
+    "DOM: Core & HTML": "DOM",
+    "DOM: Bindings (WebIDL)": "DOM",
+    "DOM: Events": "DOM",
+    "DOM: Copy & Paste and Drag & Drop": "DOM",
+    "DOM: Editor": "DOM",
+    "DOM: HTML Parser": "DOM",
+
+    "Layout: Text and Fonts": "Layout",
+    "Layout: Generated Content, Lists, and Counters": "Layout",
+
+    "CSS Parsing and Computation": "Style",
+    "CSS Transitions and Animations": "Graphics",
+
+    "Performance: General": "General",
+    "Performance Engineering": "General",
+    "Gecko Profiler": "Profiler",
+  };
+
+  const byComponent = {};
+  for (let bug of bugData.bugs) {
+    let component = bug.component;
+    if (buckets[component]) {
+      component = buckets[component];
+    }
+    if (!byComponent[component]) {
+      byComponent[component] = {};
     }
   }
 
+  for (let component of Object.keys(byComponent)) {
+    byComponent[component].creationsByDay = Array.from({length: days}, () => 0);
+    byComponent[component].resolutionsByDay = Array.from({length: days}, () => 0);
+    byComponent[component].entries = Array.from({length: days});
+    byComponent[component].runningTotal = 0;
+  }
+
   for (let bug of bugData.bugs) {
-    const data = dataByType[bug.type];
+    let component = bug.component;
+    if (buckets[component]) {
+      component = buckets[component];
+    }
+    const data = byComponent[component];
     const creation = new Date(bug.creation_time);
     let creationDay = Math.floor((creation - startDate) / msPerDay);
     if (creationDay < 0) {
@@ -1346,75 +1386,84 @@ async function loadSpeedometerBugBurndown(days) {
     }
   }
 
-  const defectsByDay = [];
-  const enhancementsByDay = [];
-  const tasksByDay = [];
-  const resolvedByDay = [];
-  let defectsCurrent = 0;
-  let enhancementsCurrent = 0;
-  let tasksCurrent = 0;
-  let resolvedCurrent = 0;
+  const resolvedByDay = Array.from({length: days});
+  let totalResolutions = 0;
+
   for (let i = 0; i < days; i++) {
-    defectsCurrent += dataByType["defect"].creationsByDay[i];
-    defectsCurrent -= dataByType["defect"].resolutionsByDay[i];
-    enhancementsCurrent += dataByType["enhancement"].creationsByDay[i];
-    enhancementsCurrent -= dataByType["enhancement"].resolutionsByDay[i];
-    tasksCurrent += dataByType["task"].creationsByDay[i];
-    tasksCurrent -= dataByType["task"].resolutionsByDay[i];
-
-    resolvedCurrent += dataByType["defect"].resolutionsByDay[i];
-    resolvedCurrent += dataByType["enhancement"].resolutionsByDay[i];
-    resolvedCurrent += dataByType["task"].resolutionsByDay[i];
-
     const dayDate = new Date(startDate);
     dayDate.setDate(dayDate.getDate() + i);
+    for (let component of Object.keys(byComponent)) {
+      byComponent[component].runningTotal += byComponent[component].creationsByDay[i];
+      byComponent[component].runningTotal -= byComponent[component].resolutionsByDay[i];
+      totalResolutions += byComponent[component].resolutionsByDay[i];
 
-    defectsByDay.push({x: dayDate, y: defectsCurrent});
-    enhancementsByDay.push({x: dayDate, y: enhancementsCurrent});
-    tasksByDay.push({x: dayDate, y: tasksCurrent});
-    resolvedByDay.push({x: dayDate, y: resolvedCurrent});
+      byComponent[component].entries[i] = {x: dayDate, y: byComponent[component].runningTotal};
+    }
+    resolvedByDay[i] = {x: dayDate, y: totalResolutions};
   }
 
-  const data = {
-    datasets: [
-      {
-        label: 'Defects',
-        data: defectsByDay,
-        borderColor: "#f09a9b",
-        backgroundColor: "#f09a9b",
-        pointRadius: 0,
-        fill: true
-      },
-      {
-        label: 'Enhancements',
-        data: enhancementsByDay,
-        borderColor: "#6fd36d",
-        backgroundColor: "#6fd36d",
-        pointRadius: 0,
-        fill: true
-      },
-      {
-        label: 'Tasks',
-        data: tasksByDay,
-        borderColor: "#7ba8db",
-        backgroundColor: "#7ba8db",
-        pointRadius: 0,
-        fill: true
-      },
-      {
-        label: 'Resolved',
-        data: resolvedByDay,
-        borderColor: "rgba(128, 128, 128, 0.2)",
-        backgroundColor: "rgba(128, 128, 128, 0.2)",
-        pointRadius: 0,
-        fill: true
+  const sortedComponents = Object.keys(byComponent);
+  sortedComponents.sort((a,b) => byComponent[b].runningTotal - byComponent[a].runningTotal);
+
+  const colors = [
+    "#E74C3C",  // Red
+    "#3498DB",  // Blue
+    "#2ECC71",  // Green
+    "#E67E22",  // Orange
+    "#9B59B6",  // Purple
+    "#1ABC9C",  // Teal
+    "#E84393",  // Pink
+  ];
+
+  const otherColor = "#95A5A6";
+  const datasets = [];
+
+  for (let i = 0; i < colors.length && i < sortedComponents.length; i++) {
+    datasets.push({
+      label: sortedComponents[i],
+      data: byComponent[sortedComponents[i]].entries,
+      borderColor: colors[i],
+      backgroundColor: colors[i],
+      pointRadius: 0,
+      fill: true
+    });
+  }
+
+  if (sortedComponents.length > colors.length) {
+    let otherData = [];
+    for (let i = 0; i < days; i++) {
+      const dayDate = new Date(startDate);
+      dayDate.setDate(dayDate.getDate() + i);
+      let total = 0;
+      for (let j = colors.length; j < sortedComponents.length; j++) {
+        let component = sortedComponents[j];
+        total += byComponent[component].entries[i].y;
       }
-    ]
-  };
+      otherData.push({x: dayDate, y: total});
+    }
+
+    datasets.push({
+      label: "Other",
+      data: otherData,
+      borderColor: otherColor,
+      backgroundColor: otherColor,
+      pointRadius: 0,
+      fill: true
+    });
+  }
+
+  datasets.push({
+    label: "Resolved",
+    data: resolvedByDay,
+    borderColor: "rgba(128, 128, 128, 0.2)",
+    backgroundColor: "rgba(128, 128, 128, 0.2)",
+    pointRadius: 0,
+    fill: true
+  });
 
   const config = {
     type: 'line',
-    data: data,
+    data: { datasets },
     options: {
       responsive: true,
       plugins: {
