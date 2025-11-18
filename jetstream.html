@@ -217,11 +217,6 @@
       filteredData.forEach(row => {
         tableBody.innerHTML += row.html;
       });
-
-      // Only add total score row if no filter is active
-      if (!currentFilterText.trim() && document.getElementById('totalScoreRow')) {
-        tableBody.innerHTML += document.getElementById('totalScoreRow').outerHTML;
-      }
     }
 
     // Function to handle filter text input changes
@@ -407,83 +402,6 @@
       if (timewindowEl) {
         timewindowEl.innerHTML = timeWindow + ' prior';
       }
-
-      // Calculate total score using 1-week averages
-      const tableRows = document.querySelectorAll('#tableBodyLikely tr:not(.sumRow)');
-
-      let totalFirefox = [];
-      let totalChrome = [];
-      let totalCaR = [];
-      let totalSafari = [];
-      let totalSafariTP = [];
-
-      // Get all values from the last week for each browser
-      data.query_result.data.rows.forEach(row => {
-        if (row.platform === platform && row.test === 'score') {
-          const rowDate = new Date(row.date);
-          if (rowDate >= oneWeekAgo) {
-            if (row.application === 'firefox' || row.application === 'fenix') {
-              totalFirefox.push(row.value);
-            } else if (row.application === 'chrome' || row.application === 'chrome-m') {
-              totalChrome.push(row.value);
-            } else if (row.application === 'custom-car' || row.application === 'cstm-car-m') {
-              totalCaR.push(row.value);
-            } else if (row.application === 'safari') {
-              totalSafari.push(row.value);
-            } else if (row.application === 'safari-tp') {
-              totalSafariTP.push(row.value);
-            }
-          }
-        }
-      });
-
-      // Calculate geometric means
-      const FxGeoMean = totalFirefox.length > 0 ?
-        Math.exp(totalFirefox.reduce((a, b) => a + Math.log(b), 0) / totalFirefox.length) : 0;
-      const ChromeGeoMean = totalChrome.length > 0 ?
-        Math.exp(totalChrome.reduce((a, b) => a + Math.log(b), 0) / totalChrome.length) : 0;
-      const CaRGeoMean = totalCaR.length > 0 ?
-        Math.exp(totalCaR.reduce((a, b) => a + Math.log(b), 0) / totalCaR.length) : 0;
-      const SafariGeoMean = totalSafari.length > 0 ?
-        Math.exp(totalSafari.reduce((a, b) => a + Math.log(b), 0) / totalSafari.length) : 0;
-      const SafariTPGeoMean = totalSafariTP.length > 0 ?
-        Math.exp(totalSafariTP.reduce((a, b) => a + Math.log(b), 0) / totalSafariTP.length) : 0;
-      // Calculate differences for total score
-      const diff = ChromeGeoMean > 0 ? (FxGeoMean - ChromeGeoMean) / ChromeGeoMean * 100 : 0;
-      const CaRdiff = CaRGeoMean > 0 ? (FxGeoMean - CaRGeoMean) / CaRGeoMean * 100 : 0;
-      const Safaridiff = SafariGeoMean > 0 ? (FxGeoMean - SafariGeoMean) / SafariGeoMean * 100 : 0;
-      const SafariTPdiff = SafariTPGeoMean > 0 ? (FxGeoMean - SafariTPGeoMean) / SafariTPGeoMean * 100 : 0;
-
-      // Create total score row
-      let newLine = '<tr onClick="openTestComparison(0, 0, 0, 0, 0)" class="sumRow"><th scope="row" class="testName">Total Score</th>';
-      newLine += '<td>' + (FxGeoMean > 0 ? round(FxGeoMean, 2) : '') + '</td>';
-      newLine += '<td>' + (ChromeGeoMean > 0 ? round(ChromeGeoMean, 2) : '') + '</td>';
-      newLine += '<td>' + (CaRGeoMean > 0 ? round(CaRGeoMean, 2) : '') + '</td>';
-
-      if (platform.includes('macosx')) {
-        newLine += '<td>' + (SafariGeoMean > 0 ? round(SafariGeoMean, 2) : '') + '</td>';
-        newLine += '<td>' + (SafariTPGeoMean > 0 ? round(SafariTPGeoMean, 2) : '') + '</td>';
-      }
-
-      newLine += '<td style="color: ' + getDiffColor(diff) + '">' + (ChromeGeoMean > 0 ? round(diff, 2) + '%' : '') + '</td>';
-      newLine += '<td style="color: ' + getDiffColor(CaRdiff) + '">' + (CaRGeoMean > 0 ? round(CaRdiff, 2) + '%' : '') + '</td>';
-
-      if (platform.includes('macosx')) {
-        newLine += '<td style="color: ' + getDiffColor(Safaridiff) + '">' + (SafariGeoMean > 0 ? round(Safaridiff, 2) + '%' : '') + '</td>';
-        newLine += '<td style="color: ' + getDiffColor(SafariTPdiff) + '">' + (SafariTPGeoMean > 0 ? round(SafariTPdiff, 2) + '%' : '') + '</td>';
-      }
-
-      newLine += '</tr>';
-
-      // Store total score row for re-adding after sorting
-      const totalScoreRow = document.createElement('div');
-      totalScoreRow.id = 'totalScoreRow';
-      totalScoreRow.innerHTML = newLine;
-      document.getElementById('totalScoreRow')?.remove();
-      document.body.appendChild(totalScoreRow);
-      totalScoreRow.style.display = 'none';
-
-      document.getElementById("tableBodyLikely").innerHTML += newLine;
     }
 
     function openTestComparison(signatureFirefox, signatureChrome, signatureCaR, signatureSafari, signatureSafariTP) {
