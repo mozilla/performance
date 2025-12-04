@@ -1134,19 +1134,44 @@ function displayChart(data, testName) {
     }
   }
 
+  const showReplicates = window.speedometerData.showReplicates;
+
+  // Make the points smaller so they overlap less
+  const unhoveredPointRadius = showReplicates ? 1.5 : 3;
+
+  // And no border because they end up still overlapping so much anyway
+  const unhoveredPointBorderWidth = showReplicates ? 0 : 0.5;
+
+  // And slightly transparent so that density can still be seen in
+  // overlapping points
+  const pointColorAlphaHex = showReplicates ? "aa" : "ff";
+
+  // And noise out the date so they have a higher chance of visually
+  // separating
+  function dateNoise(date) {
+    if (!showReplicates) {
+      return date;
+    }
+    // We set this to 6 hours, in order to not overlap with other
+    // run times. This number was chosen more on visual vibes than
+    // anything substantive.
+    const msRange = 1000 * 60 * 60 * 6;
+    return new Date(date.getTime() + Math.random() * msRange);
+  }
+
   const datasets = [
     {
       label: 'Firefox',
-      data: firefoxData.map(d => ({ x: d.date, y: d.value })),
+      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
             context.dataIndex === referencePoint.index) {
           return 8;
         }
-        return 3;
+        return unhoveredPointRadius;
       },
-      pointBackgroundColor: "#FF9500",
+      pointBackgroundColor: "#FF9500" + pointColorAlphaHex,
       pointBorderColor: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1159,23 +1184,23 @@ function displayChart(data, testName) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
             context.dataIndex === referencePoint.index) {
-          return 3;
+          return unhoveredPointRadius;
         }
-        return 0.5;
+        return unhoveredPointBorderWidth;
       }
     },
     {
       label: 'Chrome',
-      data: chromeData.map(d => ({ x: d.date, y: d.value })),
+      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
             context.dataIndex === referencePoint.index) {
           return 8;
         }
-        return 3;
+        return unhoveredPointRadius;
       },
-      pointBackgroundColor: "#1DA462",
+      pointBackgroundColor: "#1DA462" + pointColorAlphaHex,
       pointBorderColor: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1190,7 +1215,7 @@ function displayChart(data, testName) {
             context.dataIndex === referencePoint.index) {
           return 3;
         }
-        return 0.5;
+        return unhoveredPointBorderWidth;
       }
     }
   ];
@@ -1198,16 +1223,16 @@ function displayChart(data, testName) {
   if (firefoxNarData.length > 0) {
     datasets.push({
       label: 'Nightly-as-Release',
-      data: firefoxNarData.map(d => ({ x: d.date, y: d.value })),
+      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
             context.dataIndex === referencePoint.index) {
           return 8;
         }
-        return 3;
+        return unhoveredPointRadius;
       },
-      pointBackgroundColor: "#dd2500",
+      pointBackgroundColor: "#dd2500" + pointColorAlphaHex,
       pointBorderColor: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1222,7 +1247,7 @@ function displayChart(data, testName) {
             context.dataIndex === referencePoint.index) {
           return 3;
         }
-        return 0.5;
+        return unhoveredPointBorderWidth;
       }
     });
   }
@@ -1230,16 +1255,16 @@ function displayChart(data, testName) {
   if (carData.length > 0) {
     datasets.push({
       label: 'Chromium-as-Release',
-      data: carData.map(d => ({ x: d.date, y: d.value })),
+      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
             context.dataIndex === referencePoint.index) {
           return 8;
         }
-        return 3;
+        return unhoveredPointRadius;
       },
-      pointBackgroundColor: "#2773da",
+      pointBackgroundColor: "#2773da" + pointColorAlphaHex,
       pointBorderColor: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1254,7 +1279,7 @@ function displayChart(data, testName) {
             context.dataIndex === referencePoint.index) {
           return 3;
         }
-        return 0.5;
+        return unhoveredPointBorderWidth;
       }
     });
   }
@@ -1262,22 +1287,22 @@ function displayChart(data, testName) {
   if (platformConfig.supportsSafari && safariData.length > 0) {
     datasets.push({
       label: 'Safari',
-      data: safariData.map(d => ({ x: d.date, y: d.value })),
-      pointRadius: 3,
-      pointBackgroundColor: "#44444444",
+      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#444444" + pointColorAlphaHex,
       pointBorderColor: "#000000",
-      pointBorderWidth: 0.5
+      pointBorderWidth: unhoveredPointBorderWidth
     });
   }
 
   if (platformConfig.supportsSafari && safariTPData.length > 0) {
     datasets.push({
       label: 'Safari TP',
-      data: safariTPData.map(d => ({ x: d.date, y: d.value })),
-      pointRadius: 3,
-      pointBackgroundColor: "#777",
+      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#777777" + pointColorAlphaHex,
       pointBorderColor: "#44444444",
-      pointBorderWidth: 0.5
+      pointBorderWidth: unhoveredPointBorderWidth
     });
   }
 
@@ -1341,7 +1366,7 @@ function displayChart(data, testName) {
         x: {
           type: 'time',
           time: {
-            unit: 'day',
+            unit: showReplicates ? false : 'day',
             tooltipFormat: 'MMM dd, yyyy'
           },
           title: {
