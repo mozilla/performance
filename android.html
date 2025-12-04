@@ -22,13 +22,35 @@
 <script src="assets/android-metrics.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", async () => {
-      // Check URL parameters for timeline
+      // Check URL parameters for timeline, replicates, and repository
       const urlParams = new URLSearchParams(window.location.search);
       const timeline = urlParams.get('timeline') || '90';
+      const replicatesParam = urlParams.get('replicates');
+      const repoParam = urlParams.get('repository') || urlParams.get('repo');
 
-      // Always use mozilla-central for data
-      window.selectedRepository = 'mozilla-central';
+      // Initialize repository from URL parameter
+      if (repoParam === 'autoland') {
+        window.selectedRepository = 'autoland';
+      } else {
+        window.selectedRepository = 'mozilla-central';
+      }
       window.selectedTimeline = parseInt(timeline);
+
+      // Initialize replicates from URL parameter
+      if (replicatesParam === 'true' || replicatesParam === '1') {
+        window.showReplicates = true;
+      }
+
+      // Set checkbox states
+      const repositoryCheckbox = document.getElementById('repository-toggle-android');
+      if (repositoryCheckbox) {
+        repositoryCheckbox.checked = window.selectedRepository === 'autoland';
+      }
+
+      const replicatesCheckbox = document.getElementById('replicates-toggle-android');
+      if (replicatesCheckbox) {
+        replicatesCheckbox.checked = window.showReplicates;
+      }
 
       // Load data from Treeherder API
       await loadDataFromTreeherder();
@@ -108,7 +130,21 @@
       <a id="main-chart-title" href="#" target="_blank">newssite-applink-startup (A55)</a>
     </div>
 
-    <div style="width: 100%; max-width: 900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
+    <div style="width: 100%; max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; margin-bottom: 5px;">
+      <div style="display: flex; gap: 8px;">
+        <div id="repository-toggle-container-android" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+          <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+            <input type="checkbox" id="repository-toggle-android" onchange="toggleRepositoryAndroid(this.checked)" style="cursor: pointer;">
+            <span>Use autoland data</span>
+          </label>
+        </div>
+        <div id="replicates-toggle-container-android" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+          <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+            <input type="checkbox" id="replicates-toggle-android" onchange="toggleReplicatesAndroid(this.checked)" style="cursor: pointer;">
+            <span>Show replicates</span>
+          </label>
+        </div>
+      </div>
       <div id="hide-alerts-container-android" style="display: block; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
         <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
           <input type="checkbox" id="hide-alerts-android" onchange="toggleHideAlertsAndroid(this.checked)" style="cursor: pointer;">

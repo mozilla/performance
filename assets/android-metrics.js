@@ -16,6 +16,7 @@ window.selectedTimeline = 90;
 window.alerts = {};
 window.alertSummaries = {};
 window.hideAlerts = false;
+window.showReplicates = false;
 
 async function loadAndDisplayVideo(taskId, retryId, suiteName, browser, date, value, revision, workerId) {
   try {
@@ -610,14 +611,29 @@ async function loadDataFromTreeherder() {
     // Fetch signatures for all platforms
     const allSignatures = {};
     for (const platform of platforms) {
-      const sigUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/signatures/?framework=15&platform=${platform}`;
-      const sigResponse = await fetch(sigUrl);
-      const signatures = await sigResponse.json();
+      // Fetch Firefox signatures from selected repository
+      const firefoxSigUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/signatures/?framework=15&platform=${platform}`;
+      const firefoxSigResponse = await fetch(firefoxSigUrl);
+      const firefoxSignatures = await firefoxSigResponse.json();
 
-      // Filter to only relevant signatures
-      for (const [hash, sig] of Object.entries(signatures)) {
-        if (relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) {
-          allSignatures[hash] = sig;
+      // Filter to only relevant Firefox signatures
+      for (const [hash, sig] of Object.entries(firefoxSignatures)) {
+        if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
+            (sig.application === 'fenix' || sig.application === 'firefox')) {
+          allSignatures[hash] = { ...sig, repository: repository };
+        }
+      }
+
+      // Always fetch Chrome signatures from mozilla-central
+      const chromeSigUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/signatures/?framework=15&platform=${platform}`;
+      const chromeSigResponse = await fetch(chromeSigUrl);
+      const chromeSignatures = await chromeSigResponse.json();
+
+      // Filter to only relevant Chrome signatures
+      for (const [hash, sig] of Object.entries(chromeSignatures)) {
+        if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
+            sig.application !== 'fenix' && sig.application !== 'firefox') {
+          allSignatures[hash] = { ...sig, repository: 'mozilla-central' };
         }
       }
     }
@@ -629,23 +645,28 @@ async function loadDataFromTreeherder() {
     const fetchPromises = [];
 
     for (const [signatureHash, sig] of Object.entries(allSignatures)) {
-      const dataUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/data/?framework=15&interval=${intervalSeconds}&signature_id=${sig.id}`;
+      const sigRepository = sig.repository || repository;
+      const replicatesParam = window.showReplicates ? '&replicates=true' : '';
+      const dataUrl = `https://treeherder.mozilla.org/api/performance/summary/?repository=${sigRepository}&signature=${sig.id}&framework=15&interval=${intervalSeconds}&all_data=true${replicatesParam}`;
 
       const fetchPromise = fetch(dataUrl)
         .then(response => response.json())
         .then(perfData => {
           const dataPoints = [];
-          if (perfData[sig.signature_hash]) {
-            for (const point of perfData[sig.signature_hash]) {
+          if (Array.isArray(perfData) && perfData.length > 0 && perfData[0].data) {
+            const seriesData = perfData[0].data;
+            for (const point of seriesData) {
+              const timestamp = point.push_timestamp;
+              const timestampMs = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
               dataPoints.push({
-                date: new Date(point.push_timestamp * 1000).toISOString(),
+                date: new Date(timestampMs).toISOString(),
                 test: sig.test,
                 suite: sig.suite,
                 platform: sig.machine_platform,
                 application: sig.application,
                 signature_id: sig.id,
                 framework_id: sig.framework_id,
-                repository_id: repository === 'mozilla-central' ? 1 : 4,
+                repository_id: sigRepository === 'mozilla-central' ? 1 : 4,
                 value: point.value,
                 job_id: point.job_id,
                 task_id: null,
@@ -912,6 +933,38 @@ async function fetchAlertsForTest(testMetric, platform, suiteName) {
   }
 }
 
+window.toggleRepositoryAndroid = async function(checked) {
+  window.selectedRepository = checked ? 'autoland' : 'mozilla-central';
+
+  console.log(`Switching to ${window.selectedRepository}`);
+
+  const url = new URL(window.location);
+  if (checked) {
+    url.searchParams.set('repository', 'autoland');
+  } else {
+    url.searchParams.delete('repository');
+  }
+  window.history.replaceState({}, '', url);
+
+  await loadDataFromTreeherder();
+};
+
+window.toggleReplicatesAndroid = async function(checked) {
+  window.showReplicates = checked;
+
+  console.log(`${checked ? 'Showing' : 'Hiding'} replicates`);
+
+  const url = new URL(window.location);
+  if (checked) {
+    url.searchParams.set('replicates', 'true');
+  } else {
+    url.searchParams.delete('replicates');
+  }
+  window.history.replaceState({}, '', url);
+
+  await loadDataFromTreeherder();
+};
+
 function toggleHideAlertsAndroid(checked) {
   window.hideAlerts = checked;
 
@@ -1142,9 +1195,13 @@ async function displayMainChart(testMetric, testName, firefoxSigId, chromeSigId,
   // For cpuTime, use chrome-m; otherwise prefer CaR
   const chromeDataToUse = (testMetric === 'cpuTime') ? chromeData : (carData.length > 0 ? carData : chromeData);
 
-  const history = window.historyStatus;
-  const filteredFirefoxData = firefoxData.slice(-history);
-  const filteredChromeData = chromeDataToUse.slice(-history);
+  // Filter by timeline days instead of by number of points
+  const timelineDays = window.selectedTimeline;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - timelineDays);
+
+  const filteredFirefoxData = firefoxData.filter(item => new Date(item.date) >= cutoffDate);
+  const filteredChromeData = chromeDataToUse.filter(item => new Date(item.date) >= cutoffDate);
 
   window.mainChart = new Chart(ctx, {
     type: 'scatter',

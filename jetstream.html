@@ -26,7 +26,7 @@
     }
 
     // Set default platform here.
-    var platform = 'windows11-64-24h2-shippable';
+    var platform = 'macosx1500-aarch64-shippable';
 
     let timeWindow = '6wk';
     let supportsCaR = true;
@@ -48,6 +48,8 @@
       platform = 'linux1804-64-shippable-qr';
     } else if (searchParams.get('os') == 'android-a55') {
       platform = 'android-hw-a55-14-0-aarch64-shippable';
+    } else if (!searchParams.get('os')) {
+      platform = 'macosx1500-aarch64-shippable';
     }
     platforms = [platform];
 
@@ -487,13 +489,13 @@
     }
 
     async function generateContent() {
-      if (searchParams.get('os') == 'osx') {
+      if (searchParams.get('os') == 'osx' || !searchParams.get('os')) {
         document.getElementById("macbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'android-a55') {
         document.getElementById("a55button").style = "background-color:gray;";
-      } else {
+      } else if (searchParams.get('os') == 'windows') {
         document.getElementById("winbutton").style = "background-color:gray;";
       }
 
@@ -998,7 +1000,13 @@
 
         <h3 id="chart-title-jetstream"></h3>
 
-        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
+        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <div id="repository-toggle-container-jetstream" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+            <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+              <input type="checkbox" id="repository-toggle-jetstream" onchange="toggleRepositoryJetstream(this.checked)" style="cursor: pointer;">
+              <span>Use autoland data</span>
+            </label>
+          </div>
           <div id="all-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
             <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
               <input type="checkbox" id="show-all-alerts-jetstream" onchange="toggleAllAlertsJetStream(this.checked)" style="cursor: pointer;">

@@ -122,24 +122,40 @@
     <div class="content">
       <center>
         <table class="buttons">
-          <tr><td colspan="2" style="height:50px;"><a href="speedometer.html" id="windowsbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=linux" id="linuxbutton">Linux</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=osxm4" id="osxm4button">Mac</a></td></tr>
+          <tr><td colspan="2" style="height:50px;"><a href="speedometer.html?os=windows" id="windowsbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=linux" id="linuxbutton">Linux</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=osxm4" id="osxm4button">Mac</a></td></tr>
           <tr><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="speedometer.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td></tr>
         </table>
 
-        <h3 id="chart-title"></h3>
+        <h3 id="chart-title" style="margin-top: 30px; margin-bottom: 20px;"></h3>
 
-        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: flex-end; margin-bottom: 5px;">
-          <div id="all-alerts-container" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
-            <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
-              <input type="checkbox" id="show-all-alerts" onchange="toggleAllAlerts(this.checked)" style="cursor: pointer;">
-              <span>Show all subtest alerts</span>
-            </label>
+        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: space-between; margin-bottom: 5px;">
+          <div style="display: flex; gap: 8px;">
+            <div id="repository-toggle-container" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="repository-toggle" onchange="toggleRepository(this.checked)" style="cursor: pointer;">
+                <span>Use autoland data</span>
+              </label>
+            </div>
+            <div id="replicates-toggle-container" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="replicates-toggle" onchange="toggleReplicates(this.checked)" style="cursor: pointer;">
+                <span>Show replicates</span>
+              </label>
+            </div>
           </div>
-          <div id="hide-alerts-container" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
-            <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
-              <input type="checkbox" id="hide-alerts" onchange="toggleHideAlerts(this.checked)" style="cursor: pointer;">
-              <span>Hide alerts</span>
-            </label>
+          <div style="display: flex; gap: 8px;">
+            <div id="all-alerts-container" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="show-all-alerts" onchange="toggleAllAlerts(this.checked)" style="cursor: pointer;">
+                <span>Show all subtest alerts</span>
+              </label>
+            </div>
+            <div id="hide-alerts-container" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="hide-alerts" onchange="toggleHideAlerts(this.checked)" style="cursor: pointer;">
+                <span>Hide alerts</span>
+              </label>
+            </div>
           </div>
         </div>
         <div id="chart-container" style="width:100%;max-width:900px; position: relative; margin: 0 auto;">

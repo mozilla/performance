@@ -4,8 +4,8 @@
 
 window.jetstreamState = {
   preAggregatedData: null,
-  platforms: ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'],
-  currentPlatform: 'windows11-64-24h2-shippable',
+  platforms: ['macosx1500-aarch64-shippable'],
+  currentPlatform: 'macosx1500-aarch64-shippable',
   selectedTest: 'score',
   repository: 'mozilla-central',
   framework: 13,
@@ -21,13 +21,38 @@ var referencePoint = null;
 const searchParams = new URLSearchParams(window.location.search);
 
 // Set platform based on URL
-if (searchParams.get('os') == 'osx') {
-  window.jetstreamState.platforms = ['macosx1500-aarch64-shippable'];
-  window.jetstreamState.currentPlatform = 'macosx1500-aarch64-shippable';
+if (searchParams.get('os') == 'windows') {
+  window.jetstreamState.platforms = ['windows11-64-shippable-qr', 'windows11-64-24h2-shippable'];
+  window.jetstreamState.currentPlatform = 'windows11-64-24h2-shippable';
 } else if (searchParams.get('os') == 'linux') {
   window.jetstreamState.platforms = ['linux1804-64-shippable-qr'];
   window.jetstreamState.currentPlatform = 'linux1804-64-shippable-qr';
 }
+
+// Initialize repository from URL parameter
+const repoParam = searchParams.get('repository') || searchParams.get('repo');
+if (repoParam === 'autoland') {
+  window.jetstreamState.repository = 'autoland';
+}
+
+// Define toggle function early so it's available for HTML onchange handler
+window.toggleRepositoryJetstream = async function(checked) {
+  window.jetstreamState.repository = checked ? 'autoland' : 'mozilla-central';
+
+  console.log(`Switching to ${window.jetstreamState.repository}`);
+
+  const url = new URL(window.location);
+  if (checked) {
+    url.searchParams.set('repository', 'autoland');
+  } else {
+    url.searchParams.delete('repository');
+  }
+  window.history.replaceState({}, '', url);
+
+  showChartLoading();
+  await loadChartFromTreeherder(window.jetstreamState.selectedTest);
+  hideChartLoading();
+};
 
 function round(number, decimals) {
   return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -50,18 +75,34 @@ async function loadChartFromTreeherder(testName) {
 
     window.jetstreamState.selectedTest = testName;
 
-    // Get signatures for this test from mozilla-central
+    // Get signatures for this test
     const platform = window.jetstreamState.currentPlatform;
-    const sigUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/signatures/?framework=13&platform=${platform}`;
-    const sigResponse = await fetch(sigUrl);
-    const signatures = await sigResponse.json();
+    const repository = window.jetstreamState.repository;
+    const allSignatures = {};
 
-    const testSignatures = [];
-    for (const [sigId, sig] of Object.entries(signatures)) {
-      if (sig.suite === 'jetstream3' && sig.test === testName) {
-        testSignatures.push(sig);
+    // Fetch Firefox signatures from selected repository
+    const firefoxSigUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/signatures/?framework=13&platform=${platform}`;
+    const firefoxSigResponse = await fetch(firefoxSigUrl);
+    const firefoxSignatures = await firefoxSigResponse.json();
+
+    for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
+      if (sig.suite === 'jetstream3' && sig.test === testName && (sig.application === 'firefox' || sig.application === 'fenix')) {
+        allSignatures[sigId] = { ...sig, repository: repository };
       }
     }
+
+    // Always fetch Chrome/Safari signatures from mozilla-central
+    const chromeSigUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/signatures/?framework=13&platform=${platform}`;
+    const chromeSigResponse = await fetch(chromeSigUrl);
+    const chromeSignatures = await chromeSigResponse.json();
+
+    for (const [sigId, sig] of Object.entries(chromeSignatures)) {
+      if (sig.suite === 'jetstream3' && sig.test === testName && sig.application !== 'firefox' && sig.application !== 'fenix') {
+        allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
+      }
+    }
+
+    const testSignatures = Object.values(allSignatures);
 
     if (testSignatures.length === 0) {
       console.log(`No signatures found for ${testName}`);
@@ -74,14 +115,18 @@ async function loadChartFromTreeherder(testName) {
     const allData = [];
 
     for (const sig of testSignatures) {
-      const dataUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/data/?framework=13&interval=${intervalSeconds}&signature_id=${sig.id}`;
+      const sigRepository = sig.repository || repository;
+      const dataUrl = `https://treeherder.mozilla.org/api/performance/summary/?repository=${sigRepository}&signature=${sig.id}&framework=13&interval=${intervalSeconds}&all_data=true`;
       const dataResponse = await fetch(dataUrl);
       const perfData = await dataResponse.json();
 
-      if (perfData[sig.signature_hash]) {
-        for (const point of perfData[sig.signature_hash]) {
+      if (Array.isArray(perfData) && perfData.length > 0 && perfData[0].data) {
+        const seriesData = perfData[0].data;
+        for (const point of seriesData) {
+          const timestamp = point.push_timestamp;
+          const timestampMs = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
           allData.push({
-            date: new Date(point.push_timestamp * 1000),
+            date: new Date(timestampMs),
             test: sig.test,
             application: sig.application,
             signature_id: sig.id,
@@ -684,6 +729,12 @@ async function toggleAllAlertsJetStream(checked) {
 
 // Initialize - load default score chart on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Set checkbox state from URL parameter
+  const repositoryCheckbox = document.getElementById('repository-toggle-jetstream');
+  if (repositoryCheckbox) {
+    repositoryCheckbox.checked = window.jetstreamState.repository === 'autoland';
+  }
+
   // Load score chart from Treeherder
   loadChartFromTreeherder('score');
 });

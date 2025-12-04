@@ -9,7 +9,8 @@ window.speedometerData = {
   alerts: {},
   alertSummaries: {},
   showAllAlerts: false,
-  hideAlerts: false
+  hideAlerts: false,
+  showReplicates: false
 };
 
 const searchParams = new URLSearchParams(window.location.search);
@@ -50,9 +51,21 @@ const platformConfigs = {
 };
 
 // Initialize platform
-const osParam = searchParams.get('os') || 'windows';
-const platformConfig = platformConfigs[osParam] || platformConfigs['windows'];
+const osParam = searchParams.get('os') || 'osxm4';
+const platformConfig = platformConfigs[osParam] || platformConfigs['osxm4'];
 window.speedometerData.selectedPlatform = platformConfig.platforms[0];
+
+// Initialize repository from URL parameter
+const repoParam = searchParams.get('repository') || searchParams.get('repo');
+if (repoParam === 'autoland') {
+  window.speedometerData.repository = 'autoland';
+}
+
+// Initialize replicates toggle from URL parameter
+const replicatesParam = searchParams.get('replicates');
+if (replicatesParam === 'true' || replicatesParam === '1') {
+  window.speedometerData.showReplicates = true;
+}
 
 function round(number, decimals) {
   return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -71,10 +84,12 @@ function getDiffColor(diff) {
 }
 
 // Load data from Treeherder API
-async function loadSpeedometerData() {
+async function loadSpeedometerData(loadInitialChart = true) {
   try {
     // Show loading spinner on initial load
-    showChartLoading();
+    if (loadInitialChart) {
+      showChartLoading();
+    }
 
     console.log('Loading Speedometer data from Treeherder...');
 
@@ -83,20 +98,35 @@ async function loadSpeedometerData() {
 
     // Fetch signatures for all platforms
     for (const platform of platforms) {
-      console.log(`Fetching signatures for platform: ${platform}`);
-      const sigUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
-      const sigResponse = await fetch(sigUrl);
-      const signatures = await sigResponse.json();
+      // Fetch Firefox signatures from selected repository
+      console.log(`Fetching Firefox signatures for platform: ${platform} from ${window.speedometerData.repository}`);
+      const firefoxSigUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
+      const firefoxSigResponse = await fetch(firefoxSigUrl);
+      const firefoxSignatures = await firefoxSigResponse.json();
 
-      // Filter to Speedometer 3 signatures
-      let platformSigCount = 0;
-      for (const [sigId, sig] of Object.entries(signatures)) {
-        if (sig.suite === 'speedometer3') {
-          allSignatures[sigId] = sig;
-          platformSigCount++;
+      let firefoxSigCount = 0;
+      for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
+        if (sig.suite === 'speedometer3' && (sig.application === 'firefox' || sig.application === 'fenix')) {
+          allSignatures[sigId] = { ...sig, repository: window.speedometerData.repository };
+          firefoxSigCount++;
         }
       }
-      console.log(`  Found ${platformSigCount} signatures for ${platform}`);
+      console.log(`  Found ${firefoxSigCount} Firefox signatures for ${platform}`);
+
+      // Always fetch Chrome/Safari signatures from mozilla-central
+      console.log(`Fetching Chrome/Safari signatures for platform: ${platform} from mozilla-central`);
+      const chromeSigUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
+      const chromeSigResponse = await fetch(chromeSigUrl);
+      const chromeSignatures = await chromeSigResponse.json();
+
+      let chromeSigCount = 0;
+      for (const [sigId, sig] of Object.entries(chromeSignatures)) {
+        if (sig.suite === 'speedometer3' && sig.application !== 'firefox' && sig.application !== 'fenix') {
+          allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
+          chromeSigCount++;
+        }
+      }
+      console.log(`  Found ${chromeSigCount} Chrome/Safari signatures for ${platform}`);
     }
 
     console.log(`Found ${Object.keys(allSignatures).length} total Speedometer signatures`);
@@ -137,8 +167,10 @@ async function loadSpeedometerData() {
     // Load 30 days of data for these specific tests (for table) - CaR doesn't run as frequently
     await loadDataForPeriod(30, relevantSignatures);
 
-    // Display initial chart with score
-    await loadChartDataForTest('score', 90); // 90 days for chart
+    // Display initial chart with score (only if loadInitialChart is true)
+    if (loadInitialChart) {
+      await loadChartDataForTest('score', 90); // 90 days for chart
+    }
 
     // Display table
     displayTable();
@@ -154,25 +186,35 @@ async function loadDataForPeriod(days, signatures) {
 
   const fetchPromises = signatures.map(async (sig) => {
     try {
-      const dataUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/data/?framework=${window.speedometerData.framework}&interval=${intervalSeconds}&signature_id=${sig.id}`;
+      const repository = sig.repository || window.speedometerData.repository;
+      const replicatesParam = window.speedometerData.showReplicates ? '&replicates=true' : '';
+      const dataUrl = `https://treeherder.mozilla.org/api/performance/summary/?repository=${repository}&signature=${sig.id}&framework=${window.speedometerData.framework}&interval=${intervalSeconds}&all_data=true${replicatesParam}`;
       const dataResponse = await fetch(dataUrl);
       const perfData = await dataResponse.json();
 
       const dataPoints = [];
-      if (perfData[sig.signature_hash]) {
-        for (const point of perfData[sig.signature_hash]) {
+      if (Array.isArray(perfData) && perfData.length > 0 && perfData[0].data) {
+        // /performance/summary/ returns array with data field
+        const seriesData = perfData[0].data;
+        console.log(`Loaded ${seriesData.length} data points for ${sig.test} (replicates: ${window.speedometerData.showReplicates})`);
+        for (const point of seriesData) {
+          const timestamp = point.push_timestamp;
+          const timestampMs = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
           dataPoints.push({
-            date: new Date(point.push_timestamp * 1000),
+            date: new Date(timestampMs),
             test: sig.test,
             suite: sig.suite,
             platform: sig.machine_platform,
             application: sig.application,
             signature_id: sig.id,
             value: point.value,
-            push_timestamp: point.push_timestamp,
-            revision: point.revision
+            push_timestamp: timestampMs / 1000,
+            revision: point.revision,
+            job_id: point.job_id
           });
         }
+      } else {
+        console.log('Unexpected API response format for', sig.test, ':', perfData);
       }
       return dataPoints;
     } catch (error) {
@@ -219,25 +261,35 @@ async function loadChartDataForTest(testName, days) {
 
   const fetchPromises = testSignatures.map(async (sig) => {
     try {
-      const dataUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/data/?framework=${window.speedometerData.framework}&interval=${intervalSeconds}&signature_id=${sig.id}`;
+      const repository = sig.repository || window.speedometerData.repository;
+      const replicatesParam = window.speedometerData.showReplicates ? '&replicates=true' : '';
+      const dataUrl = `https://treeherder.mozilla.org/api/performance/summary/?repository=${repository}&signature=${sig.id}&framework=${window.speedometerData.framework}&interval=${intervalSeconds}&all_data=true${replicatesParam}`;
       const dataResponse = await fetch(dataUrl);
       const perfData = await dataResponse.json();
 
       const dataPoints = [];
-      if (perfData[sig.signature_hash]) {
-        for (const point of perfData[sig.signature_hash]) {
+      if (Array.isArray(perfData) && perfData.length > 0 && perfData[0].data) {
+        // /performance/summary/ returns array with data field
+        const seriesData = perfData[0].data;
+        console.log(`Chart: Loaded ${seriesData.length} data points for ${sig.test} (replicates: ${window.speedometerData.showReplicates})`);
+        for (const point of seriesData) {
+          const timestamp = point.push_timestamp;
+          const timestampMs = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
           dataPoints.push({
-            date: new Date(point.push_timestamp * 1000),
+            date: new Date(timestampMs),
             test: sig.test,
             suite: sig.suite,
             platform: sig.machine_platform,
             application: sig.application,
             signature_id: sig.id,
             value: point.value,
-            push_timestamp: point.push_timestamp,
-            revision: point.revision
+            push_timestamp: timestampMs / 1000,
+            revision: point.revision,
+            job_id: point.job_id
           });
         }
+      } else {
+        console.log('Chart: Unexpected API response format for', sig.test, ':', perfData);
       }
       return dataPoints;
     } catch (error) {
@@ -547,6 +599,62 @@ function changeRange(range) {
 
   referencePoint = null;
   loadChartDataForTest(window.speedometerData.selectedTest, days);
+}
+
+async function toggleRepository(checked) {
+  window.speedometerData.repository = checked ? 'autoland' : 'mozilla-central';
+
+  console.log(`Switching to ${window.speedometerData.repository}`);
+
+  const url = new URL(window.location);
+  if (checked) {
+    url.searchParams.set('repository', 'autoland');
+  } else {
+    url.searchParams.delete('repository');
+  }
+  window.history.replaceState({}, '', url);
+
+  showChartLoading();
+
+  // Remember the currently selected test
+  const currentTest = window.speedometerData.selectedTest;
+
+  // Reload the table data (without loading the initial chart)
+  await loadSpeedometerData(false);
+
+  // Reload the chart for the currently selected test
+  const days = window.speedometerData.days || 30;
+  await loadChartDataForTest(currentTest, days);
+
+  hideChartLoading();
+}
+
+async function toggleReplicates(checked) {
+  window.speedometerData.showReplicates = checked;
+
+  console.log(`${checked ? 'Showing' : 'Hiding'} replicates`);
+
+  const url = new URL(window.location);
+  if (checked) {
+    url.searchParams.set('replicates', 'true');
+  } else {
+    url.searchParams.delete('replicates');
+  }
+  window.history.replaceState({}, '', url);
+
+  showChartLoading();
+
+  // Remember the currently selected test
+  const currentTest = window.speedometerData.selectedTest;
+
+  // Reload the table data (without loading the initial chart)
+  await loadSpeedometerData(false);
+
+  // Reload the chart for the currently selected test
+  const days = window.speedometerData.days || 30;
+  await loadChartDataForTest(currentTest, days);
+
+  hideChartLoading();
 }
 
 async function toggleAllAlerts(checked) {
@@ -1002,8 +1110,16 @@ function displayChart(data, testName) {
   const safariTPSigId = safariTPData.length > 0 ? safariTPData[0].signature_id : null;
 
   const series = [];
-  if (firefoxSigId) series.push(`mozilla-central,${firefoxSigId},1,13`);
-  if (firefoxnarSigId) series.push(`mozilla-central,${firefoxnarSigId},1,13`);
+  if (firefoxSigId) {
+    const firefoxSig = window.speedometerData.signatures[firefoxSigId];
+    const repo = firefoxSig?.repository || window.speedometerData.repository;
+    series.push(`${repo},${firefoxSigId},1,13`);
+  }
+  if (firefoxNarSigId) {
+    const firefoxNarSig = window.speedometerData.signatures[firefoxNarSigId];
+    const repo = firefoxNarSig?.repository || window.speedometerData.repository;
+    series.push(`${repo},${firefoxNarSigId},1,13`);
+  }
   if (chromeSigId) series.push(`mozilla-central,${chromeSigId},1,13`);
   if (carSigId) series.push(`mozilla-central,${carSigId},1,13`);
   if (safariSigId) series.push(`mozilla-central,${safariSigId},1,13`);
@@ -1510,16 +1626,28 @@ async function loadSpeedometerBugBurndown(days) {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Set repository checkbox state based on URL parameter
+  const repositoryCheckbox = document.getElementById('repository-toggle');
+  if (repositoryCheckbox) {
+    repositoryCheckbox.checked = window.speedometerData.repository === 'autoland';
+  }
+
+  // Set replicates checkbox state based on URL parameter
+  const replicatesCheckbox = document.getElementById('replicates-toggle');
+  if (replicatesCheckbox) {
+    replicatesCheckbox.checked = window.speedometerData.showReplicates;
+  }
+
   // Highlight the selected platform button
   const osParam = searchParams.get('os');
-  if (!osParam || osParam === 'windows') {
+  if (!osParam || osParam === 'osxm4') {
+    const btn = document.getElementById('osxm4button');
+    if (btn) btn.style.backgroundColor = 'gray';
+  } else if (osParam === 'windows') {
     const btn = document.getElementById('windowsbutton');
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'linux') {
     const btn = document.getElementById('linuxbutton');
-    if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'osxm4') {
-    const btn = document.getElementById('osxm4button');
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'android-s24') {
     const btn = document.getElementById('mobilebutton');
