@@ -1135,9 +1135,13 @@ function displayChart(data, testName) {
   }
 
   const showReplicates = window.speedometerData.showReplicates;
+  const isSubtest = window.speedometerData.selectedTest !== 'score';
 
   // Make the points smaller so they overlap less
-  const unhoveredPointRadius = showReplicates ? 1.5 : 3;
+  let unhoveredPointRadius = 3;
+  if (showReplicates) {
+    unhoveredPointRadius = isSubtest ? 1.5 : 2;
+  }
 
   // And no border because they end up still overlapping so much anyway
   const unhoveredPointBorderWidth = showReplicates ? 0 : 0.5;
