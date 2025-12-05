@@ -46,10 +46,27 @@ async function loadAndDisplayVideo(taskId, retryId, suiteName, browser, date, va
     videoInfo.textContent = '';
     replicateSelect.innerHTML = '<option>Loading...</option>';
 
-    // First, fetch perfherder-data.json to get replicate values
-    const perfherderUrl = `https://firefoxci.taskcluster-artifacts.net/${taskId}/${retryId}/public/build/perfherder-data.json`;
-    const perfherderResponse = await fetch(perfherderUrl);
+    // Find and fetch perfherder-data file (filename may include hash suffix)
+    const artifactsUrl = `https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts`;
+    const artifactsResponse = await fetch(artifactsUrl);
+    if (!artifactsResponse.ok) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'Could not list task artifacts';
+      return;
+    }
 
+    const artifactsData = await artifactsResponse.json();
+    const perfherderArtifact = artifactsData.artifacts.find(a =>
+      a.name.startsWith('public/build/perfherder-data') && a.name.endsWith('.json')
+    );
+    if (!perfherderArtifact) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'Perfherder data not found';
+      return;
+    }
+
+    const perfherderUrl = `https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts/${perfherderArtifact.name}`;
+    const perfherderResponse = await fetch(perfherderUrl);
     if (!perfherderResponse.ok) {
       videoLoading.style.display = 'none';
       videoInfo.textContent = 'Perfherder data not available';
