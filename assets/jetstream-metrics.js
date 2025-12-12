@@ -650,6 +650,22 @@ function displayChartFromTreeherder(data, testName) {
       }
     }
   });
+
+  // Apply time range from URL parameter
+  const rangeParam = searchParams.get('range');
+  if (rangeParam) {
+    if (rangeParam === 'all') {
+      timeChart.options.scales.x.min = '';
+    } else {
+      const rangeMonths = parseInt(rangeParam);
+      if (!isNaN(rangeMonths)) {
+        var d = new Date();
+        d.setMonth(d.getMonth() - rangeMonths);
+        timeChart.options.scales.x.min = d;
+      }
+    }
+    timeChart.update();
+  }
 }
 
 function showChartLoading() {
@@ -691,7 +707,16 @@ function hideChartLoading() {
 }
 
 function changeRange(newRange) {
-  // For now, just adjust the view range
+  // Update URL with time range
+  const url = new URL(window.location);
+  if (newRange === 'all') {
+    url.searchParams.delete('range');
+  } else {
+    url.searchParams.set('range', newRange);
+  }
+  window.history.replaceState({}, '', url);
+
+  // Adjust the view range
   if (newRange == 'all') {
     if (timeChart) {
       timeChart.options.scales.x.min = '';
