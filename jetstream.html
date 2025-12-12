@@ -800,6 +800,18 @@
     }
 
     function changeRange(newRange) {
+      // Update URL with time range
+      const url = new URL(window.location);
+      if (newRange === 'all') {
+        url.searchParams.delete('range');
+      } else {
+        url.searchParams.set('range', newRange);
+      }
+      window.history.replaceState({}, '', url);
+
+      // Update button highlighting
+      updateRangeButtonHighlight();
+
       if (newRange == 'all') {
         if (!platforms.includes('macosx1400-64-shippable-qr')) {
           timeChart.options.scales.x.min = '';

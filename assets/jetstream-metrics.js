@@ -706,6 +706,28 @@ function hideChartLoading() {
   }
 }
 
+window.updateRangeButtonHighlight = function() {
+  // Reset all range buttons
+  const allButton = document.getElementById('allbutton');
+  const month3Button = document.getElementById('month3button');
+  const month1Button = document.getElementById('month1button');
+
+  if (allButton) allButton.style.backgroundColor = '';
+  if (month3Button) month3Button.style.backgroundColor = '';
+  if (month1Button) month1Button.style.backgroundColor = '';
+
+  // Highlight the selected range button
+  const currentParams = new URLSearchParams(window.location.search);
+  const rangeParam = currentParams.get('range');
+  if (!rangeParam || rangeParam === 'all') {
+    if (allButton) allButton.style.backgroundColor = 'gray';
+  } else if (rangeParam === '3') {
+    if (month3Button) month3Button.style.backgroundColor = 'gray';
+  } else if (rangeParam === '1') {
+    if (month1Button) month1Button.style.backgroundColor = 'gray';
+  }
+};
+
 function changeRange(newRange) {
   // Update URL with time range
   const url = new URL(window.location);
@@ -715,6 +737,9 @@ function changeRange(newRange) {
     url.searchParams.set('range', newRange);
   }
   window.history.replaceState({}, '', url);
+
+  // Update button highlighting
+  updateRangeButtonHighlight();
 
   // Adjust the view range
   if (newRange == 'all') {
@@ -766,6 +791,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (repositoryCheckbox) {
     repositoryCheckbox.checked = window.jetstreamState.repository === 'autoland';
   }
+
+  // Update range button highlighting
+  updateRangeButtonHighlight();
 
   // Load chart from URL parameter or default to score
   const testParam = searchParams.get('test');
