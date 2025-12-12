@@ -41,14 +41,7 @@ window.toggleRepositoryJetstream = async function(checked) {
 
   console.log(`Switching to ${window.jetstreamState.repository}`);
 
-  const url = new URL(window.location);
-  if (checked) {
-    url.searchParams.set('repository', 'autoland');
-  } else {
-    url.searchParams.delete('repository');
-  }
-  window.history.replaceState({}, '', url);
-
+  // URL will be updated by loadChartFromTreeherder with all parameters
   showChartLoading();
   await loadChartFromTreeherder(window.jetstreamState.selectedTest);
   hideChartLoading();
@@ -74,6 +67,20 @@ async function loadChartFromTreeherder(testName) {
     console.log(`Loading chart data for ${testName} from Treeherder...`);
 
     window.jetstreamState.selectedTest = testName;
+
+    // Update URL with selected test and repository
+    const url = new URL(window.location);
+    if (testName === 'score') {
+      url.searchParams.delete('test');
+    } else {
+      url.searchParams.set('test', testName);
+    }
+    if (window.jetstreamState.repository === 'autoland') {
+      url.searchParams.set('repository', 'autoland');
+    } else {
+      url.searchParams.delete('repository');
+    }
+    window.history.replaceState({}, '', url);
 
     // Get signatures for this test
     const platform = window.jetstreamState.currentPlatform;
@@ -735,6 +742,8 @@ document.addEventListener('DOMContentLoaded', () => {
     repositoryCheckbox.checked = window.jetstreamState.repository === 'autoland';
   }
 
-  // Load score chart from Treeherder
-  loadChartFromTreeherder('score');
+  // Load chart from URL parameter or default to score
+  const testParam = searchParams.get('test');
+  const initialTest = testParam || 'score';
+  loadChartFromTreeherder(initialTest);
 });
