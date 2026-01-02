@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Networking Metrics</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+
+<link rel="stylesheet" href="assets/telemetry-style.css">
+
+<script src="assets/telemetry-metrics.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/networking-metrics-data.json';
+      generateContent(dataUrl);
+  });
+</script>
+
+</head>
+<body>
+  <div class="sidebar">
+    <div class="dropdown">
+      <label for="history-select">History (days):</label>
+      <select id="history-select" onchange="setHistory(this.value)">
+        <option value=14>14</option>
+        <option value=30>30</option>
+        <option value=60>60</option>
+        <option value=90>90</option>
+        <option value=180>180</option>
+        <option value=360>360</option>
+      </select>
+    </div>
+    <div class="dropdown">
+      <label for="channel-select">Channel:</label>
+      <select id="channel-select" onchange="setChannel(this.value)">
+        <option value="Nightly">Nightly</option>
+        <option value="Beta">Beta</option>
+        <option value="Release">Release</option>
+      </select>
+    </div>
+    <div class="dropdown">
+      <label for="platform-select">Platform:</label>
+      <select id="platform-select" onchange="setPlatform(this.value)">
+        <option value="Windows">Windows</option>
+        <option value="Linux">Linux</option>
+        <option value="Mac">Mac</option>
+        <option value="Android">Android</option>
+      </select>
+    </div>
+
+    <div class="sections">
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="content-title" id="content-title">
+      Windows - Release - 90 days
+    </div>
+
+    <div class="charts-content">
+    </div>
+  </div>
+
+  <script>
+
+    window.metrics = [
+      ["network_tls_handshake", "TLS Handshake"],
+      ["network_tcp_connection", "TCP Connection"],
+      ["networking_http_channel_page_open_to_first_sent", "HTTP Channel Page Open to First Sent"],
+      ["networking_http_channel_sub_open_to_first_sent", "HTTP Channel Sub Open to First Sent"],
+      ["networking_dns_lookup_time", "DNS Lookup Time"],
+      ["network_dns_start", "DNS Start"],
+      ["network_dns_end", "DNS End"],
+      ["network_cache_hit_time", "Cache Hit Time"],
+      ["network_first_from_cache", "First From Cache"],
+      ["networking_transaction_wait_time", "Transaction Wait Time"],
+      ["networking_http_onstart_suspend_total_time", "HTTP OnStart Suspent Time"],
+    ];
+
+    // Create sidebar sections
+    createSidebarSections(metrics);
+    // Create charts content
+    createChartsContent(metrics);
+  </script>
+</body>
+</html>
