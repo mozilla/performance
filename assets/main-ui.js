@@ -67,16 +67,15 @@ if (sidebar !== null) {
     </li>
     -->
 
-      <!-- Networking menu
+      <!-- Networking menu -->
     <li class="sub-menu">
      <a href="networking.html">
-      <i class="fa-solid fa-bars-progress"></i>
+      <i class="fa-solid fa-network-wired"></i>
       <span>
        Networking
       </span>
      </a>
     </li>
-    -->
 
       <!-- ML menu -->
     <li class="sub-menu">

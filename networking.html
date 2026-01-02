@@ -3,88 +3,395 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Networking Metrics</title>
+<title>Top Level Document Requests - Desktop</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
+<link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/moment/min/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<link rel="stylesheet" href="assets/main-ui-style.css">
 
-<link rel="stylesheet" href="assets/telemetry-style.css">
-
-<script src="assets/telemetry-metrics.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-      const dataUrl = 'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/networking-metrics-data.json';
-      generateContent(dataUrl);
-  });
-</script>
-
+<style>
+  .page-header { margin-bottom: 20px; }
+  .page-header h1 { margin: 0 0 5px 0; font-size: 24px; }
+  .header-desc { margin: 0; font-size: 14px; color: #666; }
+  .legend { margin: 0 0 10px 0; font-size: 13px; }
+  .legend dt { font-weight: bold; display: inline; }
+  .legend dt::after { content: ': '; font-weight: normal; }
+  .legend dd { display: inline; margin: 0; color: #666; }
+  .legend dd::after { content: ''; display: block; margin-bottom: 4px; }
+  .group { margin-top: 40px; width: 90%; }
+  .group:first-of-type { margin-top: 0; }
+  .group h2 { margin: 0 0 20px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  .group-row { display: flex; gap: 20px; align-items: stretch; }
+  .group-row .section { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  .group-row .chart-container { flex: 1; display: flex; flex-direction: column; }
+  .group-row .chart-wrapper { flex: 1; min-height: 300px; }
+  .section { margin-top: 30px; }
+  .section:first-of-type { margin-top: 0; }
+  .section h3 { margin: 0 0 5px 0; font-size: 18px; color: #333; }
+  .section-desc { margin: 0 0 15px 0; font-size: 13px; color: #666; }
+  .chart-container { background: white; padding: 20px; border-radius: 8px; }
+  .chart-wrapper { position: relative; height: 500px; }
+  .error { color: #cc0000; padding: 10px; background: #ffeeee; border-radius: 4px; margin-top: 10px; display: none; }
+</style>
 </head>
 <body>
-  <div class="sidebar">
-    <div class="dropdown">
-      <label for="history-select">History (days):</label>
-      <select id="history-select" onchange="setHistory(this.value)">
-        <option value=14>14</option>
-        <option value=30>30</option>
-        <option value=60>60</option>
-        <option value=90>90</option>
-        <option value=180>180</option>
-        <option value=360>360</option>
-      </select>
-    </div>
-    <div class="dropdown">
-      <label for="channel-select">Channel:</label>
-      <select id="channel-select" onchange="setChannel(this.value)">
-        <option value="Nightly">Nightly</option>
-        <option value="Beta">Beta</option>
-        <option value="Release">Release</option>
-      </select>
-    </div>
-    <div class="dropdown">
-      <label for="platform-select">Platform:</label>
-      <select id="platform-select" onchange="setPlatform(this.value)">
-        <option value="Windows">Windows</option>
-        <option value="Linux">Linux</option>
-        <option value="Mac">Mac</option>
-        <option value="Android">Android</option>
-      </select>
-    </div>
-
-    <div class="sections">
+<div class="top">
+  <a href="javascript:history.back()" class="btn back-btn" title="Go Back">
+    <i class="fa-solid fa-arrow-left"></i>
+  </a>
+  <div class="top-title-container">
+    <div class="top-title">
+      <b>moz://a</b> performance portal
     </div>
   </div>
+  <a href="https://firefox-source-docs.mozilla.org/performance/reporting_a_performance_problem.html" class="btn" title="Report a Performance Bug">
+    <i class="fa-solid fa-bug"></i> Report Performance Issue
+  </a>
+</div>
+
+<div class="main-content">
+  <aside class="main-sidebar" id="main-sidebar">
+  </aside>
 
   <div class="content">
-    <div class="content-title" id="content-title">
-      Windows - Release - 90 days
+    <div class="page-header">
+      <h1>Top Level Document Requests - Desktop</h1>
+      <p class="header-desc">Recorded for navigations via the pageload event</p>
     </div>
 
-    <div class="charts-content">
+    <div class="group">
+      <h2>Protocol</h2>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Resolution Method</h3>
+          <dl class="legend">
+            <dt>DoH</dt>
+            <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
+            <dt>os_resolver</dt>
+            <dd>System DNS resolver</dd>
+          </dl>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="dns-desktop-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>HTTP Protocol Version</h3>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="http-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="http-desktop-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Performance</h2>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Lookup Time</h3>
+          <dl class="legend">
+            <dt>DoH</dt>
+            <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
+            <dt>os_resolver</dt>
+            <dd>System DNS resolver</dd>
+          </dl>
+          <p class="section-desc">Non-zero values, 75th percentile, 7-day avg</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-lookup-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="dns-lookup-desktop-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Time to Request Start</h3>
+          <p class="section-desc">Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="ttrs-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="ttrs-desktop-error"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
+</div>
 
-  <script>
+<script src="assets/main-ui.js"></script>
+<script>
+  const CHARTS = [
+    {
+      id: 'dns-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/112861/results.csv?api_key=h1RVeaRfWTQXKaN9LZwcH7GVv8T82WeVBWfzAxD8'
+    },
+    {
+      id: 'http-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113403/results.csv?api_key=sJ7dVgzAsACPSW93F0k0UAN6Ak7EQI05pSxrAdBK',
+      valueColumn: 'percentage_7d_moving_avg'
+    },
+    {
+      id: 'dns-lookup-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113418/results.csv?api_key=Hdo6PpK2b0tmv1HJvbZLxikv62pxf0ciuAstQiVR',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms'
+    },
+    {
+      id: 'ttrs-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113404/results.csv?api_key=89efwP33uMeYKbsFiYRS8qFrIoG6KN5dDgkiOeQR',
+      valueColumn: 'rolling_7day_avg_p',
+      unit: 'ms'
+    }
+  ];
+  const ANNOTATIONS = [
+    {
+      date: '2025-09-16',
+      label: 'Bug 2003257',
+      description: 'HTTP/1.1 usage increase investigation',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2003257',
+      chart: 'http-desktop'
+    }
+  ];
 
-    window.metrics = [
-      ["network_tls_handshake", "TLS Handshake"],
-      ["network_tcp_connection", "TCP Connection"],
-      ["networking_http_channel_page_open_to_first_sent", "HTTP Channel Page Open to First Sent"],
-      ["networking_http_channel_sub_open_to_first_sent", "HTTP Channel Sub Open to First Sent"],
-      ["networking_dns_lookup_time", "DNS Lookup Time"],
-      ["network_dns_start", "DNS Start"],
-      ["network_dns_end", "DNS End"],
-      ["network_cache_hit_time", "Cache Hit Time"],
-      ["network_first_from_cache", "First From Cache"],
-      ["networking_transaction_wait_time", "Transaction Wait Time"],
-      ["networking_http_onstart_suspend_total_time", "HTTP OnStart Suspent Time"],
-    ];
+  const charts = {};
+  const colors = [
+    '#0066cc', '#cc0066', '#00cc66', '#cc6600', '#6600cc',
+    '#00cccc', '#cccc00', '#666666', '#cc0000', '#0000cc'
+  ];
 
-    // Create sidebar sections
-    createSidebarSections(metrics);
-    // Create charts content
-    createChartsContent(metrics);
-  </script>
+  async function loadAllCharts() {
+    for (const config of CHARTS) {
+      loadChart(config, ANNOTATIONS);
+    }
+  }
+
+  async function loadChart(config, annotations) {
+    const errorEl = document.getElementById(`${config.id}-error`);
+    errorEl.style.display = 'none';
+    errorEl.innerHTML = '';
+
+    try {
+      const csvData = await fetchCSV(config.url, config.valueColumn);
+      renderChart(config, csvData, annotations);
+    } catch (e) {
+      errorEl.style.display = 'block';
+      errorEl.innerHTML = `Error: ${e.message}`;
+    }
+  }
+
+  async function fetchCSV(url, valueColumn) {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
+    const text = await response.text();
+    return parseCSV(text, valueColumn);
+  }
+
+  function parseCSV(text, valueColumn) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) throw new Error('CSV must have header and at least one data row');
+
+    const headers = parseCSVLine(lines[0]);
+
+    if (headers.length >= 3) {
+      const firstDataRow = parseCSVLine(lines[1]);
+      const secondColIsNumeric = !isNaN(parseFloat(firstDataRow[1]));
+      if (!secondColIsNumeric) {
+        return parseLongFormat(lines, headers, valueColumn);
+      }
+    }
+
+    return parseWideFormat(lines, headers);
+  }
+
+  function parseWideFormat(lines, headers) {
+    const data = { labels: [], series: {} };
+
+    for (let i = 1; i < headers.length; i++) {
+      data.series[headers[i]] = [];
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length < 2) continue;
+
+      const date = parseDate(values[0]);
+      data.labels.push(date);
+
+      for (let j = 1; j < headers.length; j++) {
+        const val = values[j] !== undefined ? parseFloat(values[j]) : NaN;
+        data.series[headers[j]].push(isNaN(val) ? null : val);
+      }
+    }
+
+    return data;
+  }
+
+  function parseLongFormat(lines, headers, valueColumn) {
+    const dateMap = new Map();
+    const categories = new Set();
+
+    let valueIdx = 2;
+    if (valueColumn) {
+      const idx = headers.indexOf(valueColumn);
+      if (idx >= 2) valueIdx = idx;
+    }
+
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      if (values.length <= valueIdx) continue;
+
+      const dateStr = values[0];
+      const category = values[1];
+      const value = parseFloat(values[valueIdx]);
+
+      categories.add(category);
+
+      if (!dateMap.has(dateStr)) {
+        dateMap.set(dateStr, {});
+      }
+      dateMap.get(dateStr)[category] = isNaN(value) ? null : value;
+    }
+
+    const sortedDates = Array.from(dateMap.keys()).sort();
+    const sortedCategories = Array.from(categories).sort();
+
+    const data = { labels: [], series: {} };
+    for (const cat of sortedCategories) {
+      data.series[cat] = [];
+    }
+
+    for (const dateStr of sortedDates) {
+      data.labels.push(parseDate(dateStr));
+      const row = dateMap.get(dateStr);
+      for (const cat of sortedCategories) {
+        data.series[cat].push(row[cat] !== undefined ? row[cat] : null);
+      }
+    }
+
+    return data;
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  function parseDate(str) {
+    const d = new Date(str);
+    if (isNaN(d.getTime())) throw new Error(`Invalid date: ${str}`);
+    return d;
+  }
+
+  function renderChart(config, data, annotations) {
+    const chartId = config.id;
+    const unit = config.unit || '%';
+
+    if (charts[chartId]) charts[chartId].destroy();
+
+    const datasets = Object.entries(data.series).map(([name, values], i) => ({
+      label: name,
+      data: values,
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '20',
+      borderWidth: 2,
+      pointRadius: 2,
+      tension: 0.1,
+      fill: false
+    }));
+
+    const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
+    const annotationLines = chartAnnotations.map((a, i) => ({
+      type: 'line',
+      xMin: parseDate(a.date),
+      xMax: parseDate(a.date),
+      borderColor: '#ff6384',
+      borderWidth: 2,
+      borderDash: [5, 5],
+      label: {
+        display: true,
+        content: a.label,
+        position: 'start',
+        backgroundColor: '#ff6384',
+        color: 'white',
+        font: { size: 10 },
+        padding: 4
+      },
+      click: a.url ? () => window.open(a.url, '_blank') : undefined
+    }));
+
+    const yAxisConfig = unit === '%'
+      ? { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+      : { ticks: { callback: v => Math.round(v) + unit } };
+
+    const ctx = document.getElementById(`${chartId}-chart`).getContext('2d');
+    charts[chartId] = new Chart(ctx, {
+      type: 'line',
+      data: { labels: data.labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'day', displayFormats: { day: 'MMM d, yyyy' }, tooltipFormat: 'MMM d, yyyy' }
+          },
+          y: yAxisConfig
+        },
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const val = unit === 'ms' ? Math.round(context.parsed.y) : context.parsed.y;
+                return `${context.dataset.label}: ${val}${unit}`;
+              },
+              afterBody: (context) => {
+                const date = context[0].parsed.x;
+                const matching = chartAnnotations.filter(a => {
+                  const aDate = parseDate(a.date).getTime();
+                  return Math.abs(aDate - date) < 86400000;
+                });
+                if (matching.length) {
+                  return matching.map(a => `\n${a.label}: ${a.description || ''}`);
+                }
+                return '';
+              }
+            }
+          },
+          annotation: { annotations: annotationLines }
+        }
+      }
+    });
+  }
+
+  loadAllCharts();
+</script>
 </body>
 </html>
