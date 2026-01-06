@@ -1089,7 +1089,7 @@ function displayChart(data, testName) {
     allAlertsContainer.style.display = isScore ? 'block' : 'none';
   }
   if (hideAlertsContainer) {
-    hideAlertsContainer.style.display = isScore ? 'none' : 'block';
+    hideAlertsContainer.style.display = 'block';
   }
 
   // Group by application
@@ -1344,6 +1344,13 @@ function displayChart(data, testName) {
         },
         tooltip: {
           callbacks: {
+            title: function(context) {
+              if (context.length > 0) {
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              }
+              return '';
+            },
             label: function(context) {
               let label = context.dataset.label || '';
               if (label) {
