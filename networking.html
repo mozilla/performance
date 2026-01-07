@@ -118,7 +118,7 @@
 
         <div class="section">
           <h3>Time to Request Start</h3>
-          <p class="section-desc">Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
+          <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="ttrs-desktop-chart"></canvas>
@@ -151,9 +151,11 @@
     },
     {
       id: 'ttrs-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113404/results.csv?api_key=89efwP33uMeYKbsFiYRS8qFrIoG6KN5dDgkiOeQR',
-      valueColumn: 'rolling_7day_avg_p',
-      unit: 'ms'
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113558/results.csv?api_key=rua2nkkAinLmSIoyIAxNvoJsYVkQDAPJBGplTFRN',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' }
     }
   ];
   const ANNOTATIONS = [
@@ -184,7 +186,7 @@
     errorEl.innerHTML = '';
 
     try {
-      const csvData = await fetchCSV(config.url, config.valueColumn);
+      const csvData = await fetchCSV(config.url, config.valueColumn, config.format);
       renderChart(config, csvData, annotations);
     } catch (e) {
       errorEl.style.display = 'block';
@@ -192,18 +194,22 @@
     }
   }
 
-  async function fetchCSV(url, valueColumn) {
+  async function fetchCSV(url, valueColumn, format) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
     const text = await response.text();
-    return parseCSV(text, valueColumn);
+    return parseCSV(text, valueColumn, format);
   }
 
-  function parseCSV(text, valueColumn) {
+  function parseCSV(text, valueColumn, format) {
     const lines = text.trim().split('\n');
     if (lines.length < 2) throw new Error('CSV must have header and at least one data row');
 
     const headers = parseCSVLine(lines[0]);
+
+    if (format === 'long') {
+      return parseLongFormat(lines, headers, valueColumn);
+    }
 
     if (headers.length >= 3) {
       const firstDataRow = parseCSVLine(lines[1]);
@@ -316,8 +322,9 @@
 
     if (charts[chartId]) charts[chartId].destroy();
 
+    const seriesLabels = config.seriesLabels || {};
     const datasets = Object.entries(data.series).map(([name, values], i) => ({
-      label: name,
+      label: seriesLabels[name] || name,
       data: values,
       borderColor: colors[i % colors.length],
       backgroundColor: colors[i % colors.length] + '20',
