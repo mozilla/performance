@@ -488,7 +488,15 @@
       });
     }
 
+    // Function to change platform while preserving other URL parameters
+    function changePlatform(os) {
+      const currentParams = new URLSearchParams(window.location.search);
+      currentParams.set('os', os);
+      window.location.href = 'jetstream.html?' + currentParams.toString();
+    }
+
     async function generateContent() {
+
       if (searchParams.get('os') == 'osx' || !searchParams.get('os')) {
         document.getElementById("macbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
@@ -1002,10 +1010,10 @@
       <center>
         <table class="buttons">
           <tr>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=windows" id="winbutton">Windows 11</a></td>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=osx" id="macbutton">Mac OSX (M4)</a></td>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=linux" id="linuxbutton">Linux</a></td>
-            <td colspan="2" style="height:50px;"><a href="jetstream.html?os=android-a55" id="a55button">Android (A55)</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="winbutton" onclick="changePlatform('windows'); return false;">Windows 11</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="macbutton" onclick="changePlatform('osx'); return false;">Mac OSX (M4)</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="linuxbutton" onclick="changePlatform('linux'); return false;">Linux</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="a55button" onclick="changePlatform('android-a55'); return false;">Android (A55)</a></td>
           </tr>
         </table>
         <br>
