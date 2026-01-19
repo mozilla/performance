@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top Level Document Requests - Desktop</title>
+<title>Firefox Networking</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
 <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="assets/main-ui-style.css">
 
 <style>
-  .page-header { margin-bottom: 20px; }
+  .page-header { margin-bottom: 5px; }
   .page-header h1 { margin: 0 0 5px 0; font-size: 24px; }
   .header-desc { margin: 0; font-size: 14px; color: #666; }
   .legend { margin: 0 0 10px 0; font-size: 13px; }
@@ -26,9 +26,9 @@
   .group:first-of-type { margin-top: 0; }
   .group h2 { margin: 0 0 20px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
   .group-row { display: flex; gap: 20px; align-items: stretch; }
-  .group-row .section { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-  .group-row .chart-container { flex: 1; display: flex; flex-direction: column; }
-  .group-row .chart-wrapper { flex: 1; min-height: 300px; }
+  .group-row .section { flex: 1; min-width: 0; margin-top: 0; display: flex; flex-direction: column; }
+  .group-row .chart-container { margin-top: auto; }
+  .group-row .chart-wrapper { height: 400px; }
   .section { margin-top: 30px; }
   .section:first-of-type { margin-top: 0; }
   .section h3 { margin: 0 0 5px 0; font-size: 18px; color: #333; }
@@ -59,12 +59,12 @@
 
   <div class="content">
     <div class="page-header">
-      <h1>Top Level Document Requests - Desktop</h1>
-      <p class="header-desc">Recorded for navigations via the pageload event</p>
+      <h1>Firefox Networking</h1>
     </div>
 
     <div class="group">
       <h2>Protocol</h2>
+      <p class="section-desc">Top Level Document Requests - Desktop</p>
       <div class="group-row">
         <div class="section">
           <h3>DNS Resolution Method</h3>
@@ -93,6 +93,17 @@
             <div class="error" id="http-desktop-error"></div>
           </div>
         </div>
+
+        <div class="section">
+          <h3>HTTPS/HTTP</h3>
+          <p class="section-desc">Percentage of navigations by URL scheme</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="https-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="https-desktop-error"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -102,10 +113,10 @@
         <div class="section">
           <h3>DNS Lookup Time</h3>
           <dl class="legend">
-            <dt>DoH</dt>
+            <dt>DoH-USA, DoH-Canada</dt>
             <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
             <dt>os_resolver</dt>
-            <dd>System DNS resolver</dd>
+            <dd>System DNS resolver (global)</dd>
           </dl>
           <p class="section-desc">Non-zero values, 75th percentile, 7-day avg</p>
           <div class="chart-container">
@@ -127,6 +138,30 @@
           </div>
         </div>
       </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
+          <h3>Upload Throughput</h3>
+          <p class="section-desc">Throughput for requests larger than 10MB, by HTTP version (median, 7-day avg, Mbps)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="upload-throughput-chart"></canvas>
+            </div>
+            <div class="error" id="upload-throughput-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Download Throughput</h3>
+          <p class="section-desc">Throughput for requests larger than 10MB, by HTTP version (median, 7-day avg, Mbps)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="download-throughput-chart"></canvas>
+            </div>
+            <div class="error" id="download-throughput-error"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -136,16 +171,24 @@
   const CHARTS = [
     {
       id: 'dns-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/112861/results.csv?api_key=h1RVeaRfWTQXKaN9LZwcH7GVv8T82WeVBWfzAxD8'
+      url: 'https://sql.telemetry.mozilla.org/api/queries/112861/results.csv?api_key=h1RVeaRfWTQXKaN9LZwcH7GVv8T82WeVBWfzAxD8',
+      valueColumn: 'percentage_7d_avg'
     },
     {
       id: 'http-desktop',
       url: 'https://sql.telemetry.mozilla.org/api/queries/113403/results.csv?api_key=sJ7dVgzAsACPSW93F0k0UAN6Ak7EQI05pSxrAdBK',
-      valueColumn: 'percentage_7d_moving_avg'
+      valueColumn: 'percentage_7d_moving_avg',
+      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown']
+    },
+    {
+      id: 'https-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113902/results.csv?api_key=4kGytpQhjkL9ZCM9x4WDajyLjxaeuPdC065s767O',
+      valueColumn: 'percentage_7d_avg',
+      seriesOrder: ['https', 'http', 'http_for_local_domain']
     },
     {
       id: 'dns-lookup-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113418/results.csv?api_key=Hdo6PpK2b0tmv1HJvbZLxikv62pxf0ciuAstQiVR',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113903/results.csv?api_key=13cC9yXoD7z33JoikvP8p8O3AkX8u5onsFPMjTFM',
       valueColumn: 'P75_7day_average_ms',
       unit: 'ms'
     },
@@ -156,6 +199,22 @@
       unit: 'ms',
       format: 'long',
       seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' }
+    },
+    {
+      id: 'upload-throughput',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113904/results.csv?api_key=OzgbQKU1rVnlw2XoXYaaEh1zBlDSjW0J4bkCScRv',
+      valueColumn: 'median_7d_avg_mbps',
+      unit: ' Mbps',
+      seriesOrder: ['HTTP/1.1', 'HTTP/2', 'HTTP/3'],
+      yMin: 0
+    },
+    {
+      id: 'download-throughput',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113905/results.csv?api_key=Ng5n7Lj50aJPUSl4J7799VU8kB9GgD8s0sjIofsy',
+      valueColumn: 'median_7d_avg_mbps',
+      unit: ' Mbps',
+      seriesOrder: ['HTTP/1.1', 'HTTP/2', 'HTTP/3'],
+      yMin: 0
     }
   ];
   const ANNOTATIONS = [
@@ -323,15 +382,20 @@
     if (charts[chartId]) charts[chartId].destroy();
 
     const seriesLabels = config.seriesLabels || {};
-    const datasets = Object.entries(data.series).map(([name, values], i) => ({
+    const seriesOrder = config.seriesOrder || Object.keys(data.series);
+    const orderedEntries = seriesOrder
+      .filter(name => data.series[name])
+      .map(name => [name, data.series[name]]);
+    const datasets = orderedEntries.map(([name, values], i) => ({
       label: seriesLabels[name] || name,
       data: values,
       borderColor: colors[i % colors.length],
       backgroundColor: colors[i % colors.length] + '20',
       borderWidth: 2,
-      pointRadius: 2,
+      pointRadius: 1,
       tension: 0.1,
-      fill: false
+      fill: false,
+      spanGaps: true
     }));
 
     const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
@@ -356,7 +420,7 @@
 
     const yAxisConfig = unit === '%'
       ? { min: 0, max: 100, ticks: { callback: v => v + '%' } }
-      : { ticks: { callback: v => Math.round(v) + unit } };
+      : { min: config.yMin, ticks: { callback: v => Math.round(v) + unit } };
 
     const ctx = document.getElementById(`${chartId}-chart`).getContext('2d');
     charts[chartId] = new Chart(ctx, {
