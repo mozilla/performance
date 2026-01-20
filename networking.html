@@ -141,6 +141,30 @@
 
       <div class="group-row" style="margin-top: 40px;">
         <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Glossary/First_contentful_paint" target="_blank">First Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="fcp-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="fcp-desktop-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint" target="_blank">Largest Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="lcp-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="lcp-desktop-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
           <h3>Upload Throughput</h3>
           <p class="section-desc">Throughput for requests larger than 10MB, by HTTP version (median, 7-day avg, Mbps)</p>
           <div class="chart-container">
@@ -199,6 +223,24 @@
       unit: 'ms',
       format: 'long',
       seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' }
+    },
+    {
+      id: 'fcp-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113914/results.csv?api_key=HiTQrE3NpblL4agBxPQ0Hqn0RmcXl2OdLwsd8r6F',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' },
+      yMin: 0
+    },
+    {
+      id: 'lcp-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113915/results.csv?api_key=KKz472ZmkXKsrdfJ1K5Epb75JRzDn2HuX1QjMydP',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' },
+      yMin: 0
     },
     {
       id: 'upload-throughput',
