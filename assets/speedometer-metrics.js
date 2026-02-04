@@ -24,6 +24,10 @@ const platformConfigs = {
     platforms: ['windows11-64-24h2-nightlyasrelease', 'windows11-64-24h2-shippable'],
     supportsSafari: false
   },
+  'windows-hwref': {
+    platforms: ['windows11-64-24h2-hw-ref-nightlyasrelease', 'windows11-64-24h2-hw-ref-shippable'],
+    supportsSafari: false
+  },
   'osx': {
     platforms: ['macosx1015-64-nightlyasrelease-qr', 'macosx1015-64-shippable-qr'],
     supportsSafari: false
@@ -1681,6 +1685,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'windows') {
     const btn = document.getElementById('windowsbutton');
+    if (btn) btn.style.backgroundColor = 'gray';
+  } else if (osParam === 'windows-hwref') {
+    const btn = document.getElementById('windowshwrefbutton');
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'linux') {
     const btn = document.getElementById('linuxbutton');
