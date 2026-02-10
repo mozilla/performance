@@ -112,12 +112,12 @@
       <p class="section-desc">Top Level Document Requests - Desktop</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time</h3>
+          <h3>DNS Lookup Time - USA & Canada (DoH Rollout Countries)</h3>
           <dl class="legend">
-            <dt>DoH-USA, DoH-Canada</dt>
-            <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
-            <dt>os_resolver</dt>
-            <dd>System DNS resolver (global)</dd>
+            <dt>trr-US, trr-CA</dt>
+            <dd>DNS over HTTPS via Trusted Recursive Resolver (USA, Canada)</dd>
+            <dt>os_resolver_US_CA</dt>
+            <dd>System DNS resolver (USA & Canada)</dd>
           </dl>
           <p class="section-desc">Non-zero values, 75th percentile, 7-day avg</p>
           <div class="chart-container">
@@ -213,8 +213,8 @@
     },
     {
       id: 'dns-lookup-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113903/results.csv?api_key=13cC9yXoD7z33JoikvP8p8O3AkX8u5onsFPMjTFM',
-      valueColumn: 'P75_7day_average_ms',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/114599/results.csv?api_key=lSB1Lx65qoDC3Q3VsVh91nt51TeLygqgauC3Xmdn',
+      valueColumn: 'ma_7day',
       unit: 'ms',
       yMin: 0
     },
