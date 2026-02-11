@@ -220,29 +220,35 @@
     },
     {
       id: 'ttrs-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113558/results.csv?api_key=rua2nkkAinLmSIoyIAxNvoJsYVkQDAPJBGplTFRN',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/114600/results.csv?api_key=Q9JtXttDKz4R5s3XmovMEuDC0bc4mL319MJwe3MJ',
       valueColumn: 'P75_7day_average_ms',
       unit: 'ms',
       format: 'long',
-      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' },
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
       yMin: 0
     },
     {
       id: 'fcp-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113914/results.csv?api_key=HiTQrE3NpblL4agBxPQ0Hqn0RmcXl2OdLwsd8r6F',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/114620/results.csv?api_key=qRcfwtuiZ3Aa0zfTtfTIvUEV2k9c2ms3XV2h169O',
       valueColumn: 'P75_7day_average_ms',
       unit: 'ms',
       format: 'long',
-      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' },
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
       yMin: 0
     },
     {
       id: 'lcp-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113915/results.csv?api_key=KKz472ZmkXKsrdfJ1K5Epb75JRzDn2HuX1QjMydP',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/114621/results.csv?api_key=4BjDAkj3ld1Q86Wk6HMH95QYUoszWR2MpwfQRkgF',
       valueColumn: 'P75_7day_average_ms',
       unit: 'ms',
       format: 'long',
-      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3' },
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
       yMin: 0
     },
     {
@@ -431,17 +437,22 @@
     const orderedEntries = seriesOrder
       .filter(name => data.series[name])
       .map(name => [name, data.series[name]]);
-    const datasets = orderedEntries.map(([name, values], i) => ({
-      label: seriesLabels[name] || name,
-      data: values,
-      borderColor: colors[i % colors.length],
-      backgroundColor: colors[i % colors.length] + '20',
-      borderWidth: 2,
-      pointRadius: 1,
-      tension: 0.1,
-      fill: false,
-      spanGaps: true
-    }));
+    const fadedSeries = config.fadedSeries || [];
+    const datasets = orderedEntries.map(([name, values], i) => {
+      const faded = fadedSeries.includes(name);
+      return {
+        label: seriesLabels[name] || name,
+        data: values,
+        borderColor: colors[i % colors.length] + (faded ? '80' : ''),
+        backgroundColor: colors[i % colors.length] + '20',
+        borderWidth: faded ? 1.5 : 2.5,
+        pointRadius: faded ? 0 : 1,
+        borderDash: faded ? [4, 3] : [],
+        tension: 0.1,
+        fill: false,
+        spanGaps: true
+      };
+    });
 
     const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
     const annotationLines = chartAnnotations.map((a, i) => ({
