@@ -8,9 +8,10 @@ window.speedometerData = {
   framework: 13, // Speedometer framework ID
   alerts: {},
   alertSummaries: {},
-  showAllAlerts: false,
-  hideAlerts: false,
-  showReplicates: false
+  hideAlerts: true, // Default: alerts hidden (true = hide)
+  showReplicates: false,
+  alertsFetched: {}, // Track which tests have had alerts fetched
+  allSubtestAlertsFetched: false // Track if all subtest alerts have been fetched
 };
 
 const searchParams = new URLSearchParams(window.location.search);
@@ -305,10 +306,7 @@ async function loadChartDataForTest(testName, days) {
   const results = await Promise.all(fetchPromises);
   results.forEach(dataPoints => chartData.push(...dataPoints));
 
-  // Fetch alerts for all platforms this test appears on
-  for (const platform of platforms) {
-    await fetchAlertsForTest(testName, platform, days);
-  }
+  // Don't fetch alerts by default - only fetch when user clicks "Show alerts"
 
   // Display chart
   displayChart(chartData, testName);
@@ -661,28 +659,43 @@ async function toggleReplicates(checked) {
   hideChartLoading();
 }
 
-async function toggleAllAlerts(checked) {
-  window.speedometerData.showAllAlerts = checked;
+async function toggleHideAlerts(checked) {
+  // When checkbox is checked: show alerts (hideAlerts = false)
+  // When checkbox is unchecked: hide alerts (hideAlerts = true)
+  window.speedometerData.hideAlerts = !checked;
 
-  if (checked && window.speedometerData.selectedTest === 'score') {
-    // Show loading spinner while fetching
+  if (checked) {
+    // User wants to show alerts - fetch them if not already fetched
+    const testName = window.speedometerData.selectedTest;
+
     showChartLoading();
 
-    // Fetch alerts for all subtests
-    await fetchAllSubtestAlerts(90);
+    if (testName === 'score') {
+      // For Overall Score: fetch all subtest alerts
+      if (!window.speedometerData.allSubtestAlertsFetched) {
+        await fetchAllSubtestAlerts(90);
+        window.speedometerData.allSubtestAlertsFetched = true;
+      }
+    } else {
+      // For individual subtests: fetch only that test's alerts
+      if (!window.speedometerData.alertsFetched[testName]) {
+        // Get all platforms for this test
+        const testSignatures = Object.values(window.speedometerData.signatures).filter(
+          sig => sig.test === testName
+        );
+        const platforms = [...new Set(testSignatures.map(sig => sig.machine_platform))];
+
+        // Fetch alerts for all platforms
+        for (const platform of platforms) {
+          await fetchAlertsForTest(testName, platform, 90);
+        }
+
+        window.speedometerData.alertsFetched[testName] = true;
+      }
+    }
 
     hideChartLoading();
   }
-
-  // Redraw chart with updated annotations
-  if (timeChart) {
-    timeChart.options.plugins.annotation.annotations = getAlertAnnotations(null, window.speedometerData.selectedTest);
-    timeChart.update();
-  }
-}
-
-function toggleHideAlerts(checked) {
-  window.speedometerData.hideAlerts = checked;
 
   // Redraw chart with updated annotations
   if (timeChart) {
@@ -771,12 +784,12 @@ function hideChartLoading() {
 function getAlertAnnotations(firefoxSigId, testName) {
   const annotations = {};
 
-  // If alerts are hidden, return empty
+  // If alerts are hidden (hideAlerts = true), return empty
   if (window.speedometerData.hideAlerts) {
     return annotations;
   }
 
-  const showingAllAlerts = testName === 'score' && window.speedometerData.showAllAlerts;
+  const showingAllAlerts = testName === 'score';
 
   let alertsToShow = [];
 
@@ -1085,15 +1098,24 @@ function displayChart(data, testName) {
     chartTitleElement.innerHTML = `<a id="chart-title-link" href="#" target="_blank" style="text-decoration: none; color: inherit;">${displayName} (${betterDirection})</a>`;
   }
 
-  // Show/hide the alert checkboxes
-  const allAlertsContainer = document.getElementById('all-alerts-container');
+  // Show/hide the alert checkbox
   const hideAlertsContainer = document.getElementById('hide-alerts-container');
 
-  if (allAlertsContainer) {
-    allAlertsContainer.style.display = isScore ? 'block' : 'none';
-  }
   if (hideAlertsContainer) {
     hideAlertsContainer.style.display = 'block';
+
+    // Update checkbox label to always say "Show alerts"
+    const hideAlertsCheckbox = document.getElementById('hide-alerts');
+    const hideAlertsLabel = hideAlertsContainer.querySelector('span');
+
+    if (hideAlertsLabel) {
+      hideAlertsLabel.textContent = 'Show alerts';
+    }
+
+    // Set checkbox state based on hideAlerts (inverted: checked = show, unchecked = hide)
+    if (hideAlertsCheckbox) {
+      hideAlertsCheckbox.checked = !window.speedometerData.hideAlerts;
+    }
   }
 
   // Group by application
