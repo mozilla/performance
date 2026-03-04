@@ -94,7 +94,7 @@ async function loadChartFromTreeherder(testName) {
 
     for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
       if (sig.suite === 'jetstream3' && sig.test === testName && (sig.application === 'firefox' || sig.application === 'fenix') &&
-          (!sig.extra_options || sig.extra_options.length === 0)) {
+          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
         allSignatures[sigId] = { ...sig, repository: repository };
       }
     }
@@ -106,7 +106,7 @@ async function loadChartFromTreeherder(testName) {
 
     for (const [sigId, sig] of Object.entries(chromeSignatures)) {
       if (sig.suite === 'jetstream3' && sig.test === testName && sig.application !== 'firefox' && sig.application !== 'fenix' &&
-          (!sig.extra_options || sig.extra_options.length === 0)) {
+          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
         allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
       }
     }
@@ -174,7 +174,7 @@ async function fetchAlertsForTest(testName, platform) {
       if (sig.suite === 'jetstream3' &&
           sig.test === testName &&
           (sig.application === 'firefox' || sig.application === 'fenix') &&
-          (!sig.extra_options || sig.extra_options.length === 0)) {
+          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
         autolandSigId = sig.id;
         console.log(`Found autoland signature ${autolandSigId} for ${testName}`);
         break;

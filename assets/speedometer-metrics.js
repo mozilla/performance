@@ -112,7 +112,7 @@ async function loadSpeedometerData(loadInitialChart = true) {
       let firefoxSigCount = 0;
       for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
         if (sig.suite === 'speedometer3' && (sig.application === 'firefox' || sig.application === 'fenix') &&
-            (!sig.extra_options || sig.extra_options.length === 0)) {
+            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
           allSignatures[sigId] = { ...sig, repository: window.speedometerData.repository };
           firefoxSigCount++;
         }
@@ -128,7 +128,7 @@ async function loadSpeedometerData(loadInitialChart = true) {
       let chromeSigCount = 0;
       for (const [sigId, sig] of Object.entries(chromeSignatures)) {
         if (sig.suite === 'speedometer3' && sig.application !== 'firefox' && sig.application !== 'fenix' &&
-            (!sig.extra_options || sig.extra_options.length === 0)) {
+            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
           allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
           chromeSigCount++;
         }
@@ -332,7 +332,7 @@ async function fetchAlertsForTest(testName, platform, days) {
       if (sig.suite === 'speedometer3' &&
           sig.test &&
           (sig.application === 'firefox' || sig.application === 'fenix') &&
-          (!sig.extra_options || sig.extra_options.length === 0)) {
+          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
         // Match exact test or any subpart (e.g., "NewsSite-Nuxt/NavigateToPolitics/total" matches "NewsSite-Nuxt")
         if (sig.test === testName || sig.test.startsWith(baseTestName + '/')) {
           autolandSigIds.push(sig.id);
