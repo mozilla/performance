@@ -633,10 +633,11 @@ async function loadDataFromTreeherder() {
       const firefoxSigResponse = await fetch(firefoxSigUrl);
       const firefoxSignatures = await firefoxSigResponse.json();
 
-      // Filter to only relevant Firefox signatures
+      // Filter to only relevant Firefox signatures (exclude variant runs like profiling)
       for (const [hash, sig] of Object.entries(firefoxSignatures)) {
         if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
-            (sig.application === 'fenix' || sig.application === 'firefox')) {
+            (sig.application === 'fenix' || sig.application === 'firefox') &&
+            (!sig.extra_options || sig.extra_options.length === 0)) {
           allSignatures[hash] = { ...sig, repository: repository };
         }
       }
@@ -646,10 +647,11 @@ async function loadDataFromTreeherder() {
       const chromeSigResponse = await fetch(chromeSigUrl);
       const chromeSignatures = await chromeSigResponse.json();
 
-      // Filter to only relevant Chrome signatures
+      // Filter to only relevant Chrome signatures (exclude variant runs like profiling)
       for (const [hash, sig] of Object.entries(chromeSignatures)) {
         if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
-            sig.application !== 'fenix' && sig.application !== 'firefox') {
+            sig.application !== 'fenix' && sig.application !== 'firefox' &&
+            (!sig.extra_options || sig.extra_options.length === 0)) {
           allSignatures[hash] = { ...sig, repository: 'mozilla-central' };
         }
       }
@@ -862,7 +864,8 @@ async function fetchAlertsForTest(testMetric, platform, suiteName) {
     for (const [sigId, sig] of Object.entries(signatures)) {
       if (sig.suite === suiteName &&
           baseTestNames.includes(sig.test) &&
-          (sig.application === 'firefox' || sig.application === 'fenix')) {
+          (sig.application === 'firefox' || sig.application === 'fenix') &&
+          (!sig.extra_options || sig.extra_options.length === 0)) {
         autolandSigId = sig.id;
         console.log(`Matched signature ${autolandSigId} for suite ${suiteName}, test ${sig.test}`);
         break;
