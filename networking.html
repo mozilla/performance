@@ -14,8 +14,8 @@
 <link rel="stylesheet" href="assets/main-ui-style.css">
 
 <style>
-  .page-header { margin-bottom: 5px; }
-  .page-header h1 { margin: 0 0 5px 0; font-size: 24px; }
+  .page-header { margin-bottom: 0; }
+  .page-header h1 { margin: 0; font-size: 24px; }
   .header-desc { margin: 0; font-size: 14px; color: #666; }
   .legend { margin: 0 0 10px 0; font-size: 13px; }
   .legend dt { font-weight: bold; display: inline; }
@@ -24,7 +24,8 @@
   .legend dd::after { content: ''; display: block; margin-bottom: 4px; }
   .group { margin-top: 40px; width: 90%; }
   .group:first-of-type { margin-top: 0; }
-  .group h2 { margin: 0 0 20px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  .page-header + .group { margin-top: 0; }
+  .group h2 { margin: 0 0 10px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
   .group-row { display: flex; gap: 20px; align-items: stretch; }
   .group-row .section { flex: 1; min-width: 0; margin-top: 0; display: flex; flex-direction: column; }
   .group-row .chart-container { margin-top: auto; }
@@ -59,12 +60,13 @@
 
   <div class="content">
     <div class="page-header">
-      <h1>Firefox Networking</h1>
+      <h1>Firefox Networking - Desktop</h1>
+      <p class="section-desc" style="font-size: 16px;">Release Channel</p>
     </div>
 
     <div class="group">
       <h2>Protocol</h2>
-      <p class="section-desc">Top Level Document Requests - Desktop</p>
+      <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
           <h3>DNS Resolution Method</h3>
@@ -109,17 +111,11 @@
 
     <div class="group">
       <h2>Performance</h2>
-      <p class="section-desc">Top Level Document Requests - Desktop</p>
+      <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time - USA & Canada (DoH Rollout Countries)</h3>
-          <dl class="legend">
-            <dt>trr-US, trr-CA</dt>
-            <dd>DNS over HTTPS via Trusted Recursive Resolver (USA, Canada)</dd>
-            <dt>os_resolver_US_CA</dt>
-            <dd>System DNS resolver (USA & Canada)</dd>
-          </dl>
-          <p class="section-desc">Non-zero values, 75th percentile, 7-day avg</p>
+          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
+          <p class="section-desc">USA & Canada (DoH Rollout Countries), P75, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="dns-lookup-desktop-chart"></canvas>
@@ -164,30 +160,97 @@
         </div>
       </div>
 
-      <div class="group-row" style="margin-top: 40px;">
+      <!-- Upload/Download Throughput charts hidden -->
+
+    </div>
+
+    <hr style="margin: 60px 0 40px 0; border: none; border-top: 3px solid #ddd; width: 90%;">
+
+    <div class="page-header">
+      <h1>Firefox Networking - Android</h1>
+      <p class="section-desc" style="font-size: 16px;">Release Channel</p>
+    </div>
+
+    <div class="group">
+      <h2>Protocol</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
         <div class="section">
-          <h3>Upload Throughput</h3>
-          <p class="section-desc">Throughput for requests larger than 10MB, by HTTP version (median, 7-day avg, Mbps)</p>
+          <h3>HTTP Protocol Version</h3>
+          <p class="section-desc">Percentage of navigations by HTTP version</p>
           <div class="chart-container">
             <div class="chart-wrapper">
-              <canvas id="upload-throughput-chart"></canvas>
+              <canvas id="http-android-chart"></canvas>
             </div>
-            <div class="error" id="upload-throughput-error"></div>
+            <div class="error" id="http-android-error"></div>
           </div>
         </div>
 
         <div class="section">
-          <h3>Download Throughput</h3>
-          <p class="section-desc">Throughput for requests larger than 10MB, by HTTP version (median, 7-day avg, Mbps)</p>
+          <h3>HTTPS/HTTP</h3>
+          <p class="section-desc">Percentage of navigations by URL scheme</p>
           <div class="chart-container">
             <div class="chart-wrapper">
-              <canvas id="download-throughput-chart"></canvas>
+              <canvas id="https-android-chart"></canvas>
             </div>
-            <div class="error" id="download-throughput-error"></div>
+            <div class="error" id="https-android-error"></div>
           </div>
         </div>
       </div>
     </div>
+
+    <div class="group">
+      <h2>Performance</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Lookup Time</h3>
+          <p class="section-desc">P75, 7-day avg</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-lookup-android-chart"></canvas>
+            </div>
+            <div class="error" id="dns-lookup-android-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Time to Request Start</h3>
+          <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="ttrs-android-chart"></canvas>
+            </div>
+            <div class="error" id="ttrs-android-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Glossary/First_contentful_paint" target="_blank">First Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="fcp-android-chart"></canvas>
+            </div>
+            <div class="error" id="fcp-android-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint" target="_blank">Largest Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="lcp-android-chart"></canvas>
+            </div>
+            <div class="error" id="lcp-android-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -197,19 +260,22 @@
     {
       id: 'dns-desktop',
       url: 'https://sql.telemetry.mozilla.org/api/queries/112861/results.csv?api_key=h1RVeaRfWTQXKaN9LZwcH7GVv8T82WeVBWfzAxD8',
-      valueColumn: 'percentage_7d_avg'
+      valueColumn: 'percentage_7d_avg',
+      chartType: 'stackedArea'
     },
     {
       id: 'http-desktop',
       url: 'https://sql.telemetry.mozilla.org/api/queries/113403/results.csv?api_key=sJ7dVgzAsACPSW93F0k0UAN6Ak7EQI05pSxrAdBK',
       valueColumn: 'percentage_7d_moving_avg',
-      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown']
+      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown'],
+      chartType: 'stackedArea'
     },
     {
       id: 'https-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113902/results.csv?api_key=4kGytpQhjkL9ZCM9x4WDajyLjxaeuPdC065s767O',
-      valueColumn: 'percentage_7d_avg',
-      seriesOrder: ['https', 'http', 'http_for_local_domain']
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115307/results.csv?api_key=gZ9Cq7UwYxpNCcp5BDWHwri0tmSJdMRTcBP6DM6b',
+      chartType: 'pie',
+      labelColumn: 'metric_key',
+      valueColumn: 'percentage'
     },
     {
       id: 'dns-lookup-desktop',
@@ -252,21 +318,60 @@
       yMin: 0
     },
     {
-      id: 'upload-throughput',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113904/results.csv?api_key=OzgbQKU1rVnlw2XoXYaaEh1zBlDSjW0J4bkCScRv',
-      valueColumn: 'median_7d_avg_mbps',
-      unit: ' Mbps',
-      seriesOrder: ['HTTP/1.1', 'HTTP/2', 'HTTP/3'],
+      id: 'http-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115321/results.csv?api_key=jNpImN72C4cKOMJHi1ngGQckwctxKlgh0Wqjbx8Z',
+      valueColumn: 'percentage_7d_moving_avg',
+      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown'],
+      chartType: 'stackedArea',
+      format: 'long'
+    },
+    {
+      id: 'https-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115320/results.csv?api_key=2l7AfwYmlWGtk0hUQPO3oA0kHvUNILxOjYZqLEQN',
+      chartType: 'pie',
+      labelColumn: 'metric_key',
+      valueColumn: 'percentage'
+    },
+    {
+      id: 'dns-lookup-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115329/results.csv?api_key=GRqbVlXLCtCTA4vdU4Qqbe4nm9jw2wFAKTirZRxf',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
       yMin: 0
     },
     {
-      id: 'download-throughput',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/113905/results.csv?api_key=Ng5n7Lj50aJPUSl4J7799VU8kB9GgD8s0sjIofsy',
-      valueColumn: 'median_7d_avg_mbps',
-      unit: ' Mbps',
-      seriesOrder: ['HTTP/1.1', 'HTTP/2', 'HTTP/3'],
+      id: 'ttrs-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115316/results.csv?api_key=gOm1naQJ8JgSmE9cOIcyyWz1Jrq49HWCKmrMtEGS',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
       yMin: 0
-    }
+    },
+    {
+      id: 'fcp-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115318/results.csv?api_key=4L0j3xrAfOEKBwO6p9tL0GCbRUQiDs4TKaQa5HJ8',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'lcp-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115319/results.csv?api_key=F4sp1gB3fHqDtfqqjzNyHGabVY6RdgKg00M6JHyJ',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
   ];
   const ANNOTATIONS = [
     {
@@ -296,8 +401,19 @@
     errorEl.innerHTML = '';
 
     try {
-      const csvData = await fetchCSV(config.url, config.valueColumn, config.format);
-      renderChart(config, csvData, annotations);
+      if (config.chartType === 'pie') {
+        const response = await fetch(config.url);
+        if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
+        const text = await response.text();
+        const pieData = parsePieData(text, config.labelColumn, config.valueColumn);
+        renderPieChart(config, pieData);
+      } else if (config.chartType === 'stackedArea') {
+        const csvData = await fetchCSV(config.url, config.valueColumn, config.format);
+        renderStackedAreaChart(config, csvData, annotations);
+      } else {
+        const csvData = await fetchCSV(config.url, config.valueColumn, config.format);
+        renderChart(config, csvData, annotations);
+      }
     } catch (e) {
       errorEl.style.display = 'block';
       errorEl.innerHTML = `Error: ${e.message}`;
@@ -420,10 +536,169 @@
     return result;
   }
 
+  function parsePieData(text, labelColumn, valueColumn) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) throw new Error('CSV must have header and at least one data row');
+    const headers = parseCSVLine(lines[0]);
+    const labelIdx = headers.indexOf(labelColumn);
+    const valueIdx = headers.indexOf(valueColumn);
+    if (labelIdx === -1 || valueIdx === -1) throw new Error('Required columns not found');
+
+    const labels = [];
+    const values = [];
+    for (let i = 1; i < lines.length; i++) {
+      const row = parseCSVLine(lines[i]);
+      if (row.length <= Math.max(labelIdx, valueIdx)) continue;
+      labels.push(row[labelIdx]);
+      values.push(parseFloat(row[valueIdx]));
+    }
+    return { labels, values };
+  }
+
   function parseDate(str) {
     const d = new Date(str);
     if (isNaN(d.getTime())) throw new Error(`Invalid date: ${str}`);
     return d;
+  }
+
+  function renderStackedAreaChart(config, data, annotations) {
+    const chartId = config.id;
+    if (charts[chartId]) charts[chartId].destroy();
+
+    const seriesLabels = config.seriesLabels || {};
+    const seriesOrder = config.seriesOrder || Object.keys(data.series);
+    const orderedEntries = seriesOrder
+      .filter(name => data.series[name])
+      .map(name => [name, data.series[name]]);
+
+    const datasets = orderedEntries.map(([name, values], i) => ({
+      label: seriesLabels[name] || name,
+      data: values,
+      backgroundColor: colors[i % colors.length] + 'CC',
+      borderColor: colors[i % colors.length],
+      borderWidth: 1,
+      pointRadius: 0,
+      pointHitRadius: 6,
+      tension: 0.1,
+      fill: true,
+      spanGaps: true
+    }));
+
+    const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
+    const annotationLines = chartAnnotations.map((a, i) => ({
+      type: 'line',
+      xMin: parseDate(a.date),
+      xMax: parseDate(a.date),
+      borderColor: '#ff6384',
+      borderWidth: 2,
+      borderDash: [5, 5],
+      label: {
+        display: true,
+        content: a.label,
+        position: 'start',
+        backgroundColor: '#ff6384',
+        color: 'white',
+        font: { size: 10 },
+        padding: 4
+      },
+      click: a.url ? () => window.open(a.url, '_blank') : undefined
+    }));
+
+    // Compute latest values for legend
+    const latestValues = orderedEntries.map(([name, values]) => {
+      for (let i = values.length - 1; i >= 0; i--) {
+        if (values[i] != null) return values[i];
+      }
+      return null;
+    });
+
+    const ctx = document.getElementById(`${chartId}-chart`).getContext('2d');
+    charts[chartId] = new Chart(ctx, {
+      type: 'line',
+      data: { labels: data.labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'day', displayFormats: { day: 'MMM d, yyyy' }, tooltipFormat: 'MMM d, yyyy' }
+          },
+          y: {
+            stacked: true,
+            min: 0,
+            max: 100,
+            ticks: { callback: v => v + '%' }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              generateLabels: (chart) => {
+                return chart.data.datasets.map((ds, i) => ({
+                  text: `${ds.label}: ${latestValues[i] != null ? latestValues[i].toFixed(1) + '%' : 'N/A'}`,
+                  fillStyle: ds.backgroundColor,
+                  strokeStyle: ds.borderColor,
+                  lineWidth: ds.borderWidth,
+                  hidden: !chart.isDatasetVisible(i),
+                  datasetIndex: i
+                }));
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.dataset.label}: ${context.parsed.y}%`,
+              afterBody: (context) => {
+                const date = context[0].parsed.x;
+                const matching = chartAnnotations.filter(a => {
+                  const aDate = parseDate(a.date).getTime();
+                  return Math.abs(aDate - date) < 86400000;
+                });
+                if (matching.length) {
+                  return matching.map(a => `\n${a.label}: ${a.description || ''}`);
+                }
+                return '';
+              }
+            }
+          },
+          annotation: { annotations: annotationLines }
+        }
+      }
+    });
+  }
+
+  function renderPieChart(config, data) {
+    const chartId = config.id;
+    if (charts[chartId]) charts[chartId].destroy();
+
+    const ctx = document.getElementById(`${chartId}-chart`).getContext('2d');
+    charts[chartId] = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: data.labels,
+        datasets: [{
+          data: data.values,
+          backgroundColor: colors.slice(0, data.labels.length).map(c => c + 'CC'),
+          borderColor: colors.slice(0, data.labels.length),
+          borderWidth: 2
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.label}: ${context.parsed}%`
+            }
+          }
+        }
+      }
+    });
   }
 
   function renderChart(config, data, annotations) {
