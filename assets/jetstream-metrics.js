@@ -27,6 +27,9 @@ if (searchParams.get('os') == 'windows') {
 } else if (searchParams.get('os') == 'linux') {
   window.jetstreamState.platforms = ['linux1804-64-shippable-qr'];
   window.jetstreamState.currentPlatform = 'linux1804-64-shippable-qr';
+} else if (searchParams.get('os') == 'android-a55') {
+  window.jetstreamState.platforms = ['android-hw-a55-14-0-aarch64-shippable'];
+  window.jetstreamState.currentPlatform = 'android-hw-a55-14-0-aarch64-shippable';
 }
 
 // Initialize repository from URL parameter
@@ -552,8 +555,9 @@ function displayChartFromTreeherder(data, testName) {
     });
   }
 
-  // Add Safari if on Mac and data exists
-  if (safariData.length > 0) {
+  const isMac = window.jetstreamState.currentPlatform.startsWith('macosx');
+
+  if (isMac && safariData.length > 0) {
     datasets.push({
       label: 'Safari',
       data: safariData.map(d => ({ x: d.date, y: d.value })),
@@ -564,7 +568,7 @@ function displayChartFromTreeherder(data, testName) {
     });
   }
 
-  if (safariTPData.length > 0) {
+  if (isMac && safariTPData.length > 0) {
     datasets.push({
       label: 'Safari TP',
       data: safariTPData.map(d => ({ x: d.date, y: d.value })),
