@@ -22,7 +22,7 @@
   .legend dt::after { content: ': '; font-weight: normal; }
   .legend dd { display: inline; margin: 0; color: #666; }
   .legend dd::after { content: ''; display: block; margin-bottom: 4px; }
-  .group { margin-top: 40px; width: 90%; }
+  .group { margin-top: 40px; width: 100%; }
   .group:first-of-type { margin-top: 0; }
   .page-header + .group { margin-top: 0; }
   .group h2 { margin: 0 0 10px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
@@ -37,6 +37,11 @@
   .chart-container { background: white; padding: 20px; border-radius: 8px; }
   .chart-wrapper { position: relative; height: 500px; }
   .error { color: #cc0000; padding: 10px; background: #ffeeee; border-radius: 4px; margin-top: 10px; display: none; }
+  .channel-selector { display: inline-flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; margin: 10px 0 20px 0; }
+  .channel-button { padding: 6px 18px; font-size: 14px; font-family: inherit; border: none; background: #f5f5f5; color: #555; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .channel-button:not(:last-child) { border-right: 1px solid #ccc; }
+  .channel-button.active { background: #0066cc; color: #fff; }
+  .channel-button:hover:not(.active) { background: #e0e0e0; }
 </style>
 </head>
 <body>
@@ -59,11 +64,15 @@
   </aside>
 
   <div class="content">
-    <div class="page-header">
+    <div class="page-header" id="desktop-header">
       <h1>Firefox Networking - Desktop</h1>
-      <p class="section-desc" style="font-size: 16px;">Release Channel</p>
+    </div>
+    <div class="channel-selector">
+      <button class="channel-button active" onclick="switchChannel('desktop', 'release')">Release</button>
+      <button class="channel-button" onclick="switchChannel('desktop', 'nightly')">Nightly</button>
     </div>
 
+    <div data-platform="desktop" data-channel="release">
     <div class="group">
       <h2>Protocol</h2>
       <p class="section-desc">Top Level Document Requests</p>
@@ -159,18 +168,119 @@
           </div>
         </div>
       </div>
+    </div>
+    </div>
 
-      <!-- Upload/Download Throughput charts hidden -->
+    <div data-platform="desktop" data-channel="nightly" style="display: none;">
+    <div class="group">
+      <h2>Protocol</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Resolution Method</h3>
+          <p class="section-desc">Percentage of navigations by DNS resolver type</p>
+          <dl class="legend">
+            <dt>DoH</dt>
+            <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
+            <dt>os_resolver</dt>
+            <dd>System DNS resolver</dd>
+          </dl>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="dns-desktop-nightly-error"></div>
+          </div>
+        </div>
 
+        <div class="section">
+          <h3>HTTP Protocol Version</h3>
+          <p class="section-desc">Percentage of navigations by HTTP version</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="http-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="http-desktop-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>HTTPS/HTTP</h3>
+          <p class="section-desc">Percentage of navigations by URL scheme</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="https-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="https-desktop-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Performance</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
+          <p class="section-desc">P75, 7-day avg</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-lookup-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="dns-lookup-desktop-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Time to Request Start</h3>
+          <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="ttrs-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="ttrs-desktop-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Glossary/First_contentful_paint" target="_blank">First Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="fcp-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="fcp-desktop-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint" target="_blank">Largest Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (75th percentile, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="lcp-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="lcp-desktop-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     </div>
 
     <hr style="margin: 60px 0 40px 0; border: none; border-top: 3px solid #ddd; width: 90%;">
 
-    <div class="page-header">
+    <div class="page-header" id="android-header">
       <h1>Firefox Networking - Android</h1>
-      <p class="section-desc" style="font-size: 16px;">Release Channel</p>
+    </div>
+    <div class="channel-selector">
+      <button class="channel-button active" onclick="switchChannel('android', 'release')">Release</button>
+      <button class="channel-button" onclick="switchChannel('android', 'nightly')">Nightly</button>
     </div>
 
+    <div data-platform="android" data-channel="release">
     <div class="group">
       <h2>Protocol</h2>
       <p class="section-desc">Top Level Document Requests</p>
@@ -204,7 +314,7 @@
       <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time</h3>
+          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
           <p class="section-desc">P75, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
@@ -250,13 +360,113 @@
         </div>
       </div>
     </div>
+    </div>
+
+    <div data-platform="android" data-channel="nightly" style="display: none;">
+    <div class="group">
+      <h2>Protocol</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Resolution Method (US, Canada)</h3>
+          <p class="section-desc">Percentage of navigations by DNS resolver type</p>
+          <dl class="legend">
+            <dt>DoH</dt>
+            <dd>DNS over HTTPS via Trusted Recursive Resolver</dd>
+            <dt>os_resolver</dt>
+            <dd>System DNS resolver</dd>
+          </dl>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="dns-android-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>HTTP Protocol Version</h3>
+          <p class="section-desc">Percentage of navigations by HTTP version</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="http-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="http-android-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>HTTPS/HTTP</h3>
+          <p class="section-desc">Percentage of navigations by URL scheme</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="https-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="https-android-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <h2>Performance</h2>
+      <p class="section-desc">Top Level Document Requests</p>
+      <div class="group-row">
+        <div class="section">
+          <h3>DNS Lookup Time (US, Canada) - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
+          <p class="section-desc">P75, 7-day avg</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="dns-lookup-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="dns-lookup-android-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Time to Request Start</h3>
+          <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="ttrs-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="ttrs-android-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Glossary/First_contentful_paint" target="_blank">First Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="fcp-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="fcp-android-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3><a href="https://developer.mozilla.org/en-US/docs/Web/API/LargestContentfulPaint" target="_blank">Largest Contentful Paint</a></h3>
+          <p class="section-desc">By HTTP protocol version (P75, 7-day avg)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="lcp-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="lcp-android-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div>
 
   </div>
 </div>
 
 <script src="assets/main-ui.js"></script>
 <script>
-  const CHARTS = [
+  const RELEASE_CHARTS = [
     {
       id: 'dns-desktop',
       url: 'https://sql.telemetry.mozilla.org/api/queries/112861/results.csv?api_key=h1RVeaRfWTQXKaN9LZwcH7GVv8T82WeVBWfzAxD8',
@@ -373,6 +583,133 @@
       yMin: 0
     },
   ];
+
+  const NIGHTLY_CHARTS = [
+    {
+      id: 'dns-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115473/results.csv?api_key=1BZfEQvxvUmEYUlqIWnsWpOonlf9o8weg0NOE3SO',
+      valueColumn: 'percentage_7d_avg',
+      chartType: 'stackedArea'
+    },
+    {
+      id: 'http-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115477/results.csv?api_key=dXO1b47uzGRjvLCEDa1cVjxtZdLYECb0g41u8V5Q',
+      valueColumn: 'percentage_7d_moving_avg',
+      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown'],
+      chartType: 'stackedArea'
+    },
+    {
+      id: 'https-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115479/results.csv?api_key=0nB29PJJSp8IhgSVkBYK0B0He4jaYAO5wCARUVYm',
+      chartType: 'pie',
+      labelColumn: 'metric_key',
+      valueColumn: 'percentage'
+    },
+    {
+      id: 'dns-lookup-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115481/results.csv?api_key=f9nvVZjvFtJ2QeXKrCAYJLvtYCvIjKcYdjyxiqWs',
+      valueColumn: 'ma_7day',
+      unit: 'ms',
+      yMin: 0
+    },
+    {
+      id: 'ttrs-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115484/results.csv?api_key=ogGOU2XSgp98OAJOjPJbuNE0I6nO2SxE9POcgZlu',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'fcp-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115488/results.csv?api_key=oBM38JJp8JtFXFGyFucjNcoTvdiExHiLuPIkiGy4',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'lcp-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115494/results.csv?api_key=JWsnteAJVkGCWf5IVVN8dhg5XKqeILz8en48DhBa',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'dns-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115475/results.csv?api_key=tqT4rlqAXhoXOAlQadjRUBPos97TzijdNwVe6FGu',
+      valueColumn: 'percentage_7d_avg',
+      chartType: 'stackedArea'
+    },
+    {
+      id: 'http-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115478/results.csv?api_key=mdB5BRu2YAVhwjLRBsay3JtfoDjQGQMYM4rEY9qO',
+      valueColumn: 'percentage_7d_moving_avg',
+      seriesOrder: ['HTTP/2', 'HTTP/1.1', 'HTTP/3', 'Unknown'],
+      chartType: 'stackedArea',
+      format: 'long'
+    },
+    {
+      id: 'https-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115480/results.csv?api_key=ro8Rrg80wEgP2GVazmMJT3JXhRCMOc9Eg59AJs4q',
+      chartType: 'pie',
+      labelColumn: 'metric_key',
+      valueColumn: 'percentage'
+    },
+    {
+      id: 'dns-lookup-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115483/results.csv?api_key=1Cm2f4luMfsrkD8xfmNI09T0L6bTE4ri4IfPFC0A',
+      valueColumn: 'ma_7day',
+      unit: 'ms',
+      yMin: 0
+    },
+    {
+      id: 'ttrs-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115485/results.csv?api_key=yToxAAgYHaol9r0bqjFK2peUE9LczQYeYIXPsRCJ',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'fcp-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115489/results.csv?api_key=Tsj13u2heYTuhvCme1NYBFCONi0aR0xSfnCdgBGJ',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+    {
+      id: 'lcp-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115497/results.csv?api_key=53L4FZG6MjG43b98tEo6yO3tEkOdcoArzrGYpQgq',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      format: 'long',
+      seriesOrder: ['overall', '1', '2', '3'],
+      seriesLabels: { '1': 'HTTP/1.1', '2': 'HTTP/2', '3': 'HTTP/3', 'overall': 'Overall' },
+      fadedSeries: ['1', '2', '3'],
+      yMin: 0
+    },
+  ];
+
+  const CHARTS = RELEASE_CHARTS;
+
   const ANNOTATIONS = [
     {
       date: '2025-09-16',
@@ -388,6 +725,37 @@
     '#0066cc', '#cc0066', '#00cc66', '#cc6600', '#6600cc',
     '#00cccc', '#cccc00', '#666666', '#cc0000', '#0000cc'
   ];
+
+  const loadedChannels = new Set(['desktop-release', 'android-release']);
+
+  function getNightlyChartsForPlatform(platform) {
+    const prefix = platform === 'desktop' ? 'desktop-nightly' : 'android-nightly';
+    return NIGHTLY_CHARTS.filter(c => c.id.includes(prefix));
+  }
+
+  function switchChannel(platform, channel) {
+    // Update button states
+    const header = document.getElementById(`${platform}-header`);
+    const selector = header.nextElementSibling;
+    selector.querySelectorAll('.channel-button').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.toLowerCase() === channel);
+    });
+
+    // Show/hide channel containers
+    document.querySelectorAll(`[data-platform="${platform}"]`).forEach(el => {
+      el.style.display = el.dataset.channel === channel ? '' : 'none';
+    });
+
+    // Lazy-load nightly charts on first switch
+    const key = `${platform}-${channel}`;
+    if (channel === 'nightly' && !loadedChannels.has(key)) {
+      loadedChannels.add(key);
+      const nightlyCharts = getNightlyChartsForPlatform(platform);
+      for (const config of nightlyCharts) {
+        loadChart(config, ANNOTATIONS);
+      }
+    }
+  }
 
   async function loadAllCharts() {
     for (const config of CHARTS) {
