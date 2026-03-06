@@ -716,7 +716,25 @@
       label: 'Bug 2003257',
       description: 'HTTP/1.1 usage increase investigation',
       url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2003257',
+      platform: 'desktop',
+      channel: 'release',
       chart: 'http-desktop'
+    },
+    {
+      date: '2025-05-22',
+      label: 'Bug 1958018',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'dns-lookup-android-nightly'
+    },
+    {
+      date: '2025-06-24',
+      label: 'Bug 1958018',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
+      platform: 'android',
+      channel: 'release',
+      chart: 'dns-lookup-android'
     }
   ];
 
@@ -982,7 +1000,13 @@
       spanGaps: true
     }));
 
-    const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
+    const chartAnnotations = annotations.filter(a => {
+      if (a.chart && a.chart !== chartId) return false;
+      if (a.platform && !chartId.includes(a.platform)) return false;
+      if (a.channel === 'nightly' && !chartId.endsWith('-nightly')) return false;
+      if (a.channel === 'release' && chartId.endsWith('-nightly')) return false;
+      return true;
+    });
     const annotationLines = chartAnnotations.map((a, i) => ({
       type: 'line',
       xMin: parseDate(a.date),
@@ -1127,7 +1151,13 @@
       };
     });
 
-    const chartAnnotations = annotations.filter(a => !a.chart || a.chart === chartId);
+    const chartAnnotations = annotations.filter(a => {
+      if (a.chart && a.chart !== chartId) return false;
+      if (a.platform && !chartId.includes(a.platform)) return false;
+      if (a.channel === 'nightly' && !chartId.endsWith('-nightly')) return false;
+      if (a.channel === 'release' && chartId.endsWith('-nightly')) return false;
+      return true;
+    });
     const annotationLines = chartAnnotations.map((a, i) => ({
       type: 'line',
       xMin: parseDate(a.date),
