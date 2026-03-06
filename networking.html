@@ -67,7 +67,7 @@
     <div class="page-header" id="desktop-header">
       <h1>Firefox Networking - Desktop</h1>
     </div>
-    <div class="channel-selector">
+    <div class="channel-selector" data-selector-platform="desktop">
       <button class="channel-button active" onclick="switchChannel('desktop', 'release')">Release</button>
       <button class="channel-button" onclick="switchChannel('desktop', 'nightly')">Nightly</button>
     </div>
@@ -275,7 +275,7 @@
     <div class="page-header" id="android-header">
       <h1>Firefox Networking - Android</h1>
     </div>
-    <div class="channel-selector">
+    <div class="channel-selector" data-selector-platform="android">
       <button class="channel-button active" onclick="switchChannel('android', 'release')">Release</button>
       <button class="channel-button" onclick="switchChannel('android', 'nightly')">Nightly</button>
     </div>
@@ -733,7 +733,35 @@
     return NIGHTLY_CHARTS.filter(c => c.id.includes(prefix));
   }
 
-  function switchChannel(platform, channel) {
+  function getChannelState() {
+    const state = { desktop: 'release', android: 'release' };
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      for (const part of hash.split('&')) {
+        const [platform, channel] = part.split('=');
+        if ((platform === 'desktop' || platform === 'android') &&
+            (channel === 'release' || channel === 'nightly')) {
+          state[platform] = channel;
+        }
+      }
+    }
+    return state;
+  }
+
+  function updateHash() {
+    const parts = [];
+    document.querySelectorAll('.channel-selector[data-selector-platform]').forEach(selector => {
+      const platform = selector.dataset.selectorPlatform;
+      const activeBtn = selector.querySelector('.channel-button.active');
+      const channel = activeBtn.textContent.toLowerCase();
+      if (channel === 'nightly') {
+        parts.push(`${platform}=nightly`);
+      }
+    });
+    window.location.hash = parts.length ? parts.join('&') : '';
+  }
+
+  function switchChannel(platform, channel, skipHash) {
     // Update button states
     const header = document.getElementById(`${platform}-header`);
     const selector = header.nextElementSibling;
@@ -755,6 +783,8 @@
         loadChart(config, ANNOTATIONS);
       }
     }
+
+    if (!skipHash) updateHash();
   }
 
   async function loadAllCharts() {
@@ -1164,6 +1194,22 @@
   }
 
   loadAllCharts();
+
+  // Apply channel state from URL hash
+  const initialState = getChannelState();
+  for (const [platform, channel] of Object.entries(initialState)) {
+    if (channel !== 'release') {
+      switchChannel(platform, channel, true);
+    }
+  }
+
+  // Handle back/forward navigation
+  window.addEventListener('hashchange', () => {
+    const state = getChannelState();
+    for (const [platform, channel] of Object.entries(state)) {
+      switchChannel(platform, channel, true);
+    }
+  });
 </script>
 </body>
 </html>
