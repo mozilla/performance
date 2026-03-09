@@ -134,6 +134,19 @@
         </div>
 
         <div class="section">
+          <h3>TLS Handshake Time</h3>
+          <p class="section-desc">75th percentile, 7-day avg (note: this probe has less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="tls-desktop-chart"></canvas>
+            </div>
+            <div class="error" id="tls-desktop-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
           <h3>Time to Request Start</h3>
           <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
           <div class="chart-container">
@@ -143,6 +156,7 @@
             <div class="error" id="ttrs-desktop-error"></div>
           </div>
         </div>
+        <div class="section"></div>
       </div>
 
       <div class="group-row" style="margin-top: 40px;">
@@ -233,6 +247,19 @@
         </div>
 
         <div class="section">
+          <h3>TLS Handshake Time</h3>
+          <p class="section-desc">75th percentile, 7-day avg (note: this probe has less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="tls-desktop-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="tls-desktop-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
           <h3>Time to Request Start</h3>
           <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (75th percentile, 7-day avg)</p>
           <div class="chart-container">
@@ -242,6 +269,7 @@
             <div class="error" id="ttrs-desktop-nightly-error"></div>
           </div>
         </div>
+        <div class="section"></div>
       </div>
 
       <div class="group-row" style="margin-top: 40px;">
@@ -306,6 +334,17 @@
             <div class="error" id="https-android-error"></div>
           </div>
         </div>
+
+        <div class="section">
+          <h3>Network Type</h3>
+          <p class="section-desc">By network connection type (note: less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="nettype-android-chart"></canvas>
+            </div>
+            <div class="error" id="nettype-android-error"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -325,6 +364,19 @@
         </div>
 
         <div class="section">
+          <h3>TLS Handshake Time</h3>
+          <p class="section-desc">P75, 7-day avg (note: this probe has less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="tls-android-chart"></canvas>
+            </div>
+            <div class="error" id="tls-android-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
           <h3>Time to Request Start</h3>
           <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (P75, 7-day avg)</p>
           <div class="chart-container">
@@ -334,6 +386,7 @@
             <div class="error" id="ttrs-android-error"></div>
           </div>
         </div>
+        <div class="section"></div>
       </div>
 
       <div class="group-row" style="margin-top: 40px;">
@@ -394,7 +447,9 @@
             <div class="error" id="http-android-nightly-error"></div>
           </div>
         </div>
+      </div>
 
+      <div class="group-row" style="margin-top: 40px;">
         <div class="section">
           <h3>HTTPS/HTTP</h3>
           <p class="section-desc">Percentage of navigations by URL scheme</p>
@@ -403,6 +458,17 @@
               <canvas id="https-android-nightly-chart"></canvas>
             </div>
             <div class="error" id="https-android-nightly-error"></div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Network Type</h3>
+          <p class="section-desc">By network connection type (note: less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="nettype-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="nettype-android-nightly-error"></div>
           </div>
         </div>
       </div>
@@ -424,6 +490,19 @@
         </div>
 
         <div class="section">
+          <h3>TLS Handshake Time</h3>
+          <p class="section-desc">P75, 7-day avg (note: this probe has less than 365 days of data)</p>
+          <div class="chart-container">
+            <div class="chart-wrapper">
+              <canvas id="tls-android-nightly-chart"></canvas>
+            </div>
+            <div class="error" id="tls-android-nightly-error"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group-row" style="margin-top: 40px;">
+        <div class="section">
           <h3>Time to Request Start</h3>
           <p class="section-desc">By HTTP protocol version. Includes DNS lookup and connection establishment with TLS (P75, 7-day avg)</p>
           <div class="chart-container">
@@ -433,6 +512,7 @@
             <div class="error" id="ttrs-android-nightly-error"></div>
           </div>
         </div>
+        <div class="section"></div>
       </div>
 
       <div class="group-row" style="margin-top: 40px;">
@@ -582,6 +662,29 @@
       fadedSeries: ['1', '2', '3'],
       yMin: 0
     },
+    {
+      id: 'nettype-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115600/results.csv?api_key=IiyQ7NIj4wRVz86YhpE3elJW6ybv21wnmpq1e9ej',
+      valueColumn: 'percentage_7d_avg',
+      chartType: 'stackedArea',
+      format: 'long',
+      seriesOrder: ['wifi', 'mobile', 'missing', 'ethernet', 'unknown'],
+      seriesLabels: { 'wifi': 'WiFi', 'mobile': 'Mobile', 'missing': 'Missing', 'ethernet': 'Ethernet', 'unknown': 'Unknown' }
+    },
+    {
+      id: 'tls-desktop',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/113419/results.csv?api_key=HtwisXPokpZeNBBJVdUK5kqGOuYj2EdIglQqCD5C',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      yMin: 0
+    },
+    {
+      id: 'tls-android',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115579/results.csv?api_key=h6xuQmN6t0hLVl64Ujiy1H9R1kKyThQNJIqDe5CR',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      yMin: 0
+    },
   ];
 
   const NIGHTLY_CHARTS = [
@@ -706,6 +809,29 @@
       fadedSeries: ['1', '2', '3'],
       yMin: 0
     },
+    {
+      id: 'nettype-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115599/results.csv?api_key=L42nQDKyAlEQupIOyRjaxqNsbfi8upafmsuehf3x',
+      valueColumn: 'percentage_7d_avg',
+      chartType: 'stackedArea',
+      format: 'long',
+      seriesOrder: ['wifi', 'mobile', 'missing', 'ethernet', 'unknown'],
+      seriesLabels: { 'wifi': 'WiFi', 'mobile': 'Mobile', 'missing': 'Missing', 'ethernet': 'Ethernet', 'unknown': 'Unknown' }
+    },
+    {
+      id: 'tls-desktop-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115601/results.csv?api_key=7l9oLH68G9V7defdsezWMtg8tybno6L6UuBtZUZW',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      yMin: 0
+    },
+    {
+      id: 'tls-android-nightly',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/115576/results.csv?api_key=HBT8JqUv0YTmEtsfIIdgAUfe8NXSRhfShp7i2ULk',
+      valueColumn: 'P75_7day_average_ms',
+      unit: 'ms',
+      yMin: 0
+    },
   ];
 
   const CHARTS = RELEASE_CHARTS;
@@ -714,7 +840,7 @@
     {
       date: '2025-09-16',
       label: 'Bug 2003257',
-      description: 'HTTP/1.1 usage increase investigation',
+      description: 'HTTP/1.1 used for ~25% more top level document loads as of Fx 143',
       url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2003257',
       platform: 'desktop',
       channel: 'release',
@@ -723,6 +849,7 @@
     {
       date: '2025-05-22',
       label: 'Bug 1958018',
+      description: 'Extra A and AAAA DNS requests for each host lookup',
       url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
       platform: 'android',
       channel: 'nightly',
@@ -731,10 +858,61 @@
     {
       date: '2025-06-24',
       label: 'Bug 1958018',
+      description: 'Extra A and AAAA DNS requests for each host lookup',
       url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
       platform: 'android',
       channel: 'release',
       chart: 'dns-lookup-android'
+    },
+    {
+      date: '2025-08-07',
+      label: 'Bug 1913165',
+      description: 'Add networking segmentation to the pageload event',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1913165',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'nettype-android-nightly'
+    },
+    {
+      date: '2025-09-16',
+      label: 'Bug 1913165',
+      description: 'Add networking segmentation to the pageload event',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1913165',
+      platform: 'android',
+      channel: 'release',
+      chart: 'nettype-android'
+    },
+    {
+      date: '2025-06-26',
+      label: 'Bug 1971375',
+      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      channel: 'nightly',
+      chart: 'tls-desktop-nightly'
+    },
+    {
+      date: '2025-06-26',
+      label: 'Bug 1971375',
+      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      channel: 'nightly',
+      chart: 'tls-android-nightly'
+    },
+    {
+      date: '2025-08-19',
+      label: 'Bug 1971375',
+      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      channel: 'release',
+      chart: 'tls-desktop'
+    },
+    {
+      date: '2025-08-19',
+      label: 'Bug 1971375',
+      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      channel: 'release',
+      chart: 'tls-android'
     }
   ];
 
@@ -776,7 +954,8 @@
         parts.push(`${platform}=nightly`);
       }
     });
-    window.location.hash = parts.length ? parts.join('&') : '';
+    const newHash = parts.length ? '#' + parts.join('&') : window.location.pathname + window.location.search;
+    history.replaceState(null, '', newHash);
   }
 
   function switchChannel(platform, channel, skipHash) {
@@ -1023,7 +1202,9 @@
         font: { size: 10 },
         padding: 4
       },
-      click: a.url ? () => window.open(a.url, '_blank') : undefined
+      click: a.url ? () => window.open(a.url, '_blank') : undefined,
+      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; ctx.chart.canvas.style.cursor = 'pointer'; },
+      leave: (ctx) => { ctx.chart.canvas.title = ''; ctx.chart.canvas.style.cursor = ''; }
     }));
 
     // Compute latest values for legend
@@ -1174,7 +1355,9 @@
         font: { size: 10 },
         padding: 4
       },
-      click: a.url ? () => window.open(a.url, '_blank') : undefined
+      click: a.url ? () => window.open(a.url, '_blank') : undefined,
+      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; ctx.chart.canvas.style.cursor = 'pointer'; },
+      leave: (ctx) => { ctx.chart.canvas.title = ''; ctx.chart.canvas.style.cursor = ''; }
     }));
 
     const yAxisConfig = unit === '%'
