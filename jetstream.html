@@ -1027,11 +1027,19 @@
               <span>Use autoland data</span>
             </label>
           </div>
-          <div id="all-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
-            <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
-              <input type="checkbox" id="show-all-alerts-jetstream" onchange="toggleAllAlertsJetStream(this.checked)" style="cursor: pointer;">
-              <span>Show all subtest alerts</span>
-            </label>
+          <div style="display: flex; gap: 8px;">
+            <div id="hide-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="hide-alerts-jetstream" onchange="toggleHideAlertsJetstream(this.checked)" style="cursor: pointer;">
+                <span>Show alerts</span>
+              </label>
+            </div>
+            <div id="all-alerts-container-jetstream" style="display: none; background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="show-all-alerts-jetstream" onchange="toggleAllAlertsJetStream(this.checked)" style="cursor: pointer;">
+                <span>Show all subtest alerts</span>
+              </label>
+            </div>
           </div>
         </div>
         <div style="width:100%;max-width:900px">

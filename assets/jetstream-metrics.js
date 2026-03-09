@@ -11,7 +11,7 @@ window.jetstreamState = {
   framework: 13,
   alerts: {},
   alertSummaries: {},
-  hideAlerts: false,
+  hideAlerts: true, // Default: alerts hidden (true = hide)
   showAllAlerts: false
 };
 
@@ -148,10 +148,12 @@ async function loadChartFromTreeherder(testName) {
       }
     }
 
-    // Fetch alerts from autoland for Firefox signature
-    const firefoxSig = testSignatures.find(s => s.application === 'firefox' || s.application === 'fenix');
-    if (firefoxSig) {
-      await fetchAlertsForTest(testName, platform);
+    // Fetch alerts from autoland for Firefox signature (only if alerts are shown)
+    if (!window.jetstreamState.hideAlerts) {
+      const firefoxSig = testSignatures.find(s => s.application === 'firefox' || s.application === 'fenix');
+      if (firefoxSig) {
+        await fetchAlertsForTest(testName, platform);
+      }
     }
 
     displayChartFromTreeherder(allData, testName);
@@ -444,6 +446,17 @@ function displayChartFromTreeherder(data, testName) {
   const chartTitleElement = document.getElementById('chart-title-jetstream');
   if (chartTitleElement) {
     chartTitleElement.innerHTML = `<a id="chart-title-link-jetstream" href="#" target="_blank" style="text-decoration: none; color: inherit;">${displayName} (higher is better)</a>`;
+  }
+
+  // Show the alerts checkbox
+  const hideAlertsContainer = document.getElementById('hide-alerts-container-jetstream');
+  if (hideAlertsContainer) {
+    hideAlertsContainer.style.display = 'block';
+
+    const hideAlertsCheckbox = document.getElementById('hide-alerts-jetstream');
+    if (hideAlertsCheckbox) {
+      hideAlertsCheckbox.checked = !window.jetstreamState.hideAlerts;
+    }
   }
 
   // Show/hide the all alerts checkbox
@@ -770,6 +783,32 @@ function changeRange(newRange) {
     }
   }
   referencePoint = null;
+}
+
+async function toggleHideAlertsJetstream(checked) {
+  // When checkbox is checked: show alerts (hideAlerts = false)
+  // When checkbox is unchecked: hide alerts (hideAlerts = true)
+  window.jetstreamState.hideAlerts = !checked;
+
+  if (checked) {
+    // User wants to show alerts - fetch them if not already fetched
+    const testName = window.jetstreamState.selectedTest;
+    const platform = window.jetstreamState.currentPlatform;
+
+    showChartLoading();
+
+    if (!window.jetstreamState.alerts[testName] || window.jetstreamState.alerts[testName].length === 0) {
+      await fetchAlertsForTest(testName, platform);
+    }
+
+    hideChartLoading();
+  }
+
+  // Redraw chart with updated annotations
+  if (timeChart) {
+    timeChart.options.plugins.annotation.annotations = getAlertAnnotations(window.jetstreamState.selectedTest);
+    timeChart.update();
+  }
 }
 
 async function toggleAllAlertsJetStream(checked) {
