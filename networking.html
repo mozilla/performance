@@ -1202,9 +1202,12 @@
         font: { size: 10 },
         padding: 4
       },
-      click: a.url ? () => window.open(a.url, '_blank') : undefined,
-      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; ctx.chart.canvas.style.cursor = 'pointer'; },
-      leave: (ctx) => { ctx.chart.canvas.title = ''; ctx.chart.canvas.style.cursor = ''; }
+      click: a.url ? (ctx, event) => {
+        const area = ctx.chart.chartArea;
+        if (event.y > area.bottom - 30) window.open(a.url, '_blank');
+      } : undefined,
+      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; },
+      leave: (ctx) => { ctx.chart.canvas.title = ''; }
     }));
 
     // Compute latest values for legend
@@ -1355,9 +1358,12 @@
         font: { size: 10 },
         padding: 4
       },
-      click: a.url ? () => window.open(a.url, '_blank') : undefined,
-      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; ctx.chart.canvas.style.cursor = 'pointer'; },
-      leave: (ctx) => { ctx.chart.canvas.title = ''; ctx.chart.canvas.style.cursor = ''; }
+      click: a.url ? (ctx, event) => {
+        const area = ctx.chart.chartArea;
+        if (event.y > area.bottom - 30) window.open(a.url, '_blank');
+      } : undefined,
+      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; },
+      leave: (ctx) => { ctx.chart.canvas.title = ''; }
     }));
 
     const yAxisConfig = unit === '%'
