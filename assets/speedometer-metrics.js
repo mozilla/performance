@@ -41,6 +41,10 @@ const platformConfigs = {
     platforms: ['linux1804-64-nightlyasrelease-qr', 'linux1804-64-shippable-qr'],
     supportsSafari: false
   },
+  'linux2404': {
+    platforms: ['linux2404-64-nightlyasrelease', 'linux2404-64-shippable'],
+    supportsSafari: false
+  },
   'android-a55': {
     platforms: ['android-hw-a55-14-0-aarch64-shippable'],
     supportsSafari: false
@@ -1716,6 +1720,9 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'linux') {
     const btn = document.getElementById('linuxbutton');
+    if (btn) btn.style.backgroundColor = 'gray';
+  } else if (osParam === 'linux2404') {
+    const btn = document.getElementById('linux2404button');
     if (btn) btn.style.backgroundColor = 'gray';
   } else if (osParam === 'android-s24') {
     const btn = document.getElementById('mobilebutton');

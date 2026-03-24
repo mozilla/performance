@@ -27,6 +27,9 @@ if (searchParams.get('os') == 'windows') {
 } else if (searchParams.get('os') == 'linux') {
   window.jetstreamState.platforms = ['linux1804-64-shippable-qr'];
   window.jetstreamState.currentPlatform = 'linux1804-64-shippable-qr';
+} else if (searchParams.get('os') == 'linux2404') {
+  window.jetstreamState.platforms = ['linux2404-64-shippable'];
+  window.jetstreamState.currentPlatform = 'linux2404-64-shippable';
 } else if (searchParams.get('os') == 'android-a55') {
   window.jetstreamState.platforms = ['android-hw-a55-14-0-aarch64-shippable'];
   window.jetstreamState.currentPlatform = 'android-hw-a55-14-0-aarch64-shippable';

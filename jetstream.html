@@ -46,6 +46,8 @@
       platform = 'macosx1500-aarch64-shippable';
     } else if (searchParams.get('os') == 'linux') {
       platform = 'linux1804-64-shippable-qr';
+    } else if (searchParams.get('os') == 'linux2404') {
+      platform = 'linux2404-64-shippable';
     } else if (searchParams.get('os') == 'android-a55') {
       platform = 'android-hw-a55-14-0-aarch64-shippable';
     } else if (!searchParams.get('os')) {
@@ -501,6 +503,8 @@
         document.getElementById("macbutton").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'linux') {
         document.getElementById("linuxbutton").style = "background-color:gray;";
+      } else if (searchParams.get('os') == 'linux2404') {
+        document.getElementById("linux2404button").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'android-a55') {
         document.getElementById("a55button").style = "background-color:gray;";
       } else if (searchParams.get('os') == 'windows') {
@@ -1012,7 +1016,8 @@
           <tr>
             <td colspan="2" style="height:50px;"><a href="#" id="winbutton" onclick="changePlatform('windows'); return false;">Windows 11</a></td>
             <td colspan="2" style="height:50px;"><a href="#" id="macbutton" onclick="changePlatform('osx'); return false;">Mac OSX (M4)</a></td>
-            <td colspan="2" style="height:50px;"><a href="#" id="linuxbutton" onclick="changePlatform('linux'); return false;">Linux</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="linuxbutton" onclick="changePlatform('linux'); return false;">Linux (18.04)</a></td>
+            <td colspan="2" style="height:50px;"><a href="#" id="linux2404button" onclick="changePlatform('linux2404'); return false;">Linux (24.04)</a></td>
             <td colspan="2" style="height:50px;"><a href="#" id="a55button" onclick="changePlatform('android-a55'); return false;">Android (A55)</a></td>
           </tr>
         </table>
