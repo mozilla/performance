@@ -38,10 +38,6 @@ const platformConfigs = {
     supportsSafari: true
   },
   'linux': {
-    platforms: ['linux1804-64-nightlyasrelease-qr', 'linux1804-64-shippable-qr'],
-    supportsSafari: false
-  },
-  'linux2404': {
     platforms: ['linux2404-64-nightlyasrelease', 'linux2404-64-shippable'],
     supportsSafari: false
   },
