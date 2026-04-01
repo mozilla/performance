@@ -84,6 +84,10 @@ if (subtestParam) {
 const hideParam = searchParams.get('hide');
 const hiddenDatasets = new Set(hideParam ? hideParam.split(',').map(s => decodeURIComponent(s.trim())) : []);
 
+// Initialize time range from URL parameter
+const rangeParam = searchParams.get('range');
+const initialDays = rangeParam === 'year' ? 365 : rangeParam === '3months' ? 90 : rangeParam === '1month' ? 30 : rangeParam === 'week' ? 7 : 90;
+
 function round(number, decimals) {
   return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
@@ -188,7 +192,7 @@ async function loadSpeedometerData(loadInitialChart = true) {
 
     // Display initial chart (only if loadInitialChart is true)
     if (loadInitialChart) {
-      await loadChartDataForTest(window.speedometerData.selectedTest, 90); // 90 days for chart
+      await loadChartDataForTest(window.speedometerData.selectedTest, initialDays);
     }
 
     // Display table
@@ -601,7 +605,7 @@ function calculateAverage(data) {
 
 function selectTest(testName) {
   window.speedometerData.selectedTest = testName;
-  loadChartDataForTest(testName, 90); // Load 90 days for chart
+  loadChartDataForTest(testName, initialDays);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateSubtestURL(testName);
 }
@@ -627,6 +631,16 @@ function changeRange(range) {
   } else if (range === 'week') {
     days = 7;
   }
+
+  // Update URL with range
+  const rangeSlug = range === 'all' ? 'year' : range === 3 ? '3months' : range === 1 ? '1month' : range === 'week' ? 'week' : null;
+  const url = new URL(window.location);
+  if (rangeSlug && rangeSlug !== '3months') {
+    url.searchParams.set('range', rangeSlug);
+  } else {
+    url.searchParams.delete('range');
+  }
+  window.history.replaceState({}, '', url);
 
   referencePoint = null;
   loadChartDataForTest(window.speedometerData.selectedTest, days);
