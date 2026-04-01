@@ -1800,8 +1800,28 @@ async function loadAllSubtestCharts() {
   }
 
   if (btn) {
-    btn.textContent = 'Reload All Subtest Charts';
+    btn.textContent = 'Hide All Subtest Charts';
     btn.disabled = false;
+    btn.onclick = hideAllSubtestCharts;
+  }
+}
+
+function hideAllSubtestCharts() {
+  const container = document.getElementById('all-subtests-container');
+  if (container) {
+    for (const chart of Object.values(subtestCharts)) {
+      chart.destroy();
+    }
+    subtestCharts = {};
+    container.innerHTML = '';
+  }
+
+  allSubtestChartsLoaded = false;
+
+  const btn = document.getElementById('load-all-subtests-btn');
+  if (btn) {
+    btn.textContent = 'Load All Subtest Charts';
+    btn.onclick = loadAllSubtestCharts;
   }
 }
 
