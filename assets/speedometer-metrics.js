@@ -1385,7 +1385,8 @@ function displayChart(data, testName) {
       plugins: {
         legend: {
           display: true,
-          position: 'top'
+          position: 'top',
+          onClick: syncedLegendClick
         },
         tooltip: {
           callbacks: {
@@ -1707,6 +1708,32 @@ async function loadSpeedometerBugBurndown(days) {
 
 // --- All Subtest Charts ---
 
+// Shared legend click handler: sync dataset visibility across all charts
+function syncedLegendClick(e, legendItem, legend) {
+  const clickedLabel = legendItem.text;
+  const ci = legend.chart;
+
+  // Default Chart.js toggle on the clicked chart
+  const index = legendItem.datasetIndex;
+  const meta = ci.getDatasetMeta(index);
+  meta.hidden = meta.hidden === null ? !ci.data.datasets[index].hidden : null;
+  ci.update();
+
+  const isHidden = meta.hidden;
+
+  // Sync to all other charts
+  const allCharts = [timeChart, ...Object.values(subtestCharts)].filter(c => c && c !== ci);
+  for (const chart of allCharts) {
+    for (let i = 0; i < chart.data.datasets.length; i++) {
+      if (chart.data.datasets[i].label === clickedLabel) {
+        const m = chart.getDatasetMeta(i);
+        m.hidden = isHidden;
+      }
+    }
+    chart.update();
+  }
+}
+
 const subtestNames = [
   'Charts-chartjs/total',
   'Charts-observable-plot/total',
@@ -1998,7 +2025,8 @@ function displaySubtestChart(canvas, data, testName) {
       plugins: {
         legend: {
           display: true,
-          position: 'top'
+          position: 'top',
+          onClick: syncedLegendClick
         },
         tooltip: {
           callbacks: {
