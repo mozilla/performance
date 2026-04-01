@@ -640,6 +640,10 @@ async function toggleRepository(checked) {
   await loadChartDataForTest(currentTest, days);
 
   hideChartLoading();
+
+  if (allSubtestChartsLoaded) {
+    loadAllSubtestCharts();
+  }
 }
 
 async function toggleReplicates(checked) {
@@ -668,6 +672,10 @@ async function toggleReplicates(checked) {
   await loadChartDataForTest(currentTest, days);
 
   hideChartLoading();
+
+  if (allSubtestChartsLoaded) {
+    loadAllSubtestCharts();
+  }
 }
 
 async function toggleHideAlerts(checked) {
