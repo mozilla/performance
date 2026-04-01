@@ -1120,6 +1120,25 @@ function getAlertAnnotations(firefoxSigId, testName) {
   return annotations;
 }
 
+function updatePushlogLink(url, fromRev, toRev) {
+  const container = document.getElementById('pushlog-link-container');
+  if (container) {
+    container.innerHTML = `<a href="${url}" target="_blank" style="color: #3366ff; text-decoration: underline; padding: 4px 8px;">Pushlog: ${fromRev.substring(0, 12)} \u2192 ${toRev.substring(0, 12)}</a>`;
+  }
+}
+
+function updateSubtestPushlogLink(canvas, url, fromRev, toRev) {
+  const containerId = `pushlog-${canvas.id}`;
+  let container = document.getElementById(containerId);
+  if (!container) {
+    container = document.createElement('div');
+    container.id = containerId;
+    container.style.cssText = 'text-align: center; font-family: sans-serif; font-size: 13px; margin-top: 4px;';
+    canvas.parentNode.insertBefore(container, canvas.nextSibling);
+  }
+  container.innerHTML = `<a href="${url}" target="_blank" style="color: #3366ff; text-decoration: underline; padding: 4px 8px;">Pushlog: ${fromRev.substring(0, 12)} \u2192 ${toRev.substring(0, 12)}</a>`;
+}
+
 function displayChart(data, testName) {
   const ctx = document.getElementById('myChart');
   if (!ctx) return;
@@ -1127,6 +1146,19 @@ function displayChart(data, testName) {
   if (timeChart) {
     timeChart.destroy();
   }
+
+  // Reset pushlog link placeholder
+  let pushlogContainer = document.getElementById('pushlog-link-container');
+  if (!pushlogContainer) {
+    pushlogContainer = document.createElement('div');
+    pushlogContainer.id = 'pushlog-link-container';
+    pushlogContainer.style.cssText = 'width:100%; max-width:900px; margin: 8px auto 0; text-align: center; font-family: sans-serif; font-size: 13px;';
+    const chartContainer = document.getElementById('chart-container');
+    if (chartContainer) {
+      chartContainer.parentNode.insertBefore(pushlogContainer, chartContainer.nextSibling);
+    }
+  }
+  pushlogContainer.innerHTML = '<span style="color: #999;">Select two points to generate pushlog link</span>';
 
   // Update chart title
   const isScore = testName === 'score';
@@ -1232,7 +1264,7 @@ function displayChart(data, testName) {
   const datasets = [
     {
       label: 'Firefox',
-      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1261,7 +1293,7 @@ function displayChart(data, testName) {
     },
     {
       label: 'Chrome',
-      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1293,7 +1325,7 @@ function displayChart(data, testName) {
   if (firefoxNarData.length > 0) {
     datasets.push({
       label: 'Nightly-as-Release',
-      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1325,7 +1357,7 @@ function displayChart(data, testName) {
   if (carData.length > 0) {
     datasets.push({
       label: 'Chromium-as-Release',
-      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -1357,7 +1389,7 @@ function displayChart(data, testName) {
   if (platformConfig.supportsSafari && safariData.length > 0) {
     datasets.push({
       label: 'Safari',
-      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#444444" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -1368,7 +1400,7 @@ function displayChart(data, testName) {
   if (platformConfig.supportsSafari && safariTPData.length > 0) {
     datasets.push({
       label: 'Safari TP',
-      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#777777" + pointColorAlphaHex,
       pointBorderColor: "#44444444",
@@ -1389,14 +1421,23 @@ function displayChart(data, testName) {
           const dataset = timeChart.data.datasets[element.datasetIndex];
           const dataPoint = dataset.data[element.index];
 
-          referencePoint = {
+          const newPoint = {
             x: dataPoint.x,
             y: dataPoint.y,
+            revision: dataPoint.revision,
             label: dataset.label,
             datasetIndex: element.datasetIndex,
             index: element.index
           };
 
+          if (referencePoint && referencePoint.revision && newPoint.revision) {
+            const fromRev = referencePoint.x < newPoint.x ? referencePoint.revision : newPoint.revision;
+            const toRev = referencePoint.x < newPoint.x ? newPoint.revision : referencePoint.revision;
+            const pushlogUrl = `https://hg-edge.mozilla.org/integration/autoland/pushloghtml?fromchange=${fromRev}&tochange=${toRev}`;
+            updatePushlogLink(pushlogUrl, fromRev, toRev);
+          }
+
+          referencePoint = newPoint;
           timeChart.update();
         }
       },
@@ -1419,17 +1460,19 @@ function displayChart(data, testName) {
               return '';
             },
             label: function(context) {
+              const dataPoint = context.dataset.data[context.dataIndex];
+              const rev = dataPoint && dataPoint.revision ? ` (${dataPoint.revision.substring(0, 6)})` : '';
               let label = context.dataset.label || '';
               if (label) {
                 label += ': ';
               }
-              label += round(context.parsed.y, 2);
+              label += round(context.parsed.y, 2) + rev;
 
               if (referencePoint) {
                 const currentValue = context.parsed.y;
                 const referenceValue = referencePoint.y;
                 const percentDelta = ((currentValue / referenceValue) - 1) * 100;
-                label += ` (${percentDelta > 0 ? '+' : ''}${round(percentDelta, 1)}%)`;
+                label += ` ${percentDelta > 0 ? '+' : ''}${round(percentDelta, 1)}%`;
               }
 
               return label;
@@ -2007,7 +2050,7 @@ function displaySubtestChart(canvas, data, testName) {
   const datasets = [
     {
       label: 'Firefox',
-      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#FF9500" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -2015,7 +2058,7 @@ function displaySubtestChart(canvas, data, testName) {
     },
     {
       label: 'Chrome',
-      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#1DA462" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -2026,7 +2069,7 @@ function displaySubtestChart(canvas, data, testName) {
   if (firefoxNarData.length > 0) {
     datasets.push({
       label: 'Nightly-as-Release',
-      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#dd2500" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -2037,7 +2080,7 @@ function displaySubtestChart(canvas, data, testName) {
   if (carData.length > 0) {
     datasets.push({
       label: 'Chromium-as-Release',
-      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#2773da" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -2048,7 +2091,7 @@ function displaySubtestChart(canvas, data, testName) {
   if (platformConfig.supportsSafari && safariData.length > 0) {
     datasets.push({
       label: 'Safari',
-      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#444444" + pointColorAlphaHex,
       pointBorderColor: "#000000",
@@ -2059,13 +2102,15 @@ function displaySubtestChart(canvas, data, testName) {
   if (platformConfig.supportsSafari && safariTPData.length > 0) {
     datasets.push({
       label: 'Safari TP',
-      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
       pointRadius: unhoveredPointRadius,
       pointBackgroundColor: "#777777" + pointColorAlphaHex,
       pointBorderColor: "#44444444",
       pointBorderWidth: unhoveredPointBorderWidth
     });
   }
+
+  let subtestRefPoint = null;
 
   subtestCharts[testName] = new Chart(canvas, {
     type: 'scatter',
@@ -2074,6 +2119,31 @@ function displaySubtestChart(canvas, data, testName) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 2,
+      onClick: (event, elements) => {
+        if (elements && elements.length > 0) {
+          const element = elements[0];
+          const dataset = subtestCharts[testName].data.datasets[element.datasetIndex];
+          const dataPoint = dataset.data[element.index];
+
+          const newPoint = {
+            x: dataPoint.x,
+            y: dataPoint.y,
+            revision: dataPoint.revision
+          };
+
+          if (subtestRefPoint && subtestRefPoint.revision && newPoint.revision) {
+            const fromRev = subtestRefPoint.x < newPoint.x ? subtestRefPoint.revision : newPoint.revision;
+            const toRev = subtestRefPoint.x < newPoint.x ? newPoint.revision : subtestRefPoint.revision;
+            const pushlogUrl = `https://hg-edge.mozilla.org/integration/autoland/pushloghtml?fromchange=${fromRev}&tochange=${toRev}`;
+            updateSubtestPushlogLink(canvas, pushlogUrl, fromRev, toRev);
+          }
+
+          subtestRefPoint = newPoint;
+        }
+      },
+      onHover: (event, activeElements) => {
+        event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+      },
       plugins: {
         legend: {
           display: true,
@@ -2090,9 +2160,11 @@ function displaySubtestChart(canvas, data, testName) {
               return '';
             },
             label: function(context) {
+              const dataPoint = context.dataset.data[context.dataIndex];
+              const rev = dataPoint && dataPoint.revision ? ` (${dataPoint.revision.substring(0, 6)})` : '';
               let label = context.dataset.label || '';
               if (label) label += ': ';
-              label += round(context.parsed.y, 2);
+              label += round(context.parsed.y, 2) + rev;
               return label;
             }
           }
