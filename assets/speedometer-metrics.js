@@ -74,6 +74,12 @@ if (replicatesParam === 'true' || replicatesParam === '1') {
   window.speedometerData.showReplicates = true;
 }
 
+// Initialize selected subtest from URL parameter
+const subtestParam = searchParams.get('subtest');
+if (subtestParam) {
+  window.speedometerData.selectedTest = subtestParam;
+}
+
 // Initialize hidden datasets from URL parameter (comma-separated labels)
 const hideParam = searchParams.get('hide');
 const hiddenDatasets = new Set(hideParam ? hideParam.split(',').map(s => decodeURIComponent(s.trim())) : []);
@@ -180,9 +186,9 @@ async function loadSpeedometerData(loadInitialChart = true) {
     // Load 30 days of data for these specific tests (for table) - CaR doesn't run as frequently
     await loadDataForPeriod(30, relevantSignatures);
 
-    // Display initial chart with score (only if loadInitialChart is true)
+    // Display initial chart (only if loadInitialChart is true)
     if (loadInitialChart) {
-      await loadChartDataForTest('score', 90); // 90 days for chart
+      await loadChartDataForTest(window.speedometerData.selectedTest, 90); // 90 days for chart
     }
 
     // Display table
@@ -597,6 +603,17 @@ function selectTest(testName) {
   window.speedometerData.selectedTest = testName;
   loadChartDataForTest(testName, 90); // Load 90 days for chart
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  updateSubtestURL(testName);
+}
+
+function updateSubtestURL(testName) {
+  const url = new URL(window.location);
+  if (testName && testName !== 'score') {
+    url.searchParams.set('subtest', testName);
+  } else {
+    url.searchParams.delete('subtest');
+  }
+  window.history.replaceState({}, '', url);
 }
 
 function changeRange(range) {
