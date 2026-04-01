@@ -74,6 +74,10 @@ if (replicatesParam === 'true' || replicatesParam === '1') {
   window.speedometerData.showReplicates = true;
 }
 
+// Initialize hidden datasets from URL parameter (comma-separated labels)
+const hideParam = searchParams.get('hide');
+const hiddenDatasets = new Set(hideParam ? hideParam.split(',').map(s => decodeURIComponent(s.trim())) : []);
+
 function round(number, decimals) {
   return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
@@ -1441,6 +1445,8 @@ function displayChart(data, testName) {
       }
     }
   });
+
+  applyHiddenDatasets(timeChart);
 }
 
 function showBugsLoading() {
@@ -1721,6 +1727,14 @@ function syncedLegendClick(e, legendItem, legend) {
 
   const isHidden = meta.hidden;
 
+  // Update the hidden datasets set and URL
+  if (isHidden) {
+    hiddenDatasets.add(clickedLabel);
+  } else {
+    hiddenDatasets.delete(clickedLabel);
+  }
+  updateHiddenDatasetsURL();
+
   // Sync to all other charts
   const allCharts = [timeChart, ...Object.values(subtestCharts)].filter(c => c && c !== ci);
   for (const chart of allCharts) {
@@ -1732,6 +1746,27 @@ function syncedLegendClick(e, legendItem, legend) {
     }
     chart.update();
   }
+}
+
+function updateHiddenDatasetsURL() {
+  const url = new URL(window.location);
+  if (hiddenDatasets.size > 0) {
+    url.searchParams.set('hide', [...hiddenDatasets].map(s => encodeURIComponent(s)).join(','));
+  } else {
+    url.searchParams.delete('hide');
+  }
+  window.history.replaceState({}, '', url);
+}
+
+// Apply hidden datasets to a chart after creation
+function applyHiddenDatasets(chart) {
+  if (hiddenDatasets.size === 0) return;
+  for (let i = 0; i < chart.data.datasets.length; i++) {
+    if (hiddenDatasets.has(chart.data.datasets[i].label)) {
+      chart.getDatasetMeta(i).hidden = true;
+    }
+  }
+  chart.update();
 }
 
 const subtestNames = [
@@ -2062,6 +2097,8 @@ function displaySubtestChart(canvas, data, testName) {
       }
     }
   });
+
+  applyHiddenDatasets(subtestCharts[testName]);
 }
 
 // Initialize on page load
