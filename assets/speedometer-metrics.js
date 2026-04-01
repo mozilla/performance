@@ -18,6 +18,8 @@ const searchParams = new URLSearchParams(window.location.search);
 var timeChart;
 var bugsChart;
 var referencePoint = null;
+var subtestCharts = {}; // Map of testName -> Chart instance
+var allSubtestChartsLoaded = false;
 
 // Platform configurations
 const platformConfigs = {
@@ -241,6 +243,7 @@ async function loadDataForPeriod(days, signatures) {
 
 async function loadChartDataForTest(testName, days) {
   console.log(`Loading ${days} days of data for ${testName}`);
+  window.speedometerData.days = days;
 
   // Show loading spinner
   showChartLoading();
@@ -604,6 +607,11 @@ function changeRange(range) {
 
   referencePoint = null;
   loadChartDataForTest(window.speedometerData.selectedTest, days);
+
+  // If subtest charts are loaded, reload them with the new range
+  if (allSubtestChartsLoaded) {
+    loadAllSubtestCharts();
+  }
 }
 
 async function toggleRepository(checked) {
@@ -1687,6 +1695,317 @@ async function loadSpeedometerBugBurndown(days) {
   bugsChart = new Chart(ctx, config);
 
   console.log("Created bug chart");
+}
+
+// --- All Subtest Charts ---
+
+const subtestNames = [
+  'Charts-chartjs/total',
+  'Charts-observable-plot/total',
+  'Editor-CodeMirror/total',
+  'Editor-TipTap/total',
+  'NewsSite-Next/total',
+  'NewsSite-Nuxt/total',
+  'Perf-Dashboard/total',
+  'React-Stockcharts-SVG/total',
+  'TodoMVC-Angular-Complex-DOM/total',
+  'TodoMVC-Backbone/total',
+  'TodoMVC-JavaScript-ES5/total',
+  'TodoMVC-JavaScript-ES6-Webpack-Complex-DOM/total',
+  'TodoMVC-jQuery/total',
+  'TodoMVC-Lit-Complex-DOM/total',
+  'TodoMVC-Preact-Complex-DOM/total',
+  'TodoMVC-React-Complex-DOM/total',
+  'TodoMVC-React-Redux/total',
+  'TodoMVC-Svelte-Complex-DOM/total',
+  'TodoMVC-Vue/total',
+  'TodoMVC-WebComponents/total'
+];
+
+async function loadAllSubtestCharts() {
+  const container = document.getElementById('all-subtests-container');
+  if (!container) return;
+
+  const btn = document.getElementById('load-all-subtests-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Loading subtest charts...';
+  }
+
+  allSubtestChartsLoaded = true;
+  const days = window.speedometerData.days || 90;
+
+  // Destroy existing subtest charts
+  for (const chart of Object.values(subtestCharts)) {
+    chart.destroy();
+  }
+  subtestCharts = {};
+  container.innerHTML = '';
+
+  // Create status summary
+  const statusDiv = document.createElement('div');
+  statusDiv.id = 'subtest-load-status';
+  statusDiv.style.cssText = 'text-align: center; font-family: sans-serif; font-size: 14px; color: #666; margin-bottom: 15px;';
+  statusDiv.textContent = `Loading 0 / ${subtestNames.length} subtest charts...`;
+  container.appendChild(statusDiv);
+
+  // Create placeholder divs with loading indicators for each subtest
+  for (const testName of subtestNames) {
+    const displayName = testName.replace('/total', '');
+    const wrapper = document.createElement('div');
+    wrapper.id = `subtest-wrapper-${displayName}`;
+    wrapper.style.cssText = 'position: relative; margin-bottom: 30px;';
+
+    const title = document.createElement('h3');
+    title.style.cssText = 'font-family: sans-serif; margin-bottom: 5px;';
+    title.textContent = `${displayName} (lower is better)`;
+    wrapper.appendChild(title);
+
+    const loaderDiv = document.createElement('div');
+    loaderDiv.id = `subtest-loader-${displayName}`;
+    loaderDiv.style.cssText = 'text-align: center; padding: 40px 0;';
+    loaderDiv.innerHTML = `
+      <div style="display: inline-block; width: 30px; height: 30px; border: 4px solid #ddd; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+      <div style="margin-top: 10px; font-size: 13px; color: #999;">Loading ${displayName}...</div>
+    `;
+    wrapper.appendChild(loaderDiv);
+
+    const canvas = document.createElement('canvas');
+    canvas.id = `subtest-chart-${displayName}`;
+    canvas.style.cssText = 'width:100%; display: none;';
+    wrapper.appendChild(canvas);
+
+    container.appendChild(wrapper);
+  }
+
+  // Load each subtest chart sequentially to avoid overwhelming the API,
+  // but use small batches of 4 for reasonable parallelism
+  const batchSize = 4;
+  let loaded = 0;
+
+  for (let i = 0; i < subtestNames.length; i += batchSize) {
+    const batch = subtestNames.slice(i, i + batchSize);
+    await Promise.all(batch.map(async (testName) => {
+      await loadSingleSubtestChart(testName, days);
+      loaded++;
+      if (statusDiv) {
+        statusDiv.textContent = `Loaded ${loaded} / ${subtestNames.length} subtest charts`;
+      }
+    }));
+  }
+
+  if (statusDiv) {
+    statusDiv.textContent = `All ${subtestNames.length} subtest charts loaded.`;
+    statusDiv.style.color = '#2a7';
+  }
+
+  if (btn) {
+    btn.textContent = 'Reload All Subtest Charts';
+    btn.disabled = false;
+  }
+}
+
+async function loadSingleSubtestChart(testName, days) {
+  const displayName = testName.replace('/total', '');
+
+  // Find signatures for this test
+  const testSignatures = Object.values(window.speedometerData.signatures).filter(
+    sig => sig.test === testName
+  );
+
+  if (testSignatures.length === 0) {
+    const loader = document.getElementById(`subtest-loader-${displayName}`);
+    if (loader) loader.innerHTML = '<div style="color: #999; font-size: 13px;">No data available</div>';
+    return;
+  }
+
+  const intervalSeconds = days * 24 * 60 * 60;
+  const chartData = [];
+
+  const fetchPromises = testSignatures.map(async (sig) => {
+    try {
+      const repository = sig.repository || window.speedometerData.repository;
+      const replicatesParam = window.speedometerData.showReplicates ? '&replicates=true' : '';
+      const dataUrl = `https://treeherder.mozilla.org/api/performance/summary/?repository=${repository}&signature=${sig.id}&framework=${window.speedometerData.framework}&interval=${intervalSeconds}&all_data=true${replicatesParam}`;
+      const dataResponse = await fetch(dataUrl);
+      const perfData = await dataResponse.json();
+
+      const dataPoints = [];
+      if (Array.isArray(perfData) && perfData.length > 0 && perfData[0].data) {
+        for (const point of perfData[0].data) {
+          const timestamp = point.push_timestamp;
+          const timestampMs = typeof timestamp === 'string' ? new Date(timestamp).getTime() : timestamp * 1000;
+          dataPoints.push({
+            date: new Date(timestampMs),
+            test: sig.test,
+            suite: sig.suite,
+            platform: sig.machine_platform,
+            application: sig.application,
+            signature_id: sig.id,
+            value: point.value,
+            push_timestamp: timestampMs / 1000,
+            revision: point.revision,
+            job_id: point.job_id
+          });
+        }
+      }
+      return dataPoints;
+    } catch (error) {
+      console.error(`Error fetching subtest signature ${sig.id}:`, error);
+      return [];
+    }
+  });
+
+  const results = await Promise.all(fetchPromises);
+  results.forEach(dataPoints => chartData.push(...dataPoints));
+
+  // Hide loader, show canvas
+  const loader = document.getElementById(`subtest-loader-${displayName}`);
+  const canvas = document.getElementById(`subtest-chart-${displayName}`);
+  if (loader) loader.style.display = 'none';
+  if (canvas) canvas.style.display = 'block';
+
+  // Render chart
+  displaySubtestChart(canvas, chartData, testName);
+}
+
+function displaySubtestChart(canvas, data, testName) {
+  if (!canvas) return;
+
+  const displayName = testName.replace('/total', '');
+
+  // Destroy old chart if exists
+  if (subtestCharts[testName]) {
+    subtestCharts[testName].destroy();
+  }
+
+  const firefoxData = data.filter(d => (d.application === 'firefox' || d.application === 'fenix') && !d.platform.includes("nightlyasrelease"));
+  const firefoxNarData = data.filter(d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes("nightlyasrelease"));
+  const chromeData = data.filter(d => d.application === 'chrome' || d.application === 'chrome-m');
+  const carData = data.filter(d => d.application === 'custom-car' || d.application === 'cstm-car-m');
+  const safariData = data.filter(d => d.application === 'safari');
+  const safariTPData = data.filter(d => d.application === 'safari-tp');
+
+  const showReplicates = window.speedometerData.showReplicates;
+  const unhoveredPointRadius = showReplicates ? 1.5 : 3;
+  const unhoveredPointBorderWidth = showReplicates ? 0 : 0.5;
+  const pointColorAlphaHex = showReplicates ? "aa" : "ff";
+
+  function dateNoise(date) {
+    if (!showReplicates) return date;
+    const msRange = 1000 * 60 * 60 * 6;
+    return new Date(date.getTime() + Math.random() * msRange);
+  }
+
+  const datasets = [
+    {
+      label: 'Firefox',
+      data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#FF9500" + pointColorAlphaHex,
+      pointBorderColor: "#000000",
+      pointBorderWidth: unhoveredPointBorderWidth
+    },
+    {
+      label: 'Chrome',
+      data: chromeData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#1DA462" + pointColorAlphaHex,
+      pointBorderColor: "#000000",
+      pointBorderWidth: unhoveredPointBorderWidth
+    }
+  ];
+
+  if (firefoxNarData.length > 0) {
+    datasets.push({
+      label: 'Nightly-as-Release',
+      data: firefoxNarData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#dd2500" + pointColorAlphaHex,
+      pointBorderColor: "#000000",
+      pointBorderWidth: unhoveredPointBorderWidth
+    });
+  }
+
+  if (carData.length > 0) {
+    datasets.push({
+      label: 'Chromium-as-Release',
+      data: carData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#2773da" + pointColorAlphaHex,
+      pointBorderColor: "#000000",
+      pointBorderWidth: unhoveredPointBorderWidth
+    });
+  }
+
+  if (platformConfig.supportsSafari && safariData.length > 0) {
+    datasets.push({
+      label: 'Safari',
+      data: safariData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#444444" + pointColorAlphaHex,
+      pointBorderColor: "#000000",
+      pointBorderWidth: unhoveredPointBorderWidth
+    });
+  }
+
+  if (platformConfig.supportsSafari && safariTPData.length > 0) {
+    datasets.push({
+      label: 'Safari TP',
+      data: safariTPData.map(d => ({ x: dateNoise(d.date), y: d.value })),
+      pointRadius: unhoveredPointRadius,
+      pointBackgroundColor: "#777777" + pointColorAlphaHex,
+      pointBorderColor: "#44444444",
+      pointBorderWidth: unhoveredPointBorderWidth
+    });
+  }
+
+  subtestCharts[testName] = new Chart(canvas, {
+    type: 'scatter',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: 2,
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top'
+        },
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              if (context.length > 0) {
+                const date = new Date(context[0].parsed.x);
+                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+              }
+              return '';
+            },
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) label += ': ';
+              label += round(context.parsed.y, 2);
+              return label;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'time',
+          time: {
+            unit: showReplicates ? false : 'day',
+            tooltipFormat: 'MMM dd, yyyy'
+          },
+          title: { display: true, text: 'Date' }
+        },
+        y: {
+          beginAtZero: false,
+          title: { display: true, text: 'Time (ms)' }
+        }
+      }
+    }
+  });
 }
 
 // Initialize on page load
