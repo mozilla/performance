@@ -624,6 +624,8 @@ function changeRange(range) {
     days = 90;
   } else if (range === 1) {
     days = 30;
+  } else if (range === 'week') {
+    days = 7;
   }
 
   referencePoint = null;
@@ -1487,7 +1489,7 @@ function displayChart(data, testName) {
         x: {
           type: 'time',
           time: {
-            unit: showReplicates ? false : 'day',
+            unit: 'day',
             tooltipFormat: 'MMM dd, yyyy'
           },
           title: {
@@ -2174,7 +2176,7 @@ function displaySubtestChart(canvas, data, testName) {
         x: {
           type: 'time',
           time: {
-            unit: showReplicates ? false : 'day',
+            unit: 'day',
             tooltipFormat: 'MMM dd, yyyy'
           },
           title: { display: true, text: 'Date' }
