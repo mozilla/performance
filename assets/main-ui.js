@@ -22,6 +22,9 @@ if (sidebar !== null) {
        Speedometer
       </span>
      </a>
+     <a href="speedometer_job_debug.html" style="padding-left: 38px; font-size: 0.85em; opacity: 0.8;">
+      <span>Job Debug</span>
+     </a>
     </li>
 
       <!-- Jetstream menu -->

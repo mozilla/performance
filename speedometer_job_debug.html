@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Speedometer 3 Job Debug</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
+  <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+  <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  <link rel="stylesheet" href="assets/main-ui-style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+  <script src="assets/speedometer-metrics.js"></script>
+  <style>
+    body {
+      background-color: #f0f0f0;
+    }
+
+    h3 {
+      font-family: sans-serif;
+    }
+
+    .styled-table {
+      border-collapse: collapse;
+      margin: 25px 0;
+      font-size: 0.9em;
+      font-family: sans-serif;
+      min-width: 400px;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+      .styled-table thead th {
+        background-color: #3366ff;
+        color: #ffffff;
+        text-align: center;
+      }
+
+      .styled-table th {
+        padding: 12px 20px;
+      }
+
+      .styled-table td {
+        text-align: right;
+        padding: 12px 20px;
+      }
+
+      .styled-table .testName {
+        text-align: left;
+        padding-left: 20px;
+      }
+
+    .tableBody tr {
+      border-bottom: 1px solid #dddddd;
+    }
+
+    .tableBody .sumRow {
+      border-top: 2px solid black;
+    }
+
+    .tableBody tr:nth-of-type(odd) {
+      background-color: #f3f3f3;
+    }
+
+    .tableBody tr:nth-of-type(even) {
+      background-color: #e3e3e3;
+    }
+
+    .tableBody tr:hover {
+      background-color: #d0d0d0;
+    }
+
+    .buttons td {
+      width: 250px;
+      text-align: center;
+      font-family: sans-serif;
+      font-size: 20px;
+    }
+
+    a {
+      padding-left: 30px;
+      padding-right: 30px;
+      padding-top: 10px;
+      padding-bottom: 10px;
+      text-decoration: none;
+      color: black;
+      border-radius: 5px;
+    }
+
+      a:hover {
+        background-color: lightgray;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+  </style>
+</head>
+
+<body>
+  <div class="top">
+    <a href="javascript:history.back()" class="btn back-btn" title="Go Back">
+      <i class="fa-solid fa-arrow-left"></i>
+    </a>
+    <div class="top-title-container">
+      <div class="top-title">
+        <b>moz://a</b> performance portal
+      </div>
+    </div>
+    <a href="speedometer.html" class="btn" title="Back to main dashboard">
+      <i class="fa-solid fa-chart-line"></i> Main Dashboard
+    </a>
+  </div>
+
+  <div class="main-content">
+    <aside class="main-sidebar" id="main-sidebar">
+    </aside>
+
+    <div class="content">
+      <center>
+        <div style="max-width: 900px; margin: 10px auto 20px; padding: 16px 20px; background: #e8edf5; border: 1px solid #b0bdd4; border-radius: 6px; text-align: left; font-family: sans-serif; font-size: 14px; line-height: 1.5;">
+          <strong>Job Debug View</strong> &mdash;
+          Investigate which physical machines produced each data point.
+          Select a platform and subtest, choose a single browser from the dropdown,
+          then click <em>Fetch Machine Data</em>.
+          The chart will re-colour points by machine name so you can spot
+          machine-specific noise or outliers. Click any point to open its
+          Taskcluster task.
+        </div>
+
+        <table class="buttons">
+          <tr><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=windows" id="windowsbutton">Windows 11</a></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=windows-hwref" id="windowshwrefbutton">Windows 11 (ref)</a></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=linux" id="linuxbutton">Linux</a></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=osxm4" id="osxm4button">Mac</a></td></tr>
+          <tr><td colspan="1" style="height:50px;"></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=android-s24" id="mobilebutton">Android (S24)</a></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=android-a55" id="mobilebutton2">Android (A55)</a></td><td colspan="2" style="height:50px;"><a href="speedometer_job_debug.html?os=android-p6" id="mobilebutton3">Android (P6)</a></td><td colspan="1" style="height:50px;"></td></tr>
+        </table>
+
+        <h3 id="chart-title" style="margin-top: 30px; margin-bottom: 20px;"></h3>
+
+        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div id="repository-toggle-container" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="repository-toggle" onchange="toggleRepository(this.checked)" style="cursor: pointer;">
+                <span>Use autoland data</span>
+              </label>
+            </div>
+            <div id="replicates-toggle-container" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <input type="checkbox" id="replicates-toggle" onchange="toggleReplicates(this.checked)" style="cursor: pointer;">
+                <span>Show replicates</span>
+              </label>
+            </div>
+            <div style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
+              <label style="font-size: 13px; display: flex; align-items: center; gap: 6px; margin: 0;">
+                <span>Browser:</span>
+                <select id="browser-select" onchange="jobDebug.selectBrowser(this.value)" style="font-size: 13px; padding: 2px 4px;">
+                </select>
+              </label>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="fetch-machine-btn" onclick="jobDebug.fetchMachineData()" disabled
+              style="padding: 8px 16px; font-size: 14px; font-family: sans-serif; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background-color: #667eea; color: white; font-weight: bold;">
+              Fetch Machine Data
+            </button>
+          </div>
+        </div>
+
+        <div id="machine-progress-container" style="display: none; width:100%; max-width:900px; margin: 4px auto 8px;">
+          <div style="background: #ddd; border-radius: 4px; height: 20px; overflow: hidden;">
+            <div id="machine-progress-bar" style="background: #667eea; height: 100%; width: 0%; transition: width 0.2s;"></div>
+          </div>
+          <div id="machine-progress-text" style="font-family: sans-serif; font-size: 12px; color: #666; text-align: center; margin-top: 2px;"></div>
+        </div>
+
+        <div id="machine-legend" style="display: none; width:100%; max-width:900px; margin: 4px auto 8px; font-family: sans-serif; font-size: 12px;">
+        </div>
+
+        <div id="chart-container" style="width:100%;max-width:900px; position: relative; margin: 0 auto;">
+          <canvas id="myChart" style="width:100%;max-width:900px"></canvas>
+          <table class="buttons">
+            <tr><td><a onclick="changeRange('all')" id="allbutton">1 year</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td><td><a onclick="changeRange('week')" id="weekbutton">1 week</a></td></tr>
+          </table>
+        </div>
+
+        <div style="margin-top: 20px; text-align: center;">
+          <button id="filter-outliers-btn" onclick="toggleFilterOutliers()"
+            style="padding: 10px 20px; font-size: 16px; font-family: sans-serif; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0f0; margin-left: 10px;">
+            Filter Outliers
+          </button>
+        </div>
+
+        <br>
+        <h3>Breakdown: Speedometer 3 Subtests</h3>
+        <table class="styled-table" id="tableLikely" style="max-width: 1200px;">
+          <col>
+          <col>
+          <colgroup span="2"></colgroup>
+          <col>
+          <colgroup span="2"></colgroup>
+          <col>
+          <thead>
+            <tr>
+              <th rowspan="2"></th>
+              <th colspan="6" scope="colgroup">Value<br />7 day average</th>
+              <th colspan="4">Difference vs Firefox</th>
+            </tr>
+            <tr>
+              <th scope="col">Firefox<br />Nightly</th>
+              <th scope="col">Firefox<br />NaR</th>
+              <th scope="col">Chrome<br />Release</th>
+              <th scope="col">CaR</th>
+              <th scope="col">Safari<br/>Release</th>
+              <th scope="col">Safari<br />TP</th>
+              <th scope="col">Chrome<br />Release</th>
+              <th scope="col">CaR</th>
+              <th scope="col">Safari<br/>Release</th>
+              <th scope="col">Safari<br />TP</th>
+            </tr>
+          </thead>
+          <tbody class="tableBody" id="tableBodyLikely">
+          </tbody>
+        </table>
+      </center>
+    </div> <!-- content -->
+  </div> <!-- main-content -->
+<script src="assets/main-ui.js"></script>
+<script src="assets/job-debug.js"></script>
+</body>
+</html>
