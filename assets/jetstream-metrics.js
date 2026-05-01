@@ -142,7 +142,9 @@ async function loadChartFromTreeherder(testName) {
             test: sig.test,
             application: sig.application,
             signature_id: sig.id,
-            value: point.value
+            value: point.value,
+            revision: point.revision,
+            repository: sigRepository
           });
         }
       }
@@ -433,12 +435,24 @@ function getAlertAnnotations(testName) {
   return annotations;
 }
 
+function updatePushlogLink(url, fromRev, toRev) {
+  const container = document.getElementById('pushlog-link-container');
+  if (container) {
+    container.innerHTML = `<a href="${url}" target="_blank" style="color: #3366ff; text-decoration: underline; padding: 4px 8px;">Pushlog: ${fromRev.substring(0, 12)} → ${toRev.substring(0, 12)}</a>`;
+  }
+}
+
 function displayChartFromTreeherder(data, testName) {
   const ctx = document.getElementById('myChart');
   if (!ctx) return;
 
   if (timeChart) {
     timeChart.destroy();
+  }
+
+  const pushlogContainer = document.getElementById('pushlog-link-container');
+  if (pushlogContainer) {
+    pushlogContainer.innerHTML = '<span style="color: #999;">Select two points to generate pushlog link</span>';
   }
 
   // Update chart title
@@ -498,7 +512,7 @@ function displayChartFromTreeherder(data, testName) {
   const datasets = [
     {
       label: 'Firefox',
-      data: firefoxData.map(d => ({ x: d.date, y: d.value })),
+      data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, repository: d.repository })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -527,7 +541,7 @@ function displayChartFromTreeherder(data, testName) {
     },
     {
       label: 'Chrome',
-      data: chromeData.map(d => ({ x: d.date, y: d.value })),
+      data: chromeData.map(d => ({ x: d.date, y: d.value, revision: d.revision, repository: d.repository })),
       pointRadius: function(context) {
         if (referencePoint &&
             context.datasetIndex === referencePoint.datasetIndex &&
@@ -560,7 +574,7 @@ function displayChartFromTreeherder(data, testName) {
   if (carData.length > 0) {
     datasets.push({
       label: 'Chromium-as-Release',
-      data: carData.map(d => ({ x: d.date, y: d.value })),
+      data: carData.map(d => ({ x: d.date, y: d.value, revision: d.revision, repository: d.repository })),
       pointRadius: 3,
       pointBackgroundColor: "#2773da",
       pointBorderColor: "#000000",
@@ -605,14 +619,27 @@ function displayChartFromTreeherder(data, testName) {
           const dataset = timeChart.data.datasets[element.datasetIndex];
           const dataPoint = dataset.data[element.index];
 
-          referencePoint = {
+          const newPoint = {
             x: dataPoint.x,
             y: dataPoint.y,
+            revision: dataPoint.revision,
+            repository: dataPoint.repository,
             label: dataset.label,
             datasetIndex: element.datasetIndex,
             index: element.index
           };
 
+          if (referencePoint && referencePoint.revision && newPoint.revision &&
+              referencePoint.repository === newPoint.repository) {
+            const fromRev = referencePoint.x < newPoint.x ? referencePoint.revision : newPoint.revision;
+            const toRev   = referencePoint.x < newPoint.x ? newPoint.revision : referencePoint.revision;
+            const repoPath = newPoint.repository === 'autoland'
+              ? 'integration/autoland' : newPoint.repository;
+            const pushlogUrl = `https://hg-edge.mozilla.org/${repoPath}/pushloghtml?fromchange=${fromRev}&tochange=${toRev}`;
+            updatePushlogLink(pushlogUrl, fromRev, toRev);
+          }
+
+          referencePoint = newPoint;
           timeChart.update();
         }
       },
