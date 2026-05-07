@@ -349,7 +349,8 @@
 
         const unit = (testName === 'score' || testName.endsWith("Geometric")) ? '' : ' ms';
         const scoreClass = testName === 'score' ? ' class="scoreRow"' : '';
-        let row = '<tr' + scoreClass + ' onClick="loadChartFromTreeherder(\'' + testName + '\'); window.scrollTo({ top: 0, behavior: \'smooth\' });"><th scope="row" class="testName">' + testName + '</th>';
+        const displayName = testName.endsWith('-Geometric') ? testName.slice(0, -'-Geometric'.length) : testName;
+        let row = '<tr' + scoreClass + ' onClick="loadChartFromTreeherder(\'' + testName + '\'); window.scrollTo({ top: 0, behavior: \'smooth\' });"><th scope="row" class="testName">' + displayName + '</th>';
         row += '<td>' + (firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (chromeAvg > 0 ? round(chromeAvg, 2) + unit : '') + '</td>';
         row += '<td>' + (carAvg > 0 ? round(carAvg, 2) + unit : '') + '</td>';
