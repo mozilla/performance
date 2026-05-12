@@ -2267,5 +2267,5 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   loadSpeedometerData();
-  loadSpeedometerBugBurndown(365 * 3);
+  // loadSpeedometerBugBurndown(365 * 3);
 });
