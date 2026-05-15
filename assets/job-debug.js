@@ -31,8 +31,8 @@
 
   // Browser filter definitions matching speedometer-metrics.js
   const browserDefs = [
-    { key: 'firefox', label: 'Firefox', filter: d => (d.application === 'firefox' || d.application === 'fenix') && !d.platform.includes('nightlyasrelease') },
-    { key: 'firefox-nar', label: 'Nightly-as-Release', filter: d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes('nightlyasrelease') },
+    { key: 'firefox', label: 'Firefox', filter: d => (d.application === 'firefox' || d.application === 'fenix') && !d.platform.includes('nightlyasrelease') && !(d.application === 'fenix' && d.extra_options && d.extra_options.includes('fission')) },
+    { key: 'firefox-nar', label: 'Nightly-as-Release', filter: d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes('nightlyasrelease') && !(d.application === 'fenix' && d.extra_options && d.extra_options.includes('fission')) },
     { key: 'chrome', label: 'Chrome', filter: d => d.application === 'chrome' || d.application === 'chrome-m' },
     { key: 'car', label: 'Chromium-as-Release', filter: d => d.application === 'custom-car' || d.application === 'cstm-car-m' },
     { key: 'safari', label: 'Safari', filter: d => d.application === 'safari' },

@@ -128,7 +128,8 @@ async function loadSpeedometerData(loadInitialChart = true) {
       let firefoxSigCount = 0;
       for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
         if (sig.suite === 'speedometer3' && (sig.application === 'firefox' || sig.application === 'fenix') &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
+            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf'))) &&
+            !(sig.application === 'fenix' && sig.extra_options && sig.extra_options.includes('fission'))) {
           allSignatures[sigId] = { ...sig, repository: window.speedometerData.repository };
           firefoxSigCount++;
         }
