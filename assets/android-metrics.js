@@ -461,6 +461,18 @@ function fixupStartupTests(data) {
       row.test = 'restore-startup-p6';
     } else if ( row.test === 'tab_restore' && row.suite === 'tab-restore-shopify' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
       row.test = 'restore-startup-s24';
+    } else if ( row.test === 'cold_main_first_frame.mean' && row.suite === 'applink-startup-first-frame' && row.platform === 'android-hw-a55-14-0-aarch64-shippable') {
+      row.test = 'cold_main_first_frame.mean-a55';
+    } else if ( row.test === 'cold_main_first_frame.mean' && row.suite === 'applink-startup-first-frame' && row.platform === 'android-hw-p6-13-0-aarch64-shippable') {
+      row.test = 'cold_main_first_frame.mean-p6';
+    } else if ( row.test === 'cold_main_first_frame.mean' && row.suite === 'applink-startup-first-frame' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
+      row.test = 'cold_main_first_frame.mean-s24';
+    } else if ( row.test === 'cold_view_nav_start.mean' && row.suite === 'applink-startup-navigation-start' && row.platform === 'android-hw-a55-14-0-aarch64-shippable') {
+      row.test = 'cold_view_nav_start.mean-a55';
+    } else if ( row.test === 'cold_view_nav_start.mean' && row.suite === 'applink-startup-navigation-start' && row.platform === 'android-hw-p6-13-0-aarch64-shippable') {
+      row.test = 'cold_view_nav_start.mean-p6';
+    } else if ( row.test === 'cold_view_nav_start.mean' && row.suite === 'applink-startup-navigation-start' && row.platform === 'android-hw-s24-14-0-aarch64-shippable') {
+      row.test = 'cold_view_nav_start.mean-s24';
     }
   });
 }
@@ -611,7 +623,9 @@ async function loadDataFromTreeherder() {
       'homeview-startup',
       'tab-restore-shopify',
       'speedometer3',
-      'startup'
+      'startup',
+      'applink-startup-first-frame',
+      'applink-startup-navigation-start',
     ]);
 
     const relevantTests = new Set([
@@ -1440,8 +1454,13 @@ function displayTable() {
     const monthAgoChromeAvg = calculateMonthAgoAverage(chromeDataToUse);
     const monthAgoDifference = ((monthAgoChromeAvg - monthAgoFirefoxAvg) / monthAgoFirefoxAvg) * 100;
 
-    // Include test if we have Firefox data and at least some Chrome data (even if average is 0)
-    if (firefoxAvg !== 0 && (chromeData.length > 0 || carData.length > 0)) {
+    // Some metrics are Firefox-only (no Chrome counterpart exists in Treeherder).
+    const firefoxOnlyTests = new Set([
+      'cold_view_nav_start.mean-a55',
+      'cold_view_nav_start.mean-p6',
+      'cold_view_nav_start.mean-s24'
+    ]);
+    if (firefoxAvg !== 0 && (chromeData.length > 0 || carData.length > 0 || firefoxOnlyTests.has(metric))) {
       // Get signature IDs and framework IDs for Perfherder links
       const firefoxSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
       const firefoxFrameworkId = firefoxData.length > 0 ? firefoxData[0].framework_id : null;
