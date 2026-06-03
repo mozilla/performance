@@ -23,7 +23,7 @@ if (sidebar !== null) {
       </span>
      </a>
      <a href="speedometer_job_debug.html" style="padding-left: 38px; font-size: 0.85em; opacity: 0.8;">
-      <span>Job Debug</span>
+      <i class="fa-solid fa-arrow-turn-up" style="display: inline-block; font-size: 0.8em; margin-right: 6px; vertical-align: -0.125em; transform: rotate(90deg);"></i><span>Job Debug</span>
      </a>
     </li>
 
