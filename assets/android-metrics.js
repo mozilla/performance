@@ -651,7 +651,7 @@ async function loadDataFromTreeherder() {
       for (const [hash, sig] of Object.entries(firefoxSignatures)) {
         if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
             (sig.application === 'fenix' || sig.application === 'firefox') &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
+            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
           allSignatures[hash] = { ...sig, repository: repository };
         }
       }
@@ -665,7 +665,7 @@ async function loadDataFromTreeherder() {
       for (const [hash, sig] of Object.entries(chromeSignatures)) {
         if ((relevantSuites.has(sig.suite) || relevantTests.has(sig.test)) &&
             sig.application !== 'fenix' && sig.application !== 'firefox' &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
+            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
           allSignatures[hash] = { ...sig, repository: 'mozilla-central' };
         }
       }
@@ -879,7 +879,7 @@ async function fetchAlertsForTest(testMetric, platform, suiteName) {
       if (sig.suite === suiteName &&
           baseTestNames.includes(sig.test) &&
           (sig.application === 'firefox' || sig.application === 'fenix') &&
-          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
+          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
         autolandSigId = sig.id;
         console.log(`Matched signature ${autolandSigId} for suite ${suiteName}, test ${sig.test}`);
         break;
