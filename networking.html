@@ -123,8 +123,8 @@
       <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
-          <p class="section-desc">USA & Canada (DoH Rollout Countries), P75, 7-day avg</p>
+          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> and OS resolver</h3>
+          <p class="section-desc">USA & Canada (DoH Rollout Countries), P75 &amp; P95, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="dns-lookup-desktop-chart"></canvas>
@@ -236,8 +236,8 @@
       <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
-          <p class="section-desc">P75, 7-day avg</p>
+          <h3>DNS Lookup Time (US, Canada) - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> and OS resolver</h3>
+          <p class="section-desc">P75 &amp; P95, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="dns-lookup-desktop-nightly-chart"></canvas>
@@ -354,7 +354,7 @@
       <div class="group-row">
         <div class="section">
           <h3>DNS Lookup Time</h3>
-          <p class="section-desc">P75, 7-day avg</p>
+          <p class="section-desc">P75 &amp; P95, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="dns-lookup-android-chart"></canvas>
@@ -479,8 +479,8 @@
       <p class="section-desc">Top Level Document Requests</p>
       <div class="group-row">
         <div class="section">
-          <h3>DNS Lookup Time (US, Canada) - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> vs System Resolver</h3>
-          <p class="section-desc">P75, 7-day avg</p>
+          <h3>DNS Lookup Time (US, Canada) - <a href="https://support.mozilla.org/en-US/kb/firefox-dns-over-https" target="_blank">DoH</a> and OS resolver</h3>
+          <p class="section-desc">P75 &amp; P95, 7-day avg</p>
           <div class="chart-container">
             <div class="chart-wrapper">
               <canvas id="dns-lookup-android-nightly-chart"></canvas>
@@ -569,9 +569,10 @@
     },
     {
       id: 'dns-lookup-desktop',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/114599/results.csv?api_key=lSB1Lx65qoDC3Q3VsVh91nt51TeLygqgauC3Xmdn',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/121688/results.csv?api_key=zhnbWXs4e8ArSumpkVDHzFmVBcsFcDIzAHRAqcfK',
       valueColumn: 'ma_7day',
       unit: 'ms',
+      seriesOrder: ['DoH-p95', 'os_resolver-p95', 'DoH-p75', 'os_resolver-p75'],
       yMin: 0
     },
     {
@@ -625,8 +626,9 @@
     {
       id: 'dns-lookup-android',
       url: 'https://sql.telemetry.mozilla.org/api/queries/115329/results.csv?api_key=GRqbVlXLCtCTA4vdU4Qqbe4nm9jw2wFAKTirZRxf',
-      valueColumn: 'P75_7day_average_ms',
+      valueColumn: 'value_7day_average_ms',
       unit: 'ms',
+      seriesOrder: ['p95', 'p75'],
       yMin: 0
     },
     {
@@ -708,9 +710,10 @@
     },
     {
       id: 'dns-lookup-desktop-nightly',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/115481/results.csv?api_key=f9nvVZjvFtJ2QeXKrCAYJLvtYCvIjKcYdjyxiqWs',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/121686/results.csv?api_key=xpA2aVZKs1aCceiqKrHcrr7FOiV1HSGhjYbDtKAe',
       valueColumn: 'ma_7day',
       unit: 'ms',
+      seriesOrder: ['DoH-p95', 'os_resolver-p95', 'DoH-p75', 'os_resolver-p75'],
       yMin: 0
     },
     {
@@ -769,9 +772,10 @@
     },
     {
       id: 'dns-lookup-android-nightly',
-      url: 'https://sql.telemetry.mozilla.org/api/queries/115483/results.csv?api_key=1Cm2f4luMfsrkD8xfmNI09T0L6bTE4ri4IfPFC0A',
+      url: 'https://sql.telemetry.mozilla.org/api/queries/121687/results.csv?api_key=9oyXbO2mR2oO8hk6DudyhBXaf3RA7iL6H4MCxSM2',
       valueColumn: 'ma_7day',
       unit: 'ms',
+      seriesOrder: ['DoH-p95', 'os_resolver-p95', 'DoH-p75', 'os_resolver-p75'],
       yMin: 0
     },
     {
@@ -843,24 +847,6 @@
       chart: 'http-desktop'
     },
     {
-      date: '2025-05-22',
-      label: 'Bug 1958018',
-      description: 'Extra A and AAAA DNS requests for each host lookup',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
-      platform: 'android',
-      channel: 'nightly',
-      chart: 'dns-lookup-android-nightly'
-    },
-    {
-      date: '2025-06-24',
-      label: 'Bug 1958018',
-      description: 'Extra A and AAAA DNS requests for each host lookup',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1958018',
-      platform: 'android',
-      channel: 'release',
-      chart: 'dns-lookup-android'
-    },
-    {
       date: '2025-08-07',
       label: 'Bug 1913165',
       description: 'Add networking segmentation to the pageload event',
@@ -879,37 +865,50 @@
       chart: 'nettype-android'
     },
     {
-      date: '2025-06-26',
-      label: 'Bug 1971375',
-      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      date: '2026-05-20',
+      label: 'Bug 2039555',
+      description: 'Enabled Happy Eyeballs v3 (HEv3) on nightly',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2039555',
+      platform: 'desktop',
       channel: 'nightly',
-      chart: 'tls-desktop-nightly'
+      chart: 'dns-lookup-desktop-nightly'
     },
     {
-      date: '2025-06-26',
-      label: 'Bug 1971375',
-      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
+      date: '2026-05-20',
+      label: 'Bug 2039555',
+      description: 'Enabled Happy Eyeballs v3 (HEv3) on nightly',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2039555',
+      platform: 'android',
       channel: 'nightly',
-      chart: 'tls-android-nightly'
+      chart: 'dns-lookup-android-nightly'
     },
     {
-      date: '2025-08-19',
-      label: 'Bug 1971375',
-      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
-      channel: 'release',
-      chart: 'tls-desktop'
+      date: '2026-05-20',
+      label: 'Bug 2039555',
+      description: 'Enabled Happy Eyeballs v3 (HEv3) on nightly',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2039555',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'ttrs-android-nightly'
     },
     {
-      date: '2025-08-19',
-      label: 'Bug 1971375',
-      description: 'secureConnectionStart for HTTP/3 connections is not accurate',
-      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=1971375',
-      channel: 'release',
-      chart: 'tls-android'
-    }
+      date: '2026-05-29',
+      label: 'Bug 2042702',
+      description: 'Moved pageload event to page destruction for more accurate LCP',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2042702',
+      platform: 'desktop',
+      channel: 'nightly',
+      chart: 'lcp-desktop-nightly'
+    },
+    {
+      date: '2026-05-29',
+      label: 'Bug 2042702',
+      description: 'Moved pageload event to page destruction for more accurate LCP',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2042702',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'lcp-android-nightly'
+    },
   ];
 
   const charts = {};
