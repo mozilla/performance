@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <title>Nav Bench Status Dashboard</title>
+  <title>Navigation Benchmark Status Dashboard</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
   <link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
@@ -129,6 +129,21 @@
 
     <div class="content">
       <center>
+        <div style="max-width: 900px; margin: 0 auto 20px; text-align: left; font-family: sans-serif; font-size: 0.95em; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);">
+          <strong>Navigation Benchmark</strong> tests Firefox navigation performance across real websites:
+          Amazon, BBC, DuckDuckGo, Reddit, and Wikipedia. Each scenario navigates between pages and scores
+          visual metrics like Speed Index. Per-site and overall scores are geometric means, higher is better.
+          <br><br>
+          <i class="fa-solid fa-book" style="margin-right:4px;"></i>
+          <a href="https://firefox-source-docs.mozilla.org/testing/perfdocs/raptor.html#nav-bench" target="_blank" style="padding: 0; color: #3366ff;">Documentation</a>
+          &nbsp;&nbsp;
+          <i class="fa-solid fa-bug" style="margin-right:4px;"></i>
+          <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=2033466" target="_blank" style="padding: 0; color: #3366ff;">Bug 2033466</a>
+          &nbsp;&nbsp;
+          <i class="fa-solid fa-list" style="margin-right:4px;"></i>
+          <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=2033462" target="_blank" style="padding: 0; color: #3366ff;">Meta Bug 2033462</a>
+        </div>
+
         <table class="buttons">
           <tr>
             <td style="height:50px;"><a href="navbench.html?os=linux" id="linuxbutton">Linux</a></td>
