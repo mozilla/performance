@@ -52,7 +52,7 @@ if (sidebar !== null) {
      <a href="navbench.html">
       <i class="fa-solid fa-compass"></i>
       <span>
-       Nav Bench
+       Navigation Benchmark
       </span>
      </a>
     </li>
