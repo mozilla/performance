@@ -47,6 +47,16 @@ if (sidebar !== null) {
      </a>
     </li>
 
+      <!-- Nav Bench menu -->
+    <li class="sub-menu">
+     <a href="navbench.html">
+      <i class="fa-solid fa-compass"></i>
+      <span>
+       Nav Bench
+      </span>
+     </a>
+    </li>
+
       <!-- Pageload menu
     <li class="sub-menu">
      <a href="pageload.html">
