@@ -13,9 +13,14 @@ window.navBenchData = {
   subtestNames: []
 };
 
+window.navBenchVideoState = {
+  currentVideos: {},     // { website: [{name, buffer}] }
+  currentReplicates: {}, // { website: [values] }
+  selectedWebsite: null
+};
+
 const searchParams = new URLSearchParams(window.location.search);
 var timeChart;
-var referencePoint = null;
 var subtestCharts = {};
 var allSubtestChartsLoaded = false;
 
@@ -192,16 +197,6 @@ function displayChart(data, testName) {
 
   if (timeChart) timeChart.destroy();
 
-  let pushlogContainer = document.getElementById('pushlog-link-container');
-  if (!pushlogContainer) {
-    pushlogContainer = document.createElement('div');
-    pushlogContainer.id = 'pushlog-link-container';
-    pushlogContainer.style.cssText = 'width:100%; max-width:900px; margin: 8px auto 0; text-align: center; font-family: sans-serif; font-size: 13px;';
-    const chartContainer = document.getElementById('chart-container');
-    if (chartContainer) chartContainer.parentNode.insertBefore(pushlogContainer, chartContainer.nextSibling);
-  }
-  pushlogContainer.innerHTML = '<span style="color: #999;">Select two points to generate pushlog link</span>';
-
   const displayName = getDisplayName(testName);
   const chartTitleElement = document.getElementById('chart-title');
   if (chartTitleElement) {
@@ -216,63 +211,29 @@ function displayChart(data, testName) {
     if (titleLink) titleLink.href = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=autoland,${sigId},1,13`;
   }
 
-  const datasets = [{
-    label: 'Firefox',
-    data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision })),
-    pointRadius: function(context) {
-      if (referencePoint &&
-          context.datasetIndex === referencePoint.datasetIndex &&
-          context.dataIndex === referencePoint.index) {
-        return 8;
-      }
-      return 3;
-    },
-    pointBackgroundColor: '#FF9500',
-    pointBorderColor: function(context) {
-      if (referencePoint &&
-          context.datasetIndex === referencePoint.datasetIndex &&
-          context.dataIndex === referencePoint.index) {
-        return '#FFFFFF';
-      }
-      return '#000000';
-    },
-    pointBorderWidth: function(context) {
-      if (referencePoint &&
-          context.datasetIndex === referencePoint.datasetIndex &&
-          context.dataIndex === referencePoint.index) {
-        return 3;
-      }
-      return 0.5;
-    }
-  }];
+  // defaultWebsite = selected test name (for pre-selecting website in video panel)
+  const defaultWebsite = testName !== '' ? testName : null;
 
   timeChart = new Chart(ctx, {
     type: 'scatter',
-    data: { datasets },
+    data: {
+      datasets: [{
+        label: 'Firefox',
+        data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
+        pointRadius: 3,
+        pointBackgroundColor: '#FF9500',
+        pointBorderColor: '#000000',
+        pointBorderWidth: 0.5
+      }]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 1.5,
-      onClick: (event, elements) => {
+      onClick: async (event, elements) => {
         if (elements && elements.length > 0) {
-          const element = elements[0];
-          const dataset = timeChart.data.datasets[element.datasetIndex];
-          const dataPoint = dataset.data[element.index];
-          const newPoint = {
-            x: dataPoint.x,
-            y: dataPoint.y,
-            revision: dataPoint.revision,
-            label: dataset.label,
-            datasetIndex: element.datasetIndex,
-            index: element.index
-          };
-          if (referencePoint && referencePoint.revision && newPoint.revision) {
-            const fromRev = referencePoint.x < newPoint.x ? referencePoint.revision : newPoint.revision;
-            const toRev = referencePoint.x < newPoint.x ? newPoint.revision : referencePoint.revision;
-            updatePushlogLink(`https://hg-edge.mozilla.org/integration/autoland/pushloghtml?fromchange=${fromRev}&tochange=${toRev}`, fromRev, toRev);
-          }
-          referencePoint = newPoint;
-          timeChart.update();
+          const dp = timeChart.data.datasets[elements[0].datasetIndex].data[elements[0].index];
+          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, defaultWebsite);
         }
       },
       onHover: (event, activeElements) => {
@@ -290,15 +251,12 @@ function displayChart(data, testName) {
               return '';
             },
             label: function(context) {
-              const dataPoint = context.dataset.data[context.dataIndex];
-              const rev = dataPoint && dataPoint.revision ? ` (${dataPoint.revision.substring(0, 6)})` : '';
-              let label = (context.dataset.label || '') + ': ';
-              label += round(context.parsed.y, 2) + rev;
-              if (referencePoint) {
-                const percentDelta = ((context.parsed.y / referencePoint.y) - 1) * 100;
-                label += ` ${percentDelta > 0 ? '+' : ''}${round(percentDelta, 1)}%`;
-              }
-              return label;
+              const dp = context.dataset.data[context.dataIndex];
+              const rev = dp && dp.revision ? ` (${dp.revision.substring(0, 6)})` : '';
+              return (context.dataset.label || '') + ': ' + round(context.parsed.y, 2) + rev;
+            },
+            afterLabel: function() {
+              return 'Click to view video';
             }
           }
         },
@@ -319,12 +277,229 @@ function displayChart(data, testName) {
   });
 }
 
-function updatePushlogLink(url, fromRev, toRev) {
-  const container = document.getElementById('pushlog-link-container');
-  if (container) {
-    container.innerHTML = `<a href="${url}" target="_blank" style="color: #3366ff; text-decoration: underline; padding: 4px 8px;">Pushlog: ${fromRev.substring(0, 12)} → ${toRev.substring(0, 12)}</a>`;
+// --- Video panel ---
+
+async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) {
+  const videoContainer = document.getElementById('video-container');
+  const videoElement = document.getElementById('perf-video');
+  const videoLoading = document.getElementById('video-loading');
+  const websiteSelect = document.getElementById('website-select');
+  const replicateSelect = document.getElementById('replicate-select');
+  const dataPointInfo = document.getElementById('data-point-info');
+  const jobLink = document.getElementById('job-link');
+  const videoInfo = document.getElementById('video-info');
+
+  if (!videoContainer) return;
+
+  videoContainer.style.display = 'block';
+  videoContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  videoLoading.style.display = 'block';
+  videoElement.style.display = 'none';
+  videoElement.src = '';
+  videoInfo.textContent = '';
+  websiteSelect.innerHTML = '<option>Loading...</option>';
+  replicateSelect.innerHTML = '<option>Loading...</option>';
+
+  const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  dataPointInfo.innerHTML = `<strong>Firefox</strong> | ${dateStr} | <strong>${round(value, 2)}</strong>`;
+  jobLink.href = '#';
+  jobLink.textContent = 'View Job in Treeherder';
+
+  try {
+    // Resolve job_id → task_id / retry_id via Treeherder jobs API
+    let taskId = null;
+    let retryId = 0;
+    if (job_id) {
+      const jobData = await fetch(`https://treeherder.mozilla.org/api/project/autoland/jobs/?id=${job_id}`).then(r => r.json());
+      if (jobData.results && jobData.results.length > 0) {
+        taskId = jobData.results[0].task_id;
+        retryId = jobData.results[0].retry_id || 0;
+      }
+    }
+
+    if (!taskId) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'Could not resolve Treeherder job';
+      if (revision) jobLink.href = `https://treeherder.mozilla.org/jobs?repo=autoland&revision=${revision}&group_state=expanded`;
+      return;
+    }
+
+    jobLink.href = `https://treeherder.mozilla.org/jobs?repo=autoland&revision=${revision}&group_state=expanded&selectedTaskRun=${taskId}.${retryId}`;
+
+    // Fetch Taskcluster artifact listing
+    const artifactsData = await fetch(`https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts`).then(r => r.json());
+
+    // Prefer annotated videos, fall back to original
+    const videoArtifact = artifactsData.artifacts.find(a => a.name.includes('browsertime-videos-annotated') && a.name.endsWith('.tgz'))
+      || artifactsData.artifacts.find(a => a.name.includes('browsertime-videos-original') && a.name.endsWith('.tgz'));
+
+    if (!videoArtifact) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'No video artifacts found for this job';
+      return;
+    }
+
+    // Load replicate SpeedIndex values from perfherder-data.json.
+    // The file lives at public/test_info/perfherder-data.json.
+    // Subtest names are like "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex".
+    const replicatesBySubtest = {};
+    const perfherderArtifact = artifactsData.artifacts.find(a => a.name === 'public/test_info/perfherder-data.json')
+      || artifactsData.artifacts.find(a => a.name.includes('perfherder-data') && a.name.endsWith('.json') && !a.name.includes('mozharness') && !a.name.includes('fetch'));
+    if (perfherderArtifact) {
+      try {
+        const perfherderData = await fetch(`https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts/${perfherderArtifact.name}`).then(r => r.json());
+        const suite = perfherderData.suites?.find(s => s.name === 'nav-bench-overall');
+        if (suite?.subtests) {
+          for (const subtest of suite.subtests) {
+            if (subtest.replicates?.length) replicatesBySubtest[subtest.name] = subtest.replicates;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load perfherder data:', e);
+      }
+    }
+
+    // Fetch and extract the video tgz
+    const tgzResponse = await fetch(`https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts/${videoArtifact.name}`);
+    if (!tgzResponse.ok) throw new Error(`Video archive unavailable (HTTP ${tgzResponse.status})`);
+
+    const arrayBuffer = await tgzResponse.arrayBuffer();
+    const decompressed = pako.ungzip(new Uint8Array(arrayBuffer));
+    const extractedFiles = await untar(decompressed.buffer);
+
+    // Log file names once so we can verify the grouping key extraction
+    console.log('Video files in archive:', extractedFiles.filter(f => f.name.match(/\.(mp4|webm)$/i)).map(f => f.name));
+
+    // Group by site name (matched from filename) then by scenario (pageload vs subnav).
+    // Normalise separators so duckduckgo-subnav and duckduckgo_subnav are equivalent.
+    const KNOWN_SITES = ['amazon', 'bbc', 'duckduckgo', 'reddit', 'wikipedia'];
+    const normPath = s => s.toLowerCase().replace(/[-_]/g, '-');
+
+    const videosByWebsite = {};
+    for (const file of extractedFiles) {
+      if (!file.name.match(/\.(mp4|webm)$/i)) continue;
+      const pathNorm = normPath(file.name);
+
+      const site = KNOWN_SITES.find(s => pathNorm.includes(s));
+      if (!site) {
+        console.warn('Could not match video to a known site:', file.name);
+        continue;
+      }
+
+      // Check for subnav indicator in the part of the path that comes after the site name.
+      // Only match "subnav" — not bare "nav" which appears in "nav-bench" in every path.
+      const afterSite = pathNorm.slice(pathNorm.indexOf(site) + site.length);
+      const isSubnav = afterSite.includes('subnav');
+
+      // Key: "amazon-load" or "amazon-subnav"; display: "Amazon - load" / "Amazon - subnav"
+      const key = isSubnav ? `${site}-subnav` : `${site}-load`;
+      if (!videosByWebsite[key]) videosByWebsite[key] = [];
+      videosByWebsite[key].push({ name: file.name, buffer: file.buffer });
+    }
+
+    // Resolve SpeedIndex replicates for each video group.
+    // Perfherder subtest names: "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex", etc.
+    function findReplicates(videoKey) {
+      const isSubnavKey = videoKey.endsWith('-subnav');
+      const siteKey = isSubnavKey ? videoKey.slice(0, -7) : videoKey.slice(0, -5); // strip -subnav or -load
+      const scenario = isSubnavKey ? 'subnav' : 'load';
+      const match = Object.keys(replicatesBySubtest).find(k =>
+        k.includes(siteKey) && k.includes(scenario) && k.includes('speedindex')
+      ) || Object.keys(replicatesBySubtest).find(k =>
+        k.includes(siteKey) && k.includes(scenario)
+      );
+      return match ? replicatesBySubtest[match] : [];
+    }
+
+    const resolvedReplicates = {};
+    for (const videoKey of Object.keys(videosByWebsite)) {
+      resolvedReplicates[videoKey] = findReplicates(videoKey);
+    }
+
+    window.navBenchVideoState.currentVideos = videosByWebsite;
+    window.navBenchVideoState.currentReplicates = resolvedReplicates;
+
+    const websites = Object.keys(videosByWebsite).sort();
+    if (websites.length === 0) {
+      videoLoading.style.display = 'none';
+      videoInfo.textContent = 'No video files found in archive';
+      return;
+    }
+
+    websiteSelect.innerHTML = '';
+    for (const key of websites) {
+      const option = document.createElement('option');
+      option.value = key;
+      // key is "amazon-load" or "bbc-subnav" → display "Amazon - load" / "Bbc - subnav"
+      const [sitePart, scenarioPart] = key.split(/-(?=load|subnav)/);
+      option.textContent = sitePart.charAt(0).toUpperCase() + sitePart.slice(1) + ' - ' + (scenarioPart || '');
+      websiteSelect.appendChild(option);
+    }
+
+    videoLoading.style.display = 'none';
+    videoElement.style.display = 'block';
+
+    const selectedSite = defaultWebsite && websites.includes(defaultWebsite) ? defaultWebsite : websites[0];
+    websiteSelect.value = selectedSite;
+    selectNavWebsite(selectedSite);
+
+  } catch (error) {
+    console.error('Error loading nav bench video:', error);
+    videoLoading.style.display = 'none';
+    videoInfo.textContent = 'Error loading video: ' + error.message;
   }
 }
+
+function selectNavWebsite(website) {
+  window.navBenchVideoState.selectedWebsite = website;
+  const replicateSelect = document.getElementById('replicate-select');
+  const videos = window.navBenchVideoState.currentVideos[website] || [];
+  const replicates = window.navBenchVideoState.currentReplicates[website] || [];
+
+  replicateSelect.innerHTML = '';
+  videos.forEach((v, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    const repValue = replicates[index] !== undefined ? ` (${round(replicates[index], 2)})` : '';
+    option.textContent = `Replicate ${index + 1}${repValue}`;
+    replicateSelect.appendChild(option);
+  });
+
+  if (videos.length > 0) selectNavReplicate(0);
+  else document.getElementById('video-info').textContent = 'No videos for this website';
+}
+
+function selectNavReplicate(index) {
+  const videoElement = document.getElementById('perf-video');
+  const videoInfo = document.getElementById('video-info');
+  const website = window.navBenchVideoState.selectedWebsite;
+  const videos = window.navBenchVideoState.currentVideos[website] || [];
+  const replicates = window.navBenchVideoState.currentReplicates[website] || [];
+
+  index = parseInt(index);
+  if (videos[index]) {
+    const videoBlob = new Blob([videos[index].buffer], { type: 'video/mp4' });
+    videoElement.src = URL.createObjectURL(videoBlob);
+    videoElement.load();
+    const autoplay = document.getElementById('autoplay-toggle')?.checked;
+    if (autoplay) videoElement.play().catch(() => {});
+    const repValue = replicates[index] !== undefined ? ` - Score: ${round(replicates[index], 2)}` : '';
+    videoInfo.textContent = `${website} | Replicate ${index + 1}${repValue}`;
+  } else {
+    videoInfo.textContent = 'Video not found for this replicate';
+  }
+}
+
+function closeNavVideo() {
+  const videoContainer = document.getElementById('video-container');
+  const videoElement = document.getElementById('perf-video');
+  if (videoContainer) videoContainer.style.display = 'none';
+  if (videoElement) { videoElement.pause(); videoElement.src = ''; }
+  window.navBenchVideoState.currentVideos = {};
+  window.navBenchVideoState.currentReplicates = {};
+}
+
+// ---
 
 function calculateAverage(data) {
   if (data.length === 0) return null;
@@ -390,7 +565,6 @@ function changeRange(range) {
   else url.searchParams.delete('range');
   window.history.replaceState({}, '', url);
 
-  referencePoint = null;
   loadChartDataForTest(window.navBenchData.selectedTest, days);
 
   if (allSubtestChartsLoaded) loadAllSubtestCharts();
@@ -532,7 +706,8 @@ async function loadSingleSubtestChart(testName, days) {
             application: sig.application,
             signature_id: sig.id,
             value: point.value,
-            revision: point.revision
+            revision: point.revision,
+            job_id: point.job_id
           });
         }
       }
@@ -563,7 +738,7 @@ function displaySubtestChart(canvas, data, testName) {
     data: {
       datasets: [{
         label: 'Firefox',
-        data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision })),
+        data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
         pointRadius: 3,
         pointBackgroundColor: '#FF9500',
         pointBorderColor: '#000000',
@@ -574,6 +749,15 @@ function displaySubtestChart(canvas, data, testName) {
       responsive: true,
       maintainAspectRatio: true,
       aspectRatio: 2,
+      onClick: async (event, elements, chart) => {
+        if (elements && elements.length > 0) {
+          const dp = chart.data.datasets[elements[0].datasetIndex].data[elements[0].index];
+          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, testName);
+        }
+      },
+      onHover: (event, activeElements) => {
+        event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+      },
       plugins: {
         legend: { display: true, position: 'top' },
         tooltip: {
@@ -586,9 +770,12 @@ function displaySubtestChart(canvas, data, testName) {
               return '';
             },
             label: function(context) {
-              const dataPoint = context.dataset.data[context.dataIndex];
-              const rev = dataPoint && dataPoint.revision ? ` (${dataPoint.revision.substring(0, 6)})` : '';
+              const dp = context.dataset.data[context.dataIndex];
+              const rev = dp && dp.revision ? ` (${dp.revision.substring(0, 6)})` : '';
               return (context.dataset.label || '') + ': ' + round(context.parsed.y, 2) + rev;
+            },
+            afterLabel: function() {
+              return 'Click to view video';
             }
           }
         }

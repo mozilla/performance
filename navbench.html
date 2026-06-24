@@ -12,6 +12,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-untar@2.0.0/build/dist/untar.js"></script>
 
   <script src="assets/navbench-metrics.js"></script>
   <style>
@@ -128,6 +130,7 @@
     </aside>
 
     <div class="content">
+
       <center>
         <div style="max-width: 900px; margin: 0 auto 20px; text-align: left; font-family: sans-serif; font-size: 0.95em; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);">
           <strong>Navigation Benchmark</strong> tests Firefox navigation performance across real websites:
@@ -142,6 +145,40 @@
           &nbsp;&nbsp;
           <i class="fa-solid fa-list" style="margin-right:4px;"></i>
           <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=2033462" target="_blank" style="padding: 0; color: #3366ff;">Meta Bug 2033462</a>
+        </div>
+
+        <div id="video-container" style="display: none; position: relative; background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 0 auto 20px; max-width: 900px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); font-family: sans-serif; text-align: left;">
+          <button onclick="closeNavVideo()" style="position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; line-height: 1;">&times;</button>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+            <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+              <div>
+                <label for="website-select" style="font-weight: bold; margin-right: 8px; font-size: 14px;">Website:</label>
+                <select id="website-select" onchange="selectNavWebsite(this.value)" style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;"></select>
+              </div>
+              <div>
+                <label for="replicate-select" style="font-weight: bold; margin-right: 8px; font-size: 14px;">Replicate:</label>
+                <select id="replicate-select" onchange="selectNavReplicate(this.value)" style="padding: 6px 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 13px;"></select>
+              </div>
+              <div id="data-point-info" style="font-size: 13px; color: #444;"></div>
+              <div>
+                <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                  <input type="checkbox" id="autoplay-toggle" checked style="cursor: pointer;">
+                  Autoplay
+                </label>
+              </div>
+            </div>
+            <div style="font-size: 12px;">
+              <a id="job-link" href="#" target="_blank" style="color: #667eea; text-decoration: none;">View Job in Treeherder</a>
+            </div>
+          </div>
+          <div id="video-loading" style="display: none; text-align: center; padding: 40px; background: #f0f0f0; border-radius: 8px;">
+            <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #ddd; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <div style="margin-top: 15px; font-size: 14px; color: #666;">Loading video...</div>
+          </div>
+          <video id="perf-video" controls style="width: 100%; max-height: 500px; border-radius: 8px; background: #000; display: none;">
+            Your browser does not support the video tag.
+          </video>
+          <div style="margin-top: 8px; font-size: 13px; color: #666; text-align: center;"><span id="video-info"></span></div>
         </div>
 
         <table class="buttons">
