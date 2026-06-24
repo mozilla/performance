@@ -311,7 +311,7 @@ function displayChart(data, testName) {
           title: { display: true, text: 'Date' }
         },
         y: {
-          beginAtZero: false,
+          beginAtZero: true,
           title: { display: true, text: 'Score (higher is better)' }
         }
       }
@@ -600,7 +600,7 @@ function displaySubtestChart(canvas, data, testName) {
           title: { display: true, text: 'Date' }
         },
         y: {
-          beginAtZero: false,
+          beginAtZero: true,
           title: { display: true, text: 'Score (higher is better)' }
         }
       }
