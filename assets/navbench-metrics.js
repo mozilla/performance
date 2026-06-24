@@ -339,16 +339,19 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
       return;
     }
 
-    // Load replicate score values from perfherder-data.json
-    const replicatesByWebsite = {};
-    const perfherderArtifact = artifactsData.artifacts.find(a => a.name.startsWith('public/build/perfherder-data') && a.name.endsWith('.json'));
+    // Load replicate SpeedIndex values from perfherder-data.json.
+    // The file lives at public/test_info/perfherder-data.json.
+    // Subtest names are like "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex".
+    const replicatesBySubtest = {};
+    const perfherderArtifact = artifactsData.artifacts.find(a => a.name === 'public/test_info/perfherder-data.json')
+      || artifactsData.artifacts.find(a => a.name.includes('perfherder-data') && a.name.endsWith('.json') && !a.name.includes('mozharness') && !a.name.includes('fetch'));
     if (perfherderArtifact) {
       try {
         const perfherderData = await fetch(`https://firefox-ci-tc.services.mozilla.com/api/queue/v1/task/${taskId}/runs/${retryId}/artifacts/${perfherderArtifact.name}`).then(r => r.json());
         const suite = perfherderData.suites?.find(s => s.name === 'nav-bench-overall');
         if (suite?.subtests) {
           for (const subtest of suite.subtests) {
-            if (subtest.replicates?.length) replicatesByWebsite[subtest.name] = subtest.replicates;
+            if (subtest.replicates?.length) replicatesBySubtest[subtest.name] = subtest.replicates;
           }
         }
       } catch (e) {
@@ -388,17 +391,29 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
       const afterSite = pathNorm.slice(pathNorm.indexOf(site) + site.length);
       const isSubnav = afterSite.includes('subnav');
 
-      const key = isSubnav ? `${site}-subnav` : site;
+      // Key: "amazon-load" or "amazon-subnav"; display: "Amazon - load" / "Amazon - subnav"
+      const key = isSubnav ? `${site}-subnav` : `${site}-load`;
       if (!videosByWebsite[key]) videosByWebsite[key] = [];
       videosByWebsite[key].push({ name: file.name, buffer: file.buffer });
     }
 
-    // Align replicates keys with video keys (handles hyphen/underscore mismatches)
+    // Resolve SpeedIndex replicates for each video group.
+    // Perfherder subtest names: "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex", etc.
+    function findReplicates(videoKey) {
+      const isSubnavKey = videoKey.endsWith('-subnav');
+      const siteKey = isSubnavKey ? videoKey.slice(0, -7) : videoKey.slice(0, -5); // strip -subnav or -load
+      const scenario = isSubnavKey ? 'subnav' : 'load';
+      const match = Object.keys(replicatesBySubtest).find(k =>
+        k.includes(siteKey) && k.includes(scenario) && k.includes('speedindex')
+      ) || Object.keys(replicatesBySubtest).find(k =>
+        k.includes(siteKey) && k.includes(scenario)
+      );
+      return match ? replicatesBySubtest[match] : [];
+    }
+
     const resolvedReplicates = {};
     for (const videoKey of Object.keys(videosByWebsite)) {
-      resolvedReplicates[videoKey] = replicatesByWebsite[videoKey]
-        || replicatesByWebsite[Object.keys(replicatesByWebsite).find(k => normPath(k) === normPath(videoKey))]
-        || [];
+      resolvedReplicates[videoKey] = findReplicates(videoKey);
     }
 
     window.navBenchVideoState.currentVideos = videosByWebsite;
@@ -412,10 +427,12 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
     }
 
     websiteSelect.innerHTML = '';
-    for (const site of websites) {
+    for (const key of websites) {
       const option = document.createElement('option');
-      option.value = site;
-      option.textContent = site.charAt(0).toUpperCase() + site.slice(1);
+      option.value = key;
+      // key is "amazon-load" or "bbc-subnav" → display "Amazon - load" / "Bbc - subnav"
+      const [sitePart, scenarioPart] = key.split(/-(?=load|subnav)/);
+      option.textContent = sitePart.charAt(0).toUpperCase() + sitePart.slice(1) + ' - ' + (scenarioPart || '');
       websiteSelect.appendChild(option);
     }
 
@@ -464,6 +481,8 @@ function selectNavReplicate(index) {
     const videoBlob = new Blob([videos[index].buffer], { type: 'video/mp4' });
     videoElement.src = URL.createObjectURL(videoBlob);
     videoElement.load();
+    const autoplay = document.getElementById('autoplay-toggle')?.checked;
+    if (autoplay) videoElement.play().catch(() => {});
     const repValue = replicates[index] !== undefined ? ` — Score: ${round(replicates[index], 2)}` : '';
     videoInfo.textContent = `${website} | Replicate ${index + 1}${repValue}`;
   } else {
