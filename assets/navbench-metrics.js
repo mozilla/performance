@@ -364,19 +364,45 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
     const decompressed = pako.ungzip(new Uint8Array(arrayBuffer));
     const extractedFiles = await untar(decompressed.buffer);
 
-    // Group video files by website (detect site name from path/filename)
+    // Log file names once so we can verify the grouping key extraction
+    console.log('Video files in archive:', extractedFiles.filter(f => f.name.match(/\.(mp4|webm)$/i)).map(f => f.name));
+
+    // Group by site name (matched from filename) then by scenario (pageload vs subnav).
+    // Normalise separators so duckduckgo-subnav and duckduckgo_subnav are equivalent.
     const KNOWN_SITES = ['amazon', 'bbc', 'duckduckgo', 'reddit', 'wikipedia'];
+    const normPath = s => s.toLowerCase().replace(/[-_]/g, '-');
+
     const videosByWebsite = {};
     for (const file of extractedFiles) {
-      if (!file.name.endsWith('.mp4') && !file.name.endsWith('.webm')) continue;
-      const nameLower = file.name.toLowerCase();
-      const site = KNOWN_SITES.find(s => nameLower.includes(s)) || 'other';
-      if (!videosByWebsite[site]) videosByWebsite[site] = [];
-      videosByWebsite[site].push({ name: file.name, buffer: file.buffer });
+      if (!file.name.match(/\.(mp4|webm)$/i)) continue;
+      const pathNorm = normPath(file.name);
+
+      const site = KNOWN_SITES.find(s => pathNorm.includes(s));
+      if (!site) {
+        console.warn('Could not match video to a known site:', file.name);
+        continue;
+      }
+
+      // Check for subnav indicator in the part of the path that comes after the site name.
+      // Only match "subnav" — not bare "nav" which appears in "nav-bench" in every path.
+      const afterSite = pathNorm.slice(pathNorm.indexOf(site) + site.length);
+      const isSubnav = afterSite.includes('subnav');
+
+      const key = isSubnav ? `${site}-subnav` : site;
+      if (!videosByWebsite[key]) videosByWebsite[key] = [];
+      videosByWebsite[key].push({ name: file.name, buffer: file.buffer });
+    }
+
+    // Align replicates keys with video keys (handles hyphen/underscore mismatches)
+    const resolvedReplicates = {};
+    for (const videoKey of Object.keys(videosByWebsite)) {
+      resolvedReplicates[videoKey] = replicatesByWebsite[videoKey]
+        || replicatesByWebsite[Object.keys(replicatesByWebsite).find(k => normPath(k) === normPath(videoKey))]
+        || [];
     }
 
     window.navBenchVideoState.currentVideos = videosByWebsite;
-    window.navBenchVideoState.currentReplicates = replicatesByWebsite;
+    window.navBenchVideoState.currentReplicates = resolvedReplicates;
 
     const websites = Object.keys(videosByWebsite).sort();
     if (websites.length === 0) {
