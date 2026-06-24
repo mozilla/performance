@@ -483,7 +483,7 @@ function selectNavReplicate(index) {
     videoElement.load();
     const autoplay = document.getElementById('autoplay-toggle')?.checked;
     if (autoplay) videoElement.play().catch(() => {});
-    const repValue = replicates[index] !== undefined ? ` — Score: ${round(replicates[index], 2)}` : '';
+    const repValue = replicates[index] !== undefined ? ` - Score: ${round(replicates[index], 2)}` : '';
     videoInfo.textContent = `${website} | Replicate ${index + 1}${repValue}`;
   } else {
     videoInfo.textContent = 'Video not found for this replicate';
