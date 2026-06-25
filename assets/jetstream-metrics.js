@@ -122,8 +122,8 @@ async function loadChartFromTreeherder(testName) {
       return;
     }
 
-    // Load 90 days of data
-    const intervalSeconds = 90 * 24 * 60 * 60;
+    // Load 1 year of data (matches the "all time" view range)
+    const intervalSeconds = 365 * 24 * 60 * 60;
     const allData = [];
 
     for (const sig of testSignatures) {
@@ -705,21 +705,22 @@ function displayChartFromTreeherder(data, testName) {
     }
   });
 
-  // Apply time range from URL parameter
+  // Apply time range from URL parameter. Default (no param) is "all time".
   const rangeParam = searchParams.get('range');
-  if (rangeParam) {
-    if (rangeParam === 'all') {
-      timeChart.options.scales.x.min = '';
-    } else {
-      const rangeMonths = parseInt(rangeParam);
-      if (!isNaN(rangeMonths)) {
-        var d = new Date();
-        d.setMonth(d.getMonth() - rangeMonths);
-        timeChart.options.scales.x.min = d;
-      }
+  if (!rangeParam || rangeParam === 'all') {
+    // "All time" shows the most recent full year
+    var d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    timeChart.options.scales.x.min = d;
+  } else {
+    const rangeMonths = parseInt(rangeParam);
+    if (!isNaN(rangeMonths)) {
+      var d = new Date();
+      d.setMonth(d.getMonth() - rangeMonths);
+      timeChart.options.scales.x.min = d;
     }
-    timeChart.update();
   }
+  timeChart.update();
 }
 
 function showChartLoading() {
@@ -797,8 +798,11 @@ function changeRange(newRange) {
 
   // Adjust the view range
   if (newRange == 'all') {
+    // "All time" shows the most recent full year
+    var d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
     if (timeChart) {
-      timeChart.options.scales.x.min = '';
+      timeChart.options.scales.x.min = d;
       timeChart.update();
     }
   } else {

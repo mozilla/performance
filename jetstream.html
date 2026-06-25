@@ -822,11 +822,10 @@
       updateRangeButtonHighlight();
 
       if (newRange == 'all') {
-        if (!platforms.includes('macosx1400-64-shippable-qr')) {
-          timeChart.options.scales.x.min = '';
-        } else {
-          timeChart.options.scales.x.min = '2023-12-01';
-        }
+        // "All time" shows the most recent full year
+        var d = new Date();
+        d.setFullYear(d.getFullYear() - 1);
+        timeChart.options.scales.x.min = d;
       } else {
         var d = new Date();
         d.setMonth(d.getMonth() - newRange);
