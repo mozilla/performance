@@ -26,6 +26,7 @@
     ],
     nextMachineIndex: 0,
     machineStyles: {},   // machine_name -> { color, shape }
+    hoveredMachineDatasetIndex: null,
     fetched: false
   };
 
@@ -54,6 +55,58 @@
     state.machineStyles[machineName] = style;
     state.machineColors[machineName] = style.color; // keep for legend
     return style;
+  }
+
+  function colorWithAlpha(hexColor, alpha) {
+    if (!hexColor || hexColor[0] !== '#') {
+      return hexColor;
+    }
+
+    let hex = hexColor.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map(c => c + c).join('');
+    }
+    if (hex.length !== 6) {
+      return hexColor;
+    }
+
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if ([r, g, b].some(Number.isNaN)) {
+      return hexColor;
+    }
+
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  function setHoveredMachineDataset(chart, hoveredDatasetIndex) {
+    if (!chart || state.hoveredMachineDatasetIndex === hoveredDatasetIndex) {
+      return;
+    }
+
+    state.hoveredMachineDatasetIndex = hoveredDatasetIndex;
+    const hasHover = hoveredDatasetIndex !== null;
+
+    chart.data.datasets.forEach((dataset, index) => {
+      const baseColor = dataset.baseColor || dataset.pointBackgroundColor;
+      const isHovered = index === hoveredDatasetIndex;
+
+      if (!hasHover || isHovered) {
+        dataset.pointBackgroundColor = baseColor;
+        dataset.pointBorderColor = '#000';
+        dataset.pointBorderWidth = isHovered ? 1.5 : 0.5;
+        dataset.pointRadius = isHovered ? 6 : 5;
+        return;
+      }
+
+      dataset.pointBackgroundColor = colorWithAlpha(baseColor, 0.16);
+      dataset.pointBorderColor = 'rgba(0, 0, 0, 0.12)';
+      dataset.pointBorderWidth = 0.5;
+      dataset.pointRadius = 3;
+    });
+
+    chart.update('none');
   }
 
   function populateBrowserSelect(data) {
@@ -162,6 +215,7 @@
   function redrawChartByMachine() {
     const data = state.activeChartData;
     if (!data || data.length === 0) return;
+    state.hoveredMachineDatasetIndex = null;
 
     // Group data points by machine
     const byMachine = {};
@@ -194,7 +248,8 @@
         pointRotation: style.rotation,
         pointBackgroundColor: style.color,
         pointBorderColor: '#000',
-        pointBorderWidth: 0.5
+        pointBorderWidth: 0.5,
+        baseColor: style.color
       };
     });
 
@@ -225,8 +280,11 @@
             }
           }
         },
-        onHover: (event, activeElements) => {
-          event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+        onHover: (event, activeElements, chart) => {
+          const target = event.native ? event.native.target : chart.canvas;
+          const hoveredDatasetIndex = activeElements.length > 0 ? activeElements[0].datasetIndex : null;
+          target.style.cursor = hoveredDatasetIndex !== null ? 'pointer' : 'default';
+          setHoveredMachineDataset(chart, hoveredDatasetIndex);
         },
         plugins: {
           legend: {
