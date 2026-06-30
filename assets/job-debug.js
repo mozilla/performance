@@ -373,15 +373,6 @@
     loadChartDataForTest(window.speedometerData.selectedTest, days);
   }
 
-  // Default replicates on for the job debug page (user can still toggle off)
-  if (!new URLSearchParams(window.location.search).has('replicates')) {
-    window.speedometerData.showReplicates = true;
-    const replicatesCheckbox = document.getElementById('replicates-toggle');
-    if (replicatesCheckbox) {
-      replicatesCheckbox.checked = true;
-    }
-  }
-
   // Hook into the existing chart loading to capture data and populate browser select.
   // We override displayChart to intercept the data.
   const originalDisplayChart = window.displayChart;
