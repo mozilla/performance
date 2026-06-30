@@ -115,7 +115,7 @@ async function loadSpeedometerData(loadInitialChart = true) {
     console.log('Loading Speedometer data from Treeherder...');
 
     const platforms = platformConfig.platforms;
-    const allSignatures = {};
+    const candidateSignatures = [];
 
     // Fetch signatures for all platforms
     for (const platform of platforms) {
@@ -125,16 +125,11 @@ async function loadSpeedometerData(loadInitialChart = true) {
       const firefoxSigResponse = await fetch(firefoxSigUrl);
       const firefoxSignatures = await firefoxSigResponse.json();
 
-      let firefoxSigCount = 0;
-      for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
-        if (sig.suite === 'speedometer3' && (sig.application === 'firefox' || sig.application === 'fenix') &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova'))) &&
-            !(sig.application === 'fenix' && sig.extra_options && sig.extra_options.includes('fission'))) {
-          allSignatures[sigId] = { ...sig, repository: window.speedometerData.repository };
-          firefoxSigCount++;
+      for (const sig of Object.values(firefoxSignatures)) {
+        if (sig.suite === 'speedometer3' && (sig.application === 'firefox' || sig.application === 'fenix')) {
+          candidateSignatures.push({ ...sig, repository: window.speedometerData.repository });
         }
       }
-      console.log(`  Found ${firefoxSigCount} Firefox signatures for ${platform}`);
 
       // Always fetch Chrome/Safari signatures from mozilla-central
       console.log(`Fetching Chrome/Safari signatures for platform: ${platform} from mozilla-central`);
@@ -142,15 +137,17 @@ async function loadSpeedometerData(loadInitialChart = true) {
       const chromeSigResponse = await fetch(chromeSigUrl);
       const chromeSignatures = await chromeSigResponse.json();
 
-      let chromeSigCount = 0;
-      for (const [sigId, sig] of Object.entries(chromeSignatures)) {
-        if (sig.suite === 'speedometer3' && sig.application !== 'firefox' && sig.application !== 'fenix' &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
-          allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
-          chromeSigCount++;
+      for (const sig of Object.values(chromeSignatures)) {
+        if (sig.suite === 'speedometer3' && sig.application !== 'firefox' && sig.application !== 'fenix') {
+          candidateSignatures.push({ ...sig, repository: 'mozilla-central' });
         }
       }
-      console.log(`  Found ${chromeSigCount} Chrome/Safari signatures for ${platform}`);
+    }
+
+    // Collapse instrumented/variant signatures to one canonical series per test.
+    const allSignatures = {};
+    for (const sig of PerfSignatures.selectCanonicalSignatures(candidateSignatures)) {
+      allSignatures[sig.id] = sig;
     }
 
     console.log(`Found ${Object.keys(allSignatures).length} total Speedometer signatures`);
@@ -342,21 +339,18 @@ async function fetchAlertsForTest(testName, platform, days) {
     const sigResponse = await fetch(sigUrl);
     const signatures = await sigResponse.json();
 
-    // Find all signatures for this test and its subparts
-    const autolandSigIds = [];
+    // Find all signatures for this test and its subparts. Match exact test or any
+    // subpart (e.g., "NewsSite-Nuxt/NavigateToPolitics/total" matches "NewsSite-Nuxt"),
+    // then reduce to the canonical signature per subpart.
     const baseTestName = testName.replace('/total', '');
 
-    for (const [sigId, sig] of Object.entries(signatures)) {
-      if (sig.suite === 'speedometer3' &&
-          sig.test &&
-          (sig.application === 'firefox' || sig.application === 'fenix') &&
-          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
-        // Match exact test or any subpart (e.g., "NewsSite-Nuxt/NavigateToPolitics/total" matches "NewsSite-Nuxt")
-        if (sig.test === testName || sig.test.startsWith(baseTestName + '/')) {
-          autolandSigIds.push(sig.id);
-        }
-      }
-    }
+    const candidateSignatures = Object.values(signatures).filter(sig =>
+      sig.suite === 'speedometer3' &&
+      sig.test &&
+      (sig.application === 'firefox' || sig.application === 'fenix') &&
+      (sig.test === testName || sig.test.startsWith(baseTestName + '/'))
+    );
+    const autolandSigIds = PerfSignatures.selectCanonicalSignatures(candidateSignatures).map(sig => sig.id);
 
     if (autolandSigIds.length === 0) {
       console.log(`No autoland signatures found for ${testName}`);

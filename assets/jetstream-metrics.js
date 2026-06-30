@@ -88,17 +88,16 @@ async function loadChartFromTreeherder(testName) {
     // Get signatures for this test
     const platform = window.jetstreamState.currentPlatform;
     const repository = window.jetstreamState.repository;
-    const allSignatures = {};
+    const candidateSignatures = [];
 
     // Fetch Firefox signatures from selected repository
     const firefoxSigUrl = `https://treeherder.mozilla.org/api/project/${repository}/performance/signatures/?framework=13&platform=${platform}`;
     const firefoxSigResponse = await fetch(firefoxSigUrl);
     const firefoxSignatures = await firefoxSigResponse.json();
 
-    for (const [sigId, sig] of Object.entries(firefoxSignatures)) {
-      if (sig.suite === 'jetstream3' && sig.test === testName && (sig.application === 'firefox' || sig.application === 'fenix') &&
-          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
-        allSignatures[sigId] = { ...sig, repository: repository };
+    for (const sig of Object.values(firefoxSignatures)) {
+      if (sig.suite === 'jetstream3' && sig.test === testName && (sig.application === 'firefox' || sig.application === 'fenix')) {
+        candidateSignatures.push({ ...sig, repository: repository });
       }
     }
 
@@ -107,14 +106,14 @@ async function loadChartFromTreeherder(testName) {
     const chromeSigResponse = await fetch(chromeSigUrl);
     const chromeSignatures = await chromeSigResponse.json();
 
-    for (const [sigId, sig] of Object.entries(chromeSignatures)) {
-      if (sig.suite === 'jetstream3' && sig.test === testName && sig.application !== 'firefox' && sig.application !== 'fenix' &&
-          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
-        allSignatures[sigId] = { ...sig, repository: 'mozilla-central' };
+    for (const sig of Object.values(chromeSignatures)) {
+      if (sig.suite === 'jetstream3' && sig.test === testName && sig.application !== 'firefox' && sig.application !== 'fenix') {
+        candidateSignatures.push({ ...sig, repository: 'mozilla-central' });
       }
     }
 
-    const testSignatures = Object.values(allSignatures);
+    // Collapse instrumented/variant signatures to one canonical series per application.
+    const testSignatures = PerfSignatures.selectCanonicalSignatures(candidateSignatures);
 
     if (testSignatures.length === 0) {
       console.log(`No signatures found for ${testName}`);
@@ -176,16 +175,15 @@ async function fetchAlertsForTest(testName, platform) {
     const sigResponse = await fetch(sigUrl);
     const signatures = await sigResponse.json();
 
-    let autolandSigId = null;
-    for (const [sigId, sig] of Object.entries(signatures)) {
-      if (sig.suite === 'jetstream3' &&
-          sig.test === testName &&
-          (sig.application === 'firefox' || sig.application === 'fenix') &&
-          !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf') || sig.extra_options.includes('nova')))) {
-        autolandSigId = sig.id;
-        console.log(`Found autoland signature ${autolandSigId} for ${testName}`);
-        break;
-      }
+    const candidateSignatures = Object.values(signatures).filter(sig =>
+      sig.suite === 'jetstream3' &&
+      sig.test === testName &&
+      (sig.application === 'firefox' || sig.application === 'fenix')
+    );
+    const canonicalSignatures = PerfSignatures.selectCanonicalSignatures(candidateSignatures);
+    const autolandSigId = canonicalSignatures.length > 0 ? canonicalSignatures[0].id : null;
+    if (autolandSigId) {
+      console.log(`Found autoland signature ${autolandSigId} for ${testName}`);
     }
 
     if (!autolandSigId) {
