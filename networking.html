@@ -901,6 +901,60 @@
       chart: 'tls-android-nightly'
     },
     {
+      date: '2026-05-20',
+      label: 'Bug 2039555',
+      description: 'Enabled Happy Eyeballs v3 (HEv3) on nightly',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2039555',
+      platform: 'desktop',
+      channel: 'nightly',
+      chart: 'http-desktop-nightly'
+    },
+    {
+      date: '2026-05-20',
+      label: 'Bug 2039555',
+      description: 'Enabled Happy Eyeballs v3 (HEv3) on nightly',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2039555',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'http-android-nightly'
+    },
+    {
+      date: '2026-06-26',
+      label: 'Bug 2049334',
+      description: 'Fixed ~300ms cold HTTP/3 connection delay on Android (GSO EIO fallback)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2049334',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'ttrs-android-nightly'
+    },
+    {
+      date: '2026-06-26',
+      label: 'Bug 2049334',
+      description: 'Fixed ~300ms cold HTTP/3 connection delay on Android (GSO EIO fallback)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2049334',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'tls-android-nightly'
+    },
+    {
+      date: '2026-07-08',
+      label: 'Bug 2047648',
+      description: 'Report real DNS-resolution end for Happy Eyeballs (fixes inflated dns_lookup_time)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2047648',
+      platform: 'desktop',
+      channel: 'nightly',
+      chart: 'dns-lookup-desktop-nightly'
+    },
+    {
+      date: '2026-07-08',
+      label: 'Bug 2047648',
+      description: 'Report real DNS-resolution end for Happy Eyeballs (fixes inflated dns_lookup_time)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2047648',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'dns-lookup-android-nightly'
+    },
+    {
       date: '2026-05-29',
       label: 'Bug 2042702',
       description: 'Moved pageload event to page destruction for more accurate LCP',
@@ -1203,8 +1257,8 @@
         position: 'start',
         backgroundColor: '#ff6384',
         color: 'white',
-        font: { size: 10 },
-        padding: 4
+        font: { size: 8 },
+        padding: 3
       },
       click: a.url ? (ctx, event) => {
         const area = ctx.chart.chartArea;
@@ -1359,8 +1413,8 @@
         position: 'start',
         backgroundColor: '#ff6384',
         color: 'white',
-        font: { size: 10 },
-        padding: 4
+        font: { size: 8 },
+        padding: 3
       },
       click: a.url ? (ctx, event) => {
         const area = ctx.chart.chartArea;
