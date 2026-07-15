@@ -36,7 +36,7 @@ const platformConfigs = {
     supportsSafari: false
   },
   'osxm4': {
-    platforms: ['macosx1500-aarch64-shippable'],
+    platforms: ['macosx1500-aarch64-nightlyasrelease', 'macosx1500-aarch64-shippable'],
     supportsSafari: true
   },
   'linux': {
