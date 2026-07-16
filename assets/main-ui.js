@@ -90,6 +90,16 @@ if (sidebar !== null) {
      </a>
     </li>
 
+      <!-- Memory menu -->
+    <li class="sub-menu">
+     <a href="memory.html">
+      <i class="fa-solid fa-memory"></i>
+      <span>
+       Memory
+      </span>
+     </a>
+    </li>
+
       <!-- ML menu -->
     <li class="sub-menu">
      <a href="ml.html">

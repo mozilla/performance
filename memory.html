@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firefox Memory</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
+<link href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.1/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<link rel="stylesheet" href="assets/main-ui-style.css">
+
+<style>
+  .page-header { margin-bottom: 0; }
+  .page-header h1 { margin: 0; font-size: 24px; }
+  .header-desc { margin: 0 0 10px 0; font-size: 14px; color: #666; }
+  .legend { margin: 0 0 10px 0; font-size: 13px; }
+  .legend dt { font-weight: bold; display: inline; }
+  .legend dt::after { content: ': '; font-weight: normal; }
+  .legend dd { display: inline; margin: 0; color: #666; }
+  .legend dd::after { content: ''; display: block; margin-bottom: 4px; }
+  .group { margin-top: 40px; width: 100%; }
+  .group:first-of-type { margin-top: 0; }
+  .page-header + .group { margin-top: 0; }
+  .group h2 { margin: 0 0 10px 0; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px; }
+  .section { margin-top: 30px; }
+  .section:first-of-type { margin-top: 0; }
+  .section h3 { margin: 0 0 5px 0; font-size: 18px; color: #333; }
+  .section-desc { margin: 0 0 15px 0; font-size: 13px; color: #666; }
+  .chart-container { background: white; padding: 20px; border-radius: 8px; }
+  .chart-wrapper { position: relative; height: 440px; }
+  .charts-grid { display: flex; flex-wrap: wrap; gap: 20px; }
+  .charts-grid .section { margin-top: 0; flex: 1 1 480px; min-width: 0; }
+  .error { color: #cc0000; padding: 10px; background: #ffeeee; border-radius: 4px; margin-top: 10px; display: none; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 24px; align-items: center; margin: 12px 0 20px 0; }
+  .control-group { display: flex; align-items: center; gap: 10px; }
+  .control-label { font-size: 13px; font-weight: bold; color: #555; }
+  .pill-selector { display: inline-flex; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; }
+  .pill-button { padding: 6px 18px; font-size: 14px; font-family: inherit; border: none; background: #f5f5f5; color: #555; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .pill-button:not(:last-child) { border-right: 1px solid #ccc; }
+  .pill-button.active { background: #0066cc; color: #fff; }
+  .pill-button:hover:not(.active) { background: #e0e0e0; }
+  .checkbox-label { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: bold; color: #555; cursor: pointer; }
+  .checkbox-label input { cursor: pointer; }
+  .control-group[hidden] { display: none; }
+</style>
+</head>
+<body>
+<div class="top">
+  <a href="javascript:history.back()" class="btn back-btn" title="Go Back">
+    <i class="fa-solid fa-arrow-left"></i>
+  </a>
+  <div class="top-title-container">
+    <div class="top-title">
+      <b>moz://a</b> performance portal
+    </div>
+  </div>
+  <a href="https://firefox-source-docs.mozilla.org/performance/reporting_a_performance_problem.html" class="btn" title="Report a Performance Bug">
+    <i class="fa-solid fa-bug"></i> Report Performance Issue
+  </a>
+</div>
+
+<div class="main-content">
+  <aside class="main-sidebar" id="main-sidebar">
+  </aside>
+
+  <div class="content">
+    <div class="page-header" id="desktop-header">
+      <h1>Firefox Memory - Desktop</h1>
+    </div>
+    <p class="header-desc">Per-process memory usage, last 6 months. Distributions are aggregated daily and summarized as percentiles.</p>
+
+    <div class="controls">
+      <div class="control-group">
+        <span class="control-label">Process</span>
+        <div class="pill-selector" id="process-selector">
+          <button class="pill-button active" onclick="switchProcess('default')">Parent</button>
+          <button class="pill-button" onclick="switchProcess('tab')">Content (tab)</button>
+          <button class="pill-button" onclick="switchProcess('extension')">Extension</button>
+          <button class="pill-button" onclick="switchProcess('inference')">Inference</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <span class="control-label">Channel</span>
+        <div class="pill-selector" id="channel-selector">
+          <button class="pill-button active" onclick="switchChannel('release')">Release</button>
+          <button class="pill-button" onclick="switchChannel('nightly')">Nightly</button>
+        </div>
+      </div>
+      <!-- Release only: the nightly query has no version column. -->
+      <div class="control-group" id="version-control">
+        <label class="checkbox-label">
+          <input type="checkbox" id="version-toggle" onchange="switchVersionMode(this.checked)">
+          By major version
+        </label>
+      </div>
+    </div>
+
+    <p class="section-desc" id="charts-caption"></p>
+    <div id="sections"></div>
+
+  </div>
+</div>
+
+<script src="assets/main-ui.js"></script>
+<script>
+  // ---------------------------------------------------------------------------
+  // Memory view: one chart per probe (each showing P75 + P95), grouped into
+  // sections, all for the currently selected process + channel. CSV is
+  // long-format (date, process, [version,] <probe>_p75_<unit>, ...); we fetch
+  // once per channel, cache the parsed result, and re-render on switch.
+  // To add a probe: add its columns to the STMO query, then add one entry to the
+  // relevant SECTIONS group below -- its chart is generated automatically.
+  //
+  // Two display modes:
+  //   default      -- the pooled 'all' series: P75 and P95, one colour each,
+  //                   annotated with a vertical rule on the day each major
+  //                   version reached MIN_SHARE_PCT of the population, i.e. when
+  //                   it began moving these numbers. Derived from where each
+  //                   version's rows begin; no extra CSV column needed.
+  //   by version   -- release only. One colour per major version, solid P75 and
+  //                   dashed P95 per version. The release query emits a
+  //                   `version` column ('all' plus one row set per major
+  //                   version); nightly has no such column and every row is
+  //                   treated as 'all', so the checkbox is hidden there.
+  // ---------------------------------------------------------------------------
+  const CHANNEL_URLS = {
+    release: 'https://sql.telemetry.mozilla.org/api/queries/121394/results.csv?api_key=5gDtV1iViwoLiW3Wd7Y86CfQN9jFt7cyJLZNzoLE',
+    nightly: 'https://sql.telemetry.mozilla.org/api/queries/121393/results.csv?api_key=kX8yzQ8ns6mGFUUme5KpuRyRn1JQtB8fYFHXGLYN'
+  };
+
+  // Probes shown simultaneously, grouped into sections. Each probe maps to its
+  // p75/p95 CSV columns, a display title, and a y-axis unit/label.
+  const SECTIONS = [
+    { title: 'Memory', probes: [
+      { key: 'resident_peak', title: 'Resident Peak', unit: 'MB',
+        axis: 'Peak RSS (MB)', p75: 'resident_peak_p75_mb', p95: 'resident_peak_p95_mb' },
+      { key: 'js_gc_heap', title: 'JS GC Heap', unit: 'MB',
+        axis: 'JS GC Heap (MB)', p75: 'js_gc_heap_p75_mb', p95: 'js_gc_heap_p95_mb' },
+      { key: 'memory_unique', title: 'Unique Memory', unit: 'MB',
+        axis: 'Unique (MB)', p75: 'memory_unique_p75_mb', p95: 'memory_unique_p95_mb' }
+    ] },
+    { title: 'GC / CC', probes: [
+      { key: 'javascript_gc_total_time', title: 'JS GC Total Time', unit: 'ms',
+        axis: 'Total GC time (ms)', p75: 'javascript_gc_total_time_p75_ms', p95: 'javascript_gc_total_time_p95_ms' },
+      { key: 'javascript_gc_max_pause', title: 'JS GC Max Pause', unit: 'ms',
+        axis: 'Max GC pause (ms)', p75: 'javascript_gc_max_pause_p75_ms', p95: 'javascript_gc_max_pause_p95_ms' },
+      { key: 'cycle_collector_full', title: 'Cycle Collector (Full)', unit: 'ms',
+        axis: 'Full CC time (ms)', p75: 'cycle_collector_full_p75_ms', p95: 'cycle_collector_full_p95_ms' },
+      { key: 'cycle_collector_max_pause', title: 'Cycle Collector Max Pause', unit: 'ms',
+        axis: 'Max CC pause (ms)', p75: 'cycle_collector_max_pause_p75_ms', p95: 'cycle_collector_max_pause_p95_ms' }
+    ] }
+  ];
+  const ALL_PROBES = SECTIONS.flatMap(s => s.probes);
+
+  // The two percentile lines drawn for every probe.
+  const PERCENTILES = [
+    { field: 'p75', label: 'P75', color: '#0066cc' },
+    { field: 'p95', label: 'P95', color: '#cc0066' }
+  ];
+
+  const PROCESS_LABELS = { default: 'Parent', tab: 'Content (tab)', extension: 'Extension', inference: 'Inference' };
+  const DEFAULT_PROCESS = 'default';
+
+  // Series key for the pooled (all-versions) rows.
+  const ALL = 'all';
+  // Share of a day's volume a major version needs before the release query emits
+  // rows for it. Mirrors the threshold in memory-desktop-release.sql -- keep the
+  // two in sync; it drives both the caption and the marker wording.
+  const MIN_SHARE_PCT = 10;
+  // Only release ships per-version rows.
+  const VERSION_CHANNEL = 'release';
+
+  // Validated categorical palette (8 fixed slots, light surface). A version's
+  // colour is slot (major % 8), so it is a property of the version itself:
+  // version 141 keeps its colour as the rolling 6-month window moves and other
+  // versions come and go. Consecutive majors land on consecutive slots, which is
+  // the pairing the palette's ordering is validated for (worst adjacent CVD
+  // dE 9.1 on white). Three slots sit below 3:1 contrast, so lines are also
+  // labelled directly at their right-hand end -- see versionEndLabels.
+  const VERSION_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100',
+                          '#e87ba4', '#008300', '#4a3aa7', '#e34948'];
+  const versionColor = v => VERSION_COLORS[Number(v) % VERSION_COLORS.length];
+
+  // Ink tokens: label text stays neutral, the colour sits in the swatch beside it.
+  const INK_SECONDARY = '#52514e';
+  const SURFACE = '#ffffff';
+
+  const state = { process: DEFAULT_PROCESS, channel: 'release', byVersion: false };
+  const channelData = {};   // channel -> { process -> { version -> [{date:Date, vals:{col:num|null}}] } }
+  const charts = {};        // probe.key -> Chart
+
+  // Build a section per group, with a chart card per probe, once up front.
+  function buildChartDOM() {
+    const container = document.getElementById('sections');
+    container.innerHTML = SECTIONS.map(section => `
+      <div class="group">
+        <h2>${section.title}</h2>
+        <div class="charts-grid">
+          ${section.probes.map(p => `
+            <div class="section">
+              <h3>${p.title}</h3>
+              <div class="chart-container">
+                <div class="chart-wrapper"><canvas id="chart-${p.key}"></canvas></div>
+                <div class="error" id="error-${p.key}"></div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  function showError(probeKey, msg) {
+    const el = document.getElementById(`error-${probeKey}`);
+    if (!el) return;
+    if (!msg) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    el.style.display = 'block';
+    el.innerHTML = `Error: ${msg}`;
+  }
+
+  function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  function parseDate(str) {
+    const d = new Date(str);
+    if (isNaN(d.getTime())) throw new Error(`Invalid date: ${str}`);
+    return d;
+  }
+
+  // Columns that describe a row rather than carry a probe value.
+  const META_COLS = ['date', 'process', 'version'];
+
+  // Parse long-format CSV into { process -> { version -> [{date:Date, vals}] } }.
+  // The `version` column is optional: without it (nightly) every row pools under
+  // ALL, which is exactly the shape the default display mode reads -- and with no
+  // per-version rows there are no release markers either.
+  function parseMemoryCSV(text) {
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) throw new Error('CSV must have header and at least one data row');
+    const headers = parseCSVLine(lines[0]);
+    const dateIdx = headers.indexOf('date');
+    const procIdx = headers.indexOf('process');
+    const verIdx = headers.indexOf('version');
+    if (dateIdx < 0 || procIdx < 0) throw new Error('CSV is missing a date or process column');
+    const valueCols = headers
+      .map((h, i) => ({ name: h, i }))
+      .filter(c => META_COLS.indexOf(c.name) === -1);
+
+    const byProc = {};
+    for (let i = 1; i < lines.length; i++) {
+      const v = parseCSVLine(lines[i]);
+      if (v.length < headers.length) continue;
+      const vals = {};
+      valueCols.forEach(c => {
+        const f = parseFloat(v[c.i]);
+        vals[c.name] = isNaN(f) ? null : f;
+      });
+      const version = verIdx >= 0 && v[verIdx] ? v[verIdx] : ALL;
+      const byVersion = byProc[v[procIdx]] = byProc[v[procIdx]] || {};
+      (byVersion[version] = byVersion[version] || []).push({ date: v[dateIdx], vals });
+    }
+
+    const processes = {};
+    for (const proc of Object.keys(byProc)) {
+      processes[proc] = {};
+      for (const version of Object.keys(byProc[proc])) {
+        processes[proc][version] = byProc[proc][version]
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(r => ({ date: parseDate(r.date), vals: r.vals }));
+      }
+    }
+    return { processes };
+  }
+
+  // Major versions present for this process, oldest first. Sorted numerically so
+  // the legend reads 141, 142, ... rather than lexicographically.
+  function versionsIn(procData) {
+    return Object.keys(procData || {})
+      .filter(v => v !== ALL)
+      .sort((a, b) => Number(a) - Number(b));
+  }
+
+  // Per-version series cover different date ranges, so datasets carry their own
+  // {x, y} points rather than sharing one labels array.
+  function pointsFor(rows, col) {
+    return (rows || []).map(r => ({ x: r.date, y: r.vals[col] === undefined ? null : r.vals[col] }));
+  }
+
+  async function ensureChannelData(channel) {
+    if (channelData[channel]) return channelData[channel];
+    const response = await fetch(CHANNEL_URLS[channel]);
+    if (!response.ok) throw new Error(`Failed to fetch CSV: ${response.status}`);
+    const parsed = parseMemoryCSV(await response.text());
+    channelData[channel] = parsed;
+    return parsed;
+  }
+
+  // Per-version display is release-only; the checkbox is hidden elsewhere, but
+  // the preference is kept so switching back to release restores it.
+  function versionModeActive() {
+    return state.byVersion && state.channel === VERSION_CHANNEL;
+  }
+
+  async function render() {
+    const versionMode = versionModeActive();
+    const channelLabel = state.channel.charAt(0).toUpperCase() + state.channel.slice(1);
+    const encoding = versionMode
+      ? `one colour per major version — solid P75, dashed P95 (each version while it held at least ${MIN_SHARE_PCT}% of the day's volume)`
+      : 'P75 and P95 of the daily distribution';
+    document.getElementById('charts-caption').textContent =
+      `${PROCESS_LABELS[state.process] || state.process} process — ${channelLabel} — ${encoding}`;
+
+    document.getElementById('version-control').hidden = state.channel !== VERSION_CHANNEL;
+    document.getElementById('version-toggle').checked = state.byVersion;
+
+    let parsed;
+    try {
+      parsed = await ensureChannelData(state.channel);
+    } catch (e) {
+      ALL_PROBES.forEach(p => showError(p.key, e.message));
+      return;
+    }
+
+    const procData = parsed.processes[state.process];
+
+    // Only mention the markers once we know this channel ships per-version rows.
+    if (!versionMode && procData && versionsIn(procData).length) {
+      document.getElementById('charts-caption').textContent +=
+        `. Dashed rules mark when a major version reached ${MIN_SHARE_PCT}% of the population`;
+    }
+
+    for (const probe of ALL_PROBES) {
+      renderProbe(probe, procData, versionMode);
+    }
+  }
+
+  // Direct-labels the version(s) still shipping at the right-hand edge of the
+  // chart. This is the relief channel the palette requires (three of its eight
+  // slots fall below 3:1 against white), so the versions a reader is most likely
+  // to be comparing are identified without relying on colour.
+  //
+  // Deliberately NOT every version: one that has aged out ends mid-plot, and
+  // labelling those endpoints scatters numbers across the plot looking like
+  // stray marks rather than annotation. Older versions are identified by the
+  // legend and tooltip instead.
+  const versionEndLabels = {
+    id: 'versionEndLabels',
+    afterDatasetsDraw(chart) {
+      const opts = chart.options.plugins.versionEndLabels;
+      if (!opts || !opts.enabled) return;
+      const { ctx, chartArea } = chart;
+
+      // Last real point of each visible version's P75 (solid) line.
+      const ends = [];
+      chart.data.datasets.forEach((ds, i) => {
+        if (ds.isP95 || !chart.isDatasetVisible(i)) return;
+        const points = chart.getDatasetMeta(i).data;
+        for (let k = points.length - 1; k >= 0; k--) {
+          if (ds.data[k] && ds.data[k].y != null) {
+            ends.push({
+              text: ds.versionKey, color: ds.borderColor,
+              at: +ds.data[k].x, x: points[k].x, y: points[k].y
+            });
+            break;
+          }
+        }
+      });
+      if (!ends.length) return;
+
+      // Keep only lines reaching the end of the window. The few days' slack
+      // covers a version whose final partial day lands short of the others.
+      const latest = Math.max.apply(null, ends.map(e => e.at));
+      const LIVE_SLACK_MS = 3 * 86400000;
+      const labels = ends.filter(e => e.at >= latest - LIVE_SLACK_MS);
+
+      // Nudge overlapping labels downward so co-located line ends stay legible.
+      labels.sort((a, b) => a.y - b.y);
+      const MIN_GAP = 13;
+      for (let i = 1; i < labels.length; i++) {
+        if (labels[i].y - labels[i - 1].y < MIN_GAP) labels[i].y = labels[i - 1].y + MIN_GAP;
+      }
+
+      ctx.save();
+      ctx.font = '600 11px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.textBaseline = 'middle';
+      for (const l of labels) {
+        const x = Math.min(l.x + 6, chartArea.right - 4);
+        const y = Math.max(chartArea.top + 6, Math.min(l.y, chartArea.bottom - 6));
+        // A surface-coloured halo keeps the text readable where it crosses a line.
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = SURFACE;
+        ctx.strokeText(l.text, x + 10, y);
+        ctx.fillStyle = INK_SECONDARY;
+        ctx.fillText(l.text, x + 10, y);
+        // Short dash in the series colour: the swatch carries identity, not the text.
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = l.color;
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineTo(x + 8, y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+  };
+  Chart.register(versionEndLabels);
+
+  // One legend entry per version rather than per line. The entry stands for both
+  // of that version's lines, so it is labelled with just the version number --
+  // calling it "153 P75" would be wrong, since clicking it also toggles the
+  // dashed P95 line. Solid vs dashed is explained in the caption instead.
+  function versionLegendLabels(chart) {
+    return Chart.defaults.plugins.legend.labels.generateLabels(chart)
+      .filter(item => !chart.data.datasets[item.datasetIndex].isP95)
+      .map(item => Object.assign(item, {
+        text: chart.data.datasets[item.datasetIndex].versionKey
+      }));
+  }
+
+  // Clicking a version in the legend toggles both of its lines (P75 and P95).
+  function versionLegendClick(e, item, legend) {
+    const chart = legend.chart;
+    const key = chart.data.datasets[item.datasetIndex].versionKey;
+    const show = !chart.isDatasetVisible(item.datasetIndex);
+    chart.data.datasets.forEach((ds, i) => {
+      if (ds.versionKey === key) chart.setDatasetVisibility(i, show);
+    });
+    chart.update();
+  }
+
+  // Release markers: a vertical rule on the day a major version first reached the
+  // charting threshold, i.e. when it started materially moving the pooled
+  // numbers. That is deliberately earlier than the day it becomes the most-used
+  // build -- by then it has been shifting the pooled line for weeks, which is
+  // exactly the confusion these markers exist to prevent.
+  //
+  // Only on the pooled view: in per-version mode each line already starts on its
+  // own crossing date. Styled to recede (hairline, muted chrome ink) so it reads
+  // as annotation rather than data.
+  const MARKER = {
+    color: '#898781',        // muted chrome ink
+    lineWidth: 1,
+    lineDash: [4, 4],
+    labelFontSize: 9,
+    labelPadding: 3,
+    clusterDays: 14,         // markers closer than this get staggered labels
+    staggerStepPx: 18,
+    staggerLevels: 2
+  };
+  const DAY_MS = 86400000;
+
+  // The day each major version crossed the threshold for THIS probe: the first
+  // date its series carries a value. The release query only emits a version's
+  // rows once it holds MIN_SHARE_PCT of that day's volume, so the crossing date
+  // needs no column of its own -- it is where the version's data begins.
+  function thresholdCrossings(probe, procData) {
+    const pooled = procData[ALL] || [];
+    if (!pooled.length) return [];
+    const windowStart = +pooled[0].date;
+
+    const crossings = [];
+    for (const version of versionsIn(procData)) {
+      const first = (procData[version] || []).find(
+        r => r.vals[probe.p75] != null || r.vals[probe.p95] != null);
+      // A version already present on the window's first day crossed before the
+      // window opened, so there is no crossing to mark.
+      if (first && +first.date > windowStart) crossings.push({ date: first.date, version });
+    }
+    return crossings.sort((a, b) => a.date - b.date);
+  }
+
+  function buildMarkerAnnotations(crossings) {
+    let level = 0, prev = null;
+    return crossings.map(t => {
+      level = (prev !== null && t.date - prev < MARKER.clusterDays * DAY_MS)
+        ? (level + 1) % MARKER.staggerLevels
+        : 0;
+      prev = t.date;
+      const on = t.date.toISOString().slice(0, 10);
+      return {
+        type: 'line',
+        xMin: t.date,
+        xMax: t.date,
+        borderColor: MARKER.color,
+        borderWidth: MARKER.lineWidth,
+        borderDash: MARKER.lineDash,
+        label: {
+          display: true,
+          content: t.version,
+          position: 'start',
+          yAdjust: -(level * MARKER.staggerStepPx),
+          backgroundColor: MARKER.color,
+          color: '#fff',
+          font: { size: MARKER.labelFontSize },
+          padding: MARKER.labelPadding
+        },
+        enter: (ctx) => {
+          ctx.chart.canvas.title =
+            `Firefox ${t.version} reached ${MIN_SHARE_PCT}% of release volume on ${on}`;
+        },
+        leave: (ctx) => { ctx.chart.canvas.title = ''; }
+      };
+    });
+  }
+
+  const lineStyle = (color, dashed) => ({
+    borderColor: color,
+    backgroundColor: color + '18',
+    borderWidth: 2,
+    borderDash: dashed ? [5, 4] : [],
+    pointRadius: 0,
+    pointHitRadius: 8,
+    tension: 0.1,
+    fill: false,
+    spanGaps: true
+  });
+
+  function datasetsForProbe(probe, procData, versionMode) {
+    if (!versionMode) {
+      return PERCENTILES.map(s => Object.assign(
+        { label: s.label, data: pointsFor(procData[ALL], probe[s.field]) },
+        lineStyle(s.color, false)
+      ));
+    }
+    // Solid P75 + dashed P95 in one colour per version; the dash is the
+    // secondary encoding that separates the pair without spending a hue on it.
+    return versionsIn(procData).flatMap(version => PERCENTILES.map(s => Object.assign(
+      {
+        label: `${version} ${s.label}`,
+        versionKey: version,
+        isP95: s.field === 'p95',
+        data: pointsFor(procData[version], probe[s.field])
+      },
+      lineStyle(versionColor(version), s.field === 'p95')
+    )));
+  }
+
+  function renderProbe(probe, procData, versionMode) {
+    showError(probe.key, null);
+    if (charts[probe.key]) { charts[probe.key].destroy(); delete charts[probe.key]; }
+
+    if (!procData) {
+      showError(probe.key, `No data for the "${state.process}" process on ${state.channel}.`);
+      return;
+    }
+    if (versionMode && versionsIn(procData).length === 0) {
+      showError(probe.key, `No per-version data for the "${state.process}" process.`);
+      return;
+    }
+
+    const ctx = document.getElementById(`chart-${probe.key}`).getContext('2d');
+    charts[probe.key] = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: datasetsForProbe(probe, procData, versionMode) },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        // Version series span different date ranges, so match the nearest point
+        // by x rather than by shared index.
+        interaction: versionMode
+          ? { intersect: false, mode: 'nearest', axis: 'x' }
+          : { intersect: false, mode: 'index' },
+        // Room for the end labels drawn outside the last point.
+        layout: versionMode ? { padding: { right: 34 } } : {},
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: 'month', displayFormats: { month: 'MMM yyyy' }, tooltipFormat: 'MMM d, yyyy' }
+          },
+          y: {
+            min: 0,
+            title: { display: true, text: probe.axis },
+            ticks: { callback: v => Math.round(v) + ' ' + probe.unit }
+          }
+        },
+        plugins: {
+          versionEndLabels: { enabled: versionMode },
+          // Per-probe: a version can cross the threshold on different days for
+          // different probes. Built per chart, so no annotation element state is
+          // held in common across the seven charts.
+          annotation: {
+            annotations: versionMode ? [] : buildMarkerAnnotations(thresholdCrossings(probe, procData))
+          },
+          legend: {
+            position: 'top',
+            labels: versionMode ? { generateLabels: versionLegendLabels } : {},
+            onClick: versionMode ? versionLegendClick : Chart.defaults.plugins.legend.onClick
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `${context.dataset.label}: ${Math.round(context.parsed.y)} ${probe.unit}`
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function updateHash() {
+    const parts = [];
+    if (state.process !== DEFAULT_PROCESS) parts.push(`process=${state.process}`);
+    if (state.channel !== 'release') parts.push(`channel=${state.channel}`);
+    if (state.byVersion) parts.push('versions=1');
+    const newHash = parts.length ? '#' + parts.join('&') : window.location.pathname + window.location.search;
+    history.replaceState(null, '', newHash);
+  }
+
+  function setActive(selectorId, predicateText) {
+    document.querySelectorAll(`#${selectorId} .pill-button`).forEach(btn => {
+      btn.classList.toggle('active', predicateText(btn.textContent));
+    });
+  }
+
+  function switchProcess(proc, skipHash) {
+    state.process = proc;
+    setActive('process-selector', txt => (PROCESS_LABELS[proc] || proc) === txt);
+    if (!skipHash) updateHash();
+    render();
+  }
+
+  function switchChannel(channel, skipHash) {
+    state.channel = channel;
+    setActive('channel-selector', txt => txt.toLowerCase() === channel);
+    if (!skipHash) updateHash();
+    render();
+  }
+
+  function switchVersionMode(on, skipHash) {
+    state.byVersion = on;
+    if (!skipHash) updateHash();
+    render();
+  }
+
+  function applyHash(skipHash) {
+    const hash = window.location.hash.replace('#', '');
+    let process = DEFAULT_PROCESS;
+    let channel = 'release';
+    let byVersion = false;
+    if (hash) {
+      for (const part of hash.split('&')) {
+        const [k, v] = part.split('=');
+        if (k === 'process' && PROCESS_LABELS[v]) process = v;
+        if (k === 'channel' && CHANNEL_URLS[v]) channel = v;
+        if (k === 'versions') byVersion = v === '1';
+      }
+    }
+    state.process = process;
+    state.channel = channel;
+    state.byVersion = byVersion;
+    setActive('process-selector', txt => (PROCESS_LABELS[process] || process) === txt);
+    setActive('channel-selector', txt => txt.toLowerCase() === channel);
+    render();
+  }
+
+  buildChartDOM();
+  applyHash(true);
+  window.addEventListener('hashchange', () => applyHash(true));
+</script>
+</body>
+</html>
