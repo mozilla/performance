@@ -937,6 +937,24 @@
       chart: 'tls-android-nightly'
     },
     {
+      date: '2026-07-15',
+      label: 'Bug 2054882',
+      description: 'Report connectEnd at early-data send for accepted 0-RTT (fixes time_to_request_start regression)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2054882',
+      platform: 'desktop',
+      channel: 'nightly',
+      chart: 'ttrs-desktop-nightly'
+    },
+    {
+      date: '2026-07-15',
+      label: 'Bug 2054882',
+      description: 'Report connectEnd at early-data send for accepted 0-RTT (fixes time_to_request_start regression)',
+      url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2054882',
+      platform: 'android',
+      channel: 'nightly',
+      chart: 'ttrs-android-nightly'
+    },
+    {
       date: '2026-07-08',
       label: 'Bug 2047648',
       description: 'Report real DNS-resolution end for Happy Eyeballs (fixes inflated dns_lookup_time)',
@@ -1214,6 +1232,81 @@
     return d;
   }
 
+  const DAY_MS = 24 * 60 * 60 * 1000; // milliseconds in a day
+
+  // Styling + layout for chart annotation markers (chartjs-plugin-annotation).
+  const ANNOTATION = {
+    color: '#ff6384',        // marker line and label background
+    lineWidth: 2,
+    lineDash: [5, 5],
+    labelFontSize: 8,
+    labelPadding: 3,
+    clusterWindowDays: 60,   // annotations closer together than this are staggered so labels don't overlap
+    staggerStepPx: 22,       // vertical offset added per stagger level
+    staggerLevels: 3,        // distinct label heights before cycling back to the baseline
+    tooltipMatchDays: 1,     // show an annotation in the tooltip when the hovered point is within this many days
+  };
+
+  // Annotations that apply to a given chart, matched by explicit chart id, platform, and channel.
+  function getChartAnnotations(annotations, chartId) {
+    return annotations.filter(a => {
+      if (a.chart && a.chart !== chartId) return false;
+      if (a.platform && !chartId.includes(a.platform)) return false;
+      if (a.channel === 'nightly' && !chartId.endsWith('-nightly')) return false;
+      if (a.channel === 'release' && chartId.endsWith('-nightly')) return false;
+      return true;
+    });
+  }
+
+  // Build chartjs-plugin-annotation line configs, staggering labels vertically so that
+  // annotations falling close together don't overlap.
+  function buildAnnotationLines(chartAnnotations) {
+    const clusterWindowMs = ANNOTATION.clusterWindowDays * DAY_MS;
+    const sorted = chartAnnotations
+      .map(a => ({ a, t: parseDate(a.date).getTime() }))
+      .sort((x, y) => x.t - y.t);
+
+    let level = 0, prevT = null;
+    for (const item of sorted) {
+      level = (prevT !== null && item.t - prevT < clusterWindowMs)
+        ? (level + 1) % ANNOTATION.staggerLevels
+        : 0;
+      item.yAdjust = -(level * ANNOTATION.staggerStepPx);
+      prevT = item.t;
+    }
+
+    return sorted.map(({ a, yAdjust }) => ({
+      type: 'line',
+      xMin: parseDate(a.date),
+      xMax: parseDate(a.date),
+      borderColor: ANNOTATION.color,
+      borderWidth: ANNOTATION.lineWidth,
+      borderDash: ANNOTATION.lineDash,
+      label: {
+        display: true,
+        content: a.label,
+        position: 'start',
+        yAdjust,
+        backgroundColor: ANNOTATION.color,
+        color: 'white',
+        font: { size: ANNOTATION.labelFontSize },
+        padding: ANNOTATION.labelPadding
+      },
+      click: a.url ? (ctx, event) => {
+        // The plugin fires click for every annotation whose label overlaps the click's
+        // row/column, so only open when the click is actually inside THIS label's box.
+        const label = ctx.element && ctx.element.label;
+        if (!label) return;
+        const { x, y, x2, y2 } = label.getProps(['x', 'y', 'x2', 'y2'], true);
+        if (event.x >= x && event.x <= x2 && event.y >= y && event.y <= y2) {
+          window.open(a.url, '_blank');
+        }
+      } : undefined,
+      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; },
+      leave: (ctx) => { ctx.chart.canvas.title = ''; }
+    }));
+  }
+
   function renderStackedAreaChart(config, data, annotations) {
     const chartId = config.id;
     if (charts[chartId]) charts[chartId].destroy();
@@ -1237,36 +1330,8 @@
       spanGaps: true
     }));
 
-    const chartAnnotations = annotations.filter(a => {
-      if (a.chart && a.chart !== chartId) return false;
-      if (a.platform && !chartId.includes(a.platform)) return false;
-      if (a.channel === 'nightly' && !chartId.endsWith('-nightly')) return false;
-      if (a.channel === 'release' && chartId.endsWith('-nightly')) return false;
-      return true;
-    });
-    const annotationLines = chartAnnotations.map((a, i) => ({
-      type: 'line',
-      xMin: parseDate(a.date),
-      xMax: parseDate(a.date),
-      borderColor: '#ff6384',
-      borderWidth: 2,
-      borderDash: [5, 5],
-      label: {
-        display: true,
-        content: a.label,
-        position: 'start',
-        backgroundColor: '#ff6384',
-        color: 'white',
-        font: { size: 8 },
-        padding: 3
-      },
-      click: a.url ? (ctx, event) => {
-        const area = ctx.chart.chartArea;
-        if (event.y > area.bottom - 30) window.open(a.url, '_blank');
-      } : undefined,
-      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; },
-      leave: (ctx) => { ctx.chart.canvas.title = ''; }
-    }));
+    const chartAnnotations = getChartAnnotations(annotations, chartId);
+    const annotationLines = buildAnnotationLines(chartAnnotations);
 
     // Compute latest values for legend
     const latestValues = orderedEntries.map(([name, values]) => {
@@ -1319,7 +1384,7 @@
                 const date = context[0].parsed.x;
                 const matching = chartAnnotations.filter(a => {
                   const aDate = parseDate(a.date).getTime();
-                  return Math.abs(aDate - date) < 86400000;
+                  return Math.abs(aDate - date) < ANNOTATION.tooltipMatchDays * DAY_MS;
                 });
                 if (matching.length) {
                   return matching.map(a => `\n${a.label}: ${a.description || ''}`);
@@ -1328,7 +1393,13 @@
               }
             }
           },
-          annotation: { annotations: annotationLines }
+          annotation: {
+            // intersect: a click dispatches only to the annotation whose line/label is
+            // actually under the pointer (default matches by row/column and misdelivers
+            // clicks among stacked labels).
+            interaction: { intersect: true },
+            annotations: annotationLines
+          }
         }
       }
     });
@@ -1393,36 +1464,8 @@
       };
     });
 
-    const chartAnnotations = annotations.filter(a => {
-      if (a.chart && a.chart !== chartId) return false;
-      if (a.platform && !chartId.includes(a.platform)) return false;
-      if (a.channel === 'nightly' && !chartId.endsWith('-nightly')) return false;
-      if (a.channel === 'release' && chartId.endsWith('-nightly')) return false;
-      return true;
-    });
-    const annotationLines = chartAnnotations.map((a, i) => ({
-      type: 'line',
-      xMin: parseDate(a.date),
-      xMax: parseDate(a.date),
-      borderColor: '#ff6384',
-      borderWidth: 2,
-      borderDash: [5, 5],
-      label: {
-        display: true,
-        content: a.label,
-        position: 'start',
-        backgroundColor: '#ff6384',
-        color: 'white',
-        font: { size: 8 },
-        padding: 3
-      },
-      click: a.url ? (ctx, event) => {
-        const area = ctx.chart.chartArea;
-        if (event.y > area.bottom - 30) window.open(a.url, '_blank');
-      } : undefined,
-      enter: (ctx) => { ctx.chart.canvas.title = a.description || a.label; },
-      leave: (ctx) => { ctx.chart.canvas.title = ''; }
-    }));
+    const chartAnnotations = getChartAnnotations(annotations, chartId);
+    const annotationLines = buildAnnotationLines(chartAnnotations);
 
     const yAxisConfig = unit === '%'
       ? { min: 0, max: 100, ticks: { callback: v => v + '%' } }
@@ -1455,7 +1498,7 @@
                 const date = context[0].parsed.x;
                 const matching = chartAnnotations.filter(a => {
                   const aDate = parseDate(a.date).getTime();
-                  return Math.abs(aDate - date) < 86400000;
+                  return Math.abs(aDate - date) < ANNOTATION.tooltipMatchDays * DAY_MS;
                 });
                 if (matching.length) {
                   return matching.map(a => `\n${a.label}: ${a.description || ''}`);
@@ -1464,7 +1507,13 @@
               }
             }
           },
-          annotation: { annotations: annotationLines }
+          annotation: {
+            // intersect: a click dispatches only to the annotation whose line/label is
+            // actually under the pointer (default matches by row/column and misdelivers
+            // clicks among stacked labels).
+            interaction: { intersect: true },
+            annotations: annotationLines
+          }
         }
       }
     });
