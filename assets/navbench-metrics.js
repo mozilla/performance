@@ -25,9 +25,9 @@ var subtestCharts = {};
 var allSubtestChartsLoaded = false;
 
 const platformConfigs = {
-  'linux': { platforms: ['linux2404-64-shippable'] },
-  'osxm4': { platforms: ['macosx1500-aarch64-shippable'] },
-  'windows': { platforms: ['windows11-64-24h2-shippable'] },
+  'linux': { platforms: ['linux2404-64-nightlyasrelease', 'linux2404-64-shippable'] },
+  'osxm4': { platforms: ['macosx1500-aarch64-nightlyasrelease', 'macosx1500-aarch64-shippable'] },
+  'windows': { platforms: ['windows11-64-24h2-nightlyasrelease', 'windows11-64-24h2-shippable'] },
   'windows-hwref': { platforms: ['windows11-64-24h2-hw-ref-shippable'] }
 };
 
@@ -203,28 +203,47 @@ function displayChart(data, testName) {
     chartTitleElement.innerHTML = `<a id="chart-title-link" href="#" target="_blank" style="text-decoration: none; color: inherit;">${displayName} (higher is better)</a>`;
   }
 
-  const firefoxData = data.filter(d => d.application === 'firefox');
+  const firefoxData = data.filter(d => d.application === 'firefox' && !d.platform.includes('nightlyasrelease'));
+  const firefoxNarData = data.filter(d => d.application === 'firefox' && d.platform.includes('nightlyasrelease'));
 
   if (firefoxData.length > 0) {
     const sigId = firefoxData[0].signature_id;
+    const narSigId = firefoxNarData.length > 0 ? firefoxNarData[0].signature_id : null;
     const titleLink = document.getElementById('chart-title-link');
-    if (titleLink) titleLink.href = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=autoland,${sigId},1,13`;
+    if (titleLink) {
+      let seriesParam = `autoland,${sigId},1,13`;
+      if (narSigId) seriesParam += `&series=autoland,${narSigId},1,13`;
+      titleLink.href = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=${seriesParam}`;
+    }
   }
 
   // defaultWebsite = selected test name (for pre-selecting website in video panel)
   const defaultWebsite = testName !== '' ? testName : null;
 
+  const datasets = [{
+    label: 'Firefox',
+    data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
+    pointRadius: 3,
+    pointBackgroundColor: '#FF9500',
+    pointBorderColor: '#000000',
+    pointBorderWidth: 0.5
+  }];
+
+  if (firefoxNarData.length > 0) {
+    datasets.push({
+      label: 'Nightly-as-Release',
+      data: firefoxNarData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
+      pointRadius: 3,
+      pointBackgroundColor: '#dd2500',
+      pointBorderColor: '#000000',
+      pointBorderWidth: 0.5
+    });
+  }
+
   timeChart = new Chart(ctx, {
     type: 'scatter',
     data: {
-      datasets: [{
-        label: 'Firefox',
-        data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
-        pointRadius: 3,
-        pointBackgroundColor: '#FF9500',
-        pointBorderColor: '#000000',
-        pointBorderWidth: 0.5
-      }]
+      datasets: datasets
     },
     options: {
       responsive: true,
@@ -519,21 +538,24 @@ function displayTable() {
 
   const subtestNames = window.navBenchData.subtestNames;
   if (subtestNames.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center; padding: 20px; font-family: sans-serif; color: #666;">No data found. This test may not have run yet on autoland.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; font-family: sans-serif; color: #666;">No data found. This test may not have run yet on autoland.</td></tr>';
     return;
   }
 
   subtestNames.forEach(testName => {
     const testData = window.navBenchData.allData.filter(d => d.test === testName && d.application === 'firefox');
-    const avg = calculateAverage(testData);
-    if (avg === null) return;
+    const shippableData = testData.filter(d => !d.platform.includes('nightlyasrelease'));
+    const narData = testData.filter(d => d.platform.includes('nightlyasrelease'));
+    const avg = calculateAverage(shippableData);
+    const narAvg = calculateAverage(narData);
+    if (avg === null && narAvg === null) return;
 
     const displayName = getDisplayName(testName);
     const row = document.createElement('tr');
     if (testName === '') row.className = 'scoreRow';
     row.style.cursor = 'pointer';
     row.onclick = () => selectTest(testName);
-    row.innerHTML = `<th scope="row" class="testName">${displayName}</th><td>${round(avg, 2)}</td>`;
+    row.innerHTML = `<th scope="row" class="testName">${displayName}</th><td>${avg !== null ? round(avg, 2) : ''}</td><td>${narAvg !== null ? round(narAvg, 2) : ''}</td>`;
     tbody.appendChild(row);
   });
 }
@@ -704,6 +726,7 @@ async function loadSingleSubtestChart(testName, days) {
           dataPoints.push({
             date: new Date(timestampMs),
             application: sig.application,
+            platform: sig.machine_platform,
             signature_id: sig.id,
             value: point.value,
             revision: point.revision,
@@ -731,19 +754,33 @@ function displaySubtestChart(canvas, data, testName) {
   if (!canvas) return;
   if (subtestCharts[testName]) subtestCharts[testName].destroy();
 
-  const firefoxData = data.filter(d => d.application === 'firefox');
+  const firefoxData = data.filter(d => d.application === 'firefox' && !d.platform.includes('nightlyasrelease'));
+  const firefoxNarData = data.filter(d => d.application === 'firefox' && d.platform.includes('nightlyasrelease'));
+
+  const datasets = [{
+    label: 'Firefox',
+    data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
+    pointRadius: 3,
+    pointBackgroundColor: '#FF9500',
+    pointBorderColor: '#000000',
+    pointBorderWidth: 0.5
+  }];
+
+  if (firefoxNarData.length > 0) {
+    datasets.push({
+      label: 'Nightly-as-Release',
+      data: firefoxNarData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
+      pointRadius: 3,
+      pointBackgroundColor: '#dd2500',
+      pointBorderColor: '#000000',
+      pointBorderWidth: 0.5
+    });
+  }
 
   subtestCharts[testName] = new Chart(canvas, {
     type: 'scatter',
     data: {
-      datasets: [{
-        label: 'Firefox',
-        data: firefoxData.map(d => ({ x: d.date, y: d.value, revision: d.revision, job_id: d.job_id })),
-        pointRadius: 3,
-        pointBackgroundColor: '#FF9500',
-        pointBorderColor: '#000000',
-        pointBorderWidth: 0.5
-      }]
+      datasets: datasets
     },
     options: {
       responsive: true,
