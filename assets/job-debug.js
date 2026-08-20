@@ -28,7 +28,19 @@
     ],
     nextMachineIndex: 0,
     machineStyles: {},   // machine_name -> { color, shape, rotation }
-    hoveredMachineDatasetIndex: null
+    hoveredMachineDatasetIndex: null,
+    isolatedMachine: null   // machine_name, or null when all machines are shown
+  };
+
+  // Symbols mirroring the Chart.js point styles used for the machine legend.
+  // Escaped rather than literal so they survive being served without a charset.
+  const shapeSymbols = {
+    'circle-0': '\u25cf',      // filled circle
+    'triangle-0': '\u25b2',    // up triangle
+    'rect-0': '\u25a0',        // square
+    'rectRot-0': '\u25c6',     // diamond
+    'triangle-180': '\u25bc',  // down triangle
+    'rect-45': '\u25a8'        // tilted square
   };
 
   // Browser filter definitions matching speedometer-metrics.js
@@ -90,25 +102,93 @@
     state.hoveredMachineDatasetIndex = hoveredDatasetIndex;
     const hasHover = hoveredDatasetIndex !== null;
 
+    // Only the fill and border fade; point sizes stay constant so that the
+    // chart doesn't wiggle as the pointer moves between machines.
     chart.data.datasets.forEach((dataset, index) => {
       const baseColor = dataset.baseColor || dataset.pointBackgroundColor;
       const isHovered = index === hoveredDatasetIndex;
 
+      // Chart.js draws the lowest (order, index) last, i.e. on top, so give the
+      // hovered machine a lower order than the rest. Without this, a faded
+      // machine that happens to sort earlier paints over the opaque points.
+      dataset.order = isHovered ? -1 : 0;
+
       if (!hasHover || isHovered) {
         dataset.pointBackgroundColor = baseColor;
         dataset.pointBorderColor = '#000';
-        dataset.pointBorderWidth = isHovered ? 1.5 : 0.5;
-        dataset.pointRadius = isHovered ? 6 : 5;
         return;
       }
 
       dataset.pointBackgroundColor = colorWithAlpha(baseColor, 0.16);
-      dataset.pointBorderColor = 'rgba(0, 0, 0, 0.12)';
-      dataset.pointBorderWidth = 0.5;
-      dataset.pointRadius = 3;
+      dataset.pointBorderColor = 'transparent';
     });
 
     chart.update('none');
+  }
+
+  function setIsolatedMachine(chart, machineName) {
+    if (!chart) return;
+    state.isolatedMachine = machineName;
+    applyIsolation(chart);
+    chart.update();
+    renderMachineLegend(chart);
+  }
+
+  function applyIsolation(chart) {
+    chart.data.datasets.forEach((dataset, index) => {
+      chart.getDatasetMeta(index).hidden =
+        state.isolatedMachine !== null && dataset.label !== state.isolatedMachine;
+    });
+  }
+
+  function renderMachineLegend(chart) {
+    const legendDiv = document.getElementById('machine-legend');
+    if (!legendDiv) return;
+    legendDiv.innerHTML = '';
+
+    const heading = document.createElement('span');
+    heading.className = 'machine-legend-heading';
+    heading.textContent = 'Machines:';
+    legendDiv.appendChild(heading);
+
+    chart.data.datasets.forEach((dataset, index) => {
+      const isSelected = state.isolatedMachine === dataset.label;
+      const isHidden = !!chart.getDatasetMeta(index).hidden;
+      const style = state.machineStyles[dataset.label];
+      const symbol = shapeSymbols[`${style.shape}-${style.rotation}`] || '●';
+
+      const chip = document.createElement('span');
+      chip.className = 'machine-chip'
+        + (isSelected ? ' selected' : '')
+        + (isHidden ? ' hidden-machine' : '');
+      chip.title = isSelected
+        ? 'Click to show all machines'
+        : `Click to show only ${dataset.label}`;
+
+      const swatch = document.createElement('span');
+      swatch.className = 'machine-chip-swatch';
+      swatch.textContent = symbol;
+      if (!isHidden) {
+        swatch.style.color = style.color;
+      }
+
+      const label = document.createElement('span');
+      label.className = 'machine-chip-name';
+      label.textContent = dataset.label;
+
+      chip.appendChild(swatch);
+      chip.appendChild(label);
+
+      chip.addEventListener('mouseenter', () => setHoveredMachineDataset(chart, index));
+      chip.addEventListener('click', () => {
+        setIsolatedMachine(chart, isSelected ? null : dataset.label);
+      });
+
+      legendDiv.appendChild(chip);
+    });
+
+    // Assigned rather than added so that re-rendering doesn't stack listeners
+    legendDiv.onmouseleave = () => setHoveredMachineDataset(chart, null);
   }
 
   function populateBrowserSelect(data) {
@@ -171,8 +251,15 @@
       byMachine[machine].push(d);
     }
 
-    // Sort machines by count descending for readability
-    const sortedMachines = Object.keys(byMachine).sort((a, b) => byMachine[b].length - byMachine[a].length);
+    // Sort alphabetically (numeric-aware) so a machine keeps its legend
+    // position when the test, range or browser changes
+    const sortedMachines = Object.keys(byMachine).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+    // Keep an isolated machine isolated across reloads, but only if it still
+    // has data - otherwise the chart would come back empty
+    if (state.isolatedMachine !== null && !byMachine[state.isolatedMachine]) {
+      state.isolatedMachine = null;
+    }
 
     // Build datasets, one per machine, with unique color+shape combos
     const datasets = sortedMachines.map(machine => {
@@ -200,6 +287,20 @@
     if (typeof timeChart !== 'undefined' && timeChart) {
       timeChart.destroy();
     }
+
+    // Pin the axes to the extent of all data for the selected browser, so that
+    // isolating a machine or switching between machines doesn't rescale the plot
+    const xValues = data.map(d => d.date.getTime());
+    const yValues = data.map(d => d.value);
+    const hasData = data.length > 0;
+    const xMin = hasData ? Math.min(...xValues) : undefined;
+    const xMax = hasData ? Math.max(...xValues) : undefined;
+    const yMin = hasData ? Math.min(...yValues) : undefined;
+    const yMax = hasData ? Math.max(...yValues) : undefined;
+    // Fall back to a fixed padding when every point shares the same x or y,
+    // which would otherwise collapse the axis into a zero-width range
+    const xPad = xMax > xMin ? (xMax - xMin) * 0.02 : 12 * 60 * 60 * 1000;
+    const yPad = yMax > yMin ? (yMax - yMin) * 0.05 : Math.abs(yMax) * 0.05 || 1;
 
     const browserLabel = (browserDefs.find(d => d.key === state.activeBrowser) || {}).label || state.activeBrowser;
     const isScore = testName === 'score';
@@ -250,11 +351,15 @@
         scales: {
           x: {
             type: 'time',
+            min: hasData ? xMin - xPad : undefined,
+            max: hasData ? xMax + xPad : undefined,
             time: { unit: 'day', tooltipFormat: 'MMM dd, yyyy' },
             title: { display: true, text: 'Date' }
           },
           y: {
             beginAtZero: false,
+            min: hasData ? yMin - yPad : undefined,
+            max: hasData ? yMax + yPad : undefined,
             title: {
               display: true,
               text: isScore ? 'Score (Higher is better)' : 'Time (ms)'
@@ -271,20 +376,9 @@
       chartTitleElement.textContent = `${displayName} - ${browserLabel} by Machine (${betterDirection})`;
     }
 
-    // Build machine legend with counts
-    const legendDiv = document.getElementById('machine-legend');
-    if (legendDiv) {
-      const shapeSymbols = {
-        'circle-0': '●', 'triangle-0': '▲', 'rect-0': '■',
-        'rectRot-0': '◆', 'triangle-180': '▼', 'rect-45': '▨'
-      };
-      legendDiv.innerHTML = '<strong>Machines:</strong> ' + sortedMachines.map(m => {
-        const style = state.machineStyles[m];
-        const count = byMachine[m].length;
-        const symbol = shapeSymbols[`${style.shape}-${style.rotation}`] || '●';
-        return `<span style="display:inline-block; margin: 2px 8px 2px 0;"><span style="color:${style.color}; font-size: 14px; margin-right: 3px;">${symbol}</span>${m} (${count})</span>`;
-      }).join('');
-    }
+    applyIsolation(timeChart);
+    timeChart.update('none');
+    renderMachineLegend(timeChart);
   }
 
   function selectBrowser(key) {

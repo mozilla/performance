@@ -2,6 +2,7 @@
 <html lang="en">
 
 <head>
+  <meta charset="UTF-8">
   <title>Speedometer 3 Job Debug</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@400;700&display=swap" rel="stylesheet">
@@ -97,6 +98,64 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
+
+    /* Machine legend: a tiled grid of chips with collapsed borders */
+    #machine-legend {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      text-align: left;
+    }
+
+    .machine-legend-heading {
+      font-weight: bold;
+      padding: 4px 8px 4px 0;
+    }
+
+    .machine-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border: 1px solid #ccc;
+      background: #fff;
+      cursor: pointer;
+      user-select: none;
+      /* Pull each chip onto its neighbour so adjacent borders share a line */
+      margin: -1px 0 0 -1px;
+    }
+
+      .machine-chip:hover {
+        background: #e8edf5;
+        border-color: #3366ff;
+        /* Lift the outline above the neighbours it overlaps */
+        position: relative;
+        z-index: 1;
+      }
+
+      /* Deliberately no bold or size change: the chip must not resize when
+         selected, or the chips after it would shift out from under the cursor */
+      .machine-chip.selected {
+        background: #dbe4ff;
+        border-color: #3366ff;
+        box-shadow: inset 0 0 0 1px #3366ff;
+        position: relative;
+        z-index: 2;
+      }
+
+      .machine-chip.hidden-machine {
+        background: #f3f3f3;
+        color: #999;
+      }
+
+        .machine-chip.hidden-machine .machine-chip-name {
+          text-decoration: line-through;
+        }
+
+    .machine-chip-swatch {
+      font-size: 14px;
+      line-height: 1;
+    }
   </style>
 </head>
 
@@ -127,7 +186,8 @@
           Select a platform and subtest, then choose a single browser from the
           dropdown. Points are coloured by machine name so you can spot
           machine-specific noise or outliers. Click any point to open its
-          Taskcluster task.
+          Taskcluster task. Hover a machine name in the legend to highlight its
+          points, or click the name to show only that machine.
         </div>
 
         <table class="buttons">
