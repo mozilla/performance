@@ -348,10 +348,6 @@
         return `<span style="display:inline-block; margin: 2px 8px 2px 0;"><span style="color:${style.color}; font-size: 14px; margin-right: 3px;">${symbol}</span>${m} (${count})</span>`;
       }).join('');
     }
-
-    if (typeof filterOutliersEnabled !== 'undefined' && filterOutliersEnabled) {
-      applyOutlierFilter(timeChart);
-    }
   }
 
   function selectBrowser(key) {
