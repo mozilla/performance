@@ -231,7 +231,8 @@ async function loadDataForPeriod(days, signatures) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       } else {
@@ -307,7 +308,8 @@ async function loadChartDataForTest(testName, days) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       } else {
@@ -2006,7 +2008,8 @@ async function loadSingleSubtestChart(testName, days) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       }
