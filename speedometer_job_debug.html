@@ -124,9 +124,8 @@
         <div style="max-width: 900px; margin: 10px auto 20px; padding: 16px 20px; background: #e8edf5; border: 1px solid #b0bdd4; border-radius: 6px; text-align: left; font-family: sans-serif; font-size: 14px; line-height: 1.5;">
           <strong>Job Debug View</strong> &mdash;
           Investigate which physical machines produced each data point.
-          Select a platform and subtest, choose a single browser from the dropdown,
-          then click <em>Fetch Machine Data</em>.
-          The chart will re-colour points by machine name so you can spot
+          Select a platform and subtest, then choose a single browser from the
+          dropdown. Points are coloured by machine name so you can spot
           machine-specific noise or outliers. Click any point to open its
           Taskcluster task.
         </div>
@@ -138,7 +137,7 @@
 
         <h3 id="chart-title" style="margin-top: 30px; margin-bottom: 20px;"></h3>
 
-        <div style="width:100%; max-width:900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <div style="width:100%; max-width:900px; margin: 0 auto; margin-bottom: 5px;">
           <div style="display: flex; gap: 8px; align-items: center;">
             <div id="repository-toggle-container" style="background: #f0f0f0; padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc;">
               <label style="font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; margin: 0;">
@@ -160,22 +159,9 @@
               </label>
             </div>
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button id="fetch-machine-btn" onclick="jobDebug.fetchMachineData()" disabled
-              style="padding: 8px 16px; font-size: 14px; font-family: sans-serif; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background-color: #667eea; color: white; font-weight: bold;">
-              Fetch Machine Data
-            </button>
-          </div>
         </div>
 
-        <div id="machine-progress-container" style="display: none; width:100%; max-width:900px; margin: 4px auto 8px;">
-          <div style="background: #ddd; border-radius: 4px; height: 20px; overflow: hidden;">
-            <div id="machine-progress-bar" style="background: #667eea; height: 100%; width: 0%; transition: width 0.2s;"></div>
-          </div>
-          <div id="machine-progress-text" style="font-family: sans-serif; font-size: 12px; color: #666; text-align: center; margin-top: 2px;"></div>
-        </div>
-
-        <div id="machine-legend" style="display: none; width:100%; max-width:900px; margin: 4px auto 8px; font-family: sans-serif; font-size: 12px;">
+        <div id="machine-legend" style="width:100%; max-width:900px; margin: 4px auto 8px; font-family: sans-serif; font-size: 12px;">
         </div>
 
         <div id="chart-container" style="width:100%;max-width:900px; position: relative; margin: 0 auto;">
@@ -183,13 +169,6 @@
           <table class="buttons">
             <tr><td><a onclick="changeRange('all')" id="allbutton">1 year</a></td><td><a onclick="changeRange(3)" id="month3button">3 months</a></td><td><a onclick="changeRange(1)" id="month1button">1 month</a></td><td><a onclick="changeRange('week')" id="weekbutton">1 week</a></td></tr>
           </table>
-        </div>
-
-        <div style="margin-top: 20px; text-align: center;">
-          <button id="filter-outliers-btn" onclick="toggleFilterOutliers()"
-            style="padding: 10px 20px; font-size: 16px; font-family: sans-serif; cursor: pointer; border: 1px solid #ccc; border-radius: 5px; background-color: #f0f0f0; margin-left: 10px;">
-            Filter Outliers
-          </button>
         </div>
 
         <br>

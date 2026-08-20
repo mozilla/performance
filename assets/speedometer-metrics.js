@@ -231,7 +231,8 @@ async function loadDataForPeriod(days, signatures) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       } else {
@@ -307,7 +308,8 @@ async function loadChartDataForTest(testName, days) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       } else {
@@ -600,7 +602,9 @@ function calculateAverage(data) {
 
 function selectTest(testName) {
   window.speedometerData.selectedTest = testName;
-  loadChartDataForTest(testName, initialDays);
+  // Keep whatever range the user picked with changeRange(), falling back to the
+  // range from the URL before the first chart load has set it.
+  loadChartDataForTest(testName, window.speedometerData.days || initialDays);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateSubtestURL(testName);
 }
@@ -2006,7 +2010,8 @@ async function loadSingleSubtestChart(testName, days) {
             value: point.value,
             push_timestamp: timestampMs / 1000,
             revision: point.revision,
-            job_id: point.job_id
+            job_id: point.job_id,
+            machine_name: point.machine_name
           });
         }
       }
