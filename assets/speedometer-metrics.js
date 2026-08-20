@@ -602,7 +602,9 @@ function calculateAverage(data) {
 
 function selectTest(testName) {
   window.speedometerData.selectedTest = testName;
-  loadChartDataForTest(testName, initialDays);
+  // Keep whatever range the user picked with changeRange(), falling back to the
+  // range from the URL before the first chart load has set it.
+  loadChartDataForTest(testName, window.speedometerData.days || initialDays);
   window.scrollTo({ top: 0, behavior: 'smooth' });
   updateSubtestURL(testName);
 }
