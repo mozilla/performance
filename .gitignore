@@ -1,3 +1,32 @@
 *~
 *.swp
 __pycache__
+
+# Finder leaves these behind after browsing the tree, and jj tracks new files
+# automatically, so they turn up in a diff that has nothing to do with them.
+.DS_Store
+
+# Scratch output from playwright-cli (page snapshots and screenshots taken
+# while checking a change in a browser). Created in whatever directory the
+# tool is run from, so match at any depth.
+.playwright-cli/
+
+# --- Build and tooling output ---------------------------------------------
+# Unanchored, because a stray install in a subdirectory is still not ours.
+node_modules
+# Anchored, because these are only ever produced at the root and a source
+# directory that happens to be called `build` should still be tracked.
+/build
+/.svelte-kit
+/package
+/test-results
+/playwright-report
+/blob-report
+/.playwright
+
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
+
+.env
+.env.*
+!.env.example

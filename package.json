@@ -1,0 +1,45 @@
+{
+	"name": "mozilla-performance-dashboard",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"prepare": "svelte-kit sync || echo ''",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"lint": "oxlint --deny-warnings",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:e2e": "playwright test",
+		"test:e2e:ui": "playwright test --ui"
+	},
+	"devDependencies": {
+		"@playwright/test": "^1.62.1",
+		"@sveltejs/adapter-static": "^3.0.8",
+		"@sveltejs/kit": "^2.20.0",
+		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@testing-library/jest-dom": "^7.0.1",
+		"@testing-library/svelte": "^5.4.2",
+		"@vitest/coverage-v8": "^4.1.11",
+		"jsdom": "^29.1.1",
+		"oxlint": "^1.79.0",
+		"prettier": "^3.9.6",
+		"prettier-plugin-svelte": "^4.1.1",
+		"svelte": "^5.20.0",
+		"svelte-check": "^4.1.4",
+		"typescript": "^5.7.3",
+		"vite": "^6.0.11",
+		"vitest": "^4.1.11"
+	},
+	"dependencies": {
+		"chart.js": "^4.4.7",
+		"chartjs-adapter-date-fns": "^3.0.0",
+		"chartjs-plugin-annotation": "^3.1.0",
+		"date-fns": "^4.1.0"
+	}
+}
