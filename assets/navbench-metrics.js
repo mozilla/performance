@@ -31,6 +31,101 @@ const platformConfigs = {
   'windows-hwref': { platforms: ['windows11-64-24h2-hw-ref-shippable'] }
 };
 
+// Events worth calling out on the charts. `date` is the autoland push time.
+// `tests` limits an annotation to specific test names ('' = overall); omit to show on every chart.
+const NAV_BENCH_ANNOTATIONS = [
+  {
+    date: '2026-09-03T16:54:43Z',
+    label: 'Bug 2043896',
+    description: 'Added google, facebook, yahoo and google-docs to the benchmark; overall score is now a geomean over more sites',
+    url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2043896'
+  }
+];
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Styling + layout for annotation markers (chartjs-plugin-annotation), matching networking.html.
+const ANNOTATION_STYLE = {
+  color: '#ff6384',
+  lineWidth: 2,
+  lineDash: [5, 5],
+  labelFontSize: 9,
+  labelPadding: 3,
+  clusterWindowDays: 14,   // annotations closer together than this are staggered so labels don't overlap
+  staggerStepPx: 22,
+  staggerLevels: 3,
+  tooltipMatchDays: 1      // show an annotation in the point tooltip when the point is within this many days
+};
+
+function getNavAnnotations(testName) {
+  return NAV_BENCH_ANNOTATIONS.filter(a => !a.tests || a.tests.includes(testName));
+}
+
+function buildAnnotationLines(chartAnnotations) {
+  const clusterWindowMs = ANNOTATION_STYLE.clusterWindowDays * DAY_MS;
+  const sorted = chartAnnotations
+    .map(a => ({ a, t: new Date(a.date).getTime() }))
+    .sort((x, y) => x.t - y.t);
+
+  let level = 0, prevT = null;
+  for (const item of sorted) {
+    level = (prevT !== null && item.t - prevT < clusterWindowMs)
+      ? (level + 1) % ANNOTATION_STYLE.staggerLevels
+      : 0;
+    // Labels sit at the top of the line; stagger downwards so they stay inside the chart area.
+    item.yAdjust = level * ANNOTATION_STYLE.staggerStepPx;
+    prevT = item.t;
+  }
+
+  return sorted.map(({ a, t, yAdjust }) => ({
+    type: 'line',
+    xMin: t,
+    xMax: t,
+    borderColor: ANNOTATION_STYLE.color,
+    borderWidth: ANNOTATION_STYLE.lineWidth,
+    borderDash: ANNOTATION_STYLE.lineDash,
+    label: {
+      display: true,
+      content: a.label,
+      position: 'end',
+      yAdjust,
+      backgroundColor: ANNOTATION_STYLE.color,
+      color: 'white',
+      font: { size: ANNOTATION_STYLE.labelFontSize },
+      padding: ANNOTATION_STYLE.labelPadding
+    },
+    click: a.url ? (ctx, event) => {
+      // The plugin fires click for every annotation whose label overlaps the click's
+      // row/column, so only open when the click is actually inside THIS label's box.
+      const label = ctx.element && ctx.element.label;
+      if (!label) return;
+      const { x, y, x2, y2 } = label.getProps(['x', 'y', 'x2', 'y2'], true);
+      if (event.x >= x && event.x <= x2 && event.y >= y && event.y <= y2) {
+        window.open(a.url, '_blank');
+      }
+    } : undefined,
+    enter: (ctx) => {
+      ctx.chart.canvas.title = a.description ? `${a.label}: ${a.description}` : a.label;
+      ctx.chart.canvas.style.cursor = a.url ? 'pointer' : 'default';
+    },
+    leave: (ctx) => {
+      ctx.chart.canvas.title = '';
+      ctx.chart.canvas.style.cursor = 'default';
+    }
+  }));
+}
+
+// Tooltip lines for annotations that fall within tooltipMatchDays of the hovered point.
+function annotationTooltipLines(chartAnnotations, pointDateMs) {
+  const lines = [];
+  for (const a of chartAnnotations) {
+    if (Math.abs(new Date(a.date).getTime() - pointDateMs) < ANNOTATION_STYLE.tooltipMatchDays * DAY_MS) {
+      lines.push(`${a.label}: ${a.description || ''}`);
+    }
+  }
+  return lines;
+}
+
 const osParam = searchParams.get('os') || 'osxm4';
 const platformConfig = platformConfigs[osParam] || platformConfigs['osxm4'];
 
@@ -50,11 +145,17 @@ function getDisplayName(testName) {
   return testName === '' ? 'Overall Score' : testName;
 }
 
+// Profiling / instrumented variants publish their own signatures with extra options such as
+// 'gecko-profile', 'etw-profile', 'simpleperf' or 'perfetto'. Never chart those.
+function isProfilingSignature(sig) {
+  return (sig.extra_options || []).some(opt => /profil|simpleperf|perfetto/i.test(opt));
+}
+
 async function loadNavBenchData(loadInitialChart = true) {
   try {
     if (loadInitialChart) showChartLoading();
 
-    const allSignatures = {};
+    const candidateSignatures = [];
 
     for (const platform of platformConfig.platforms) {
       const sigUrl = `https://treeherder.mozilla.org/api/project/autoland/performance/signatures/?framework=${window.navBenchData.framework}&platform=${platform}`;
@@ -62,14 +163,20 @@ async function loadNavBenchData(loadInitialChart = true) {
       const signatures = await sigResponse.json();
 
       for (const [sigId, sig] of Object.entries(signatures)) {
-        if (sig.suite === 'nav-bench-overall' && sig.application === 'firefox' &&
-            !(sig.extra_options && (sig.extra_options.includes('gecko-profile') || sig.extra_options.includes('simpleperf')))) {
-          allSignatures[sigId] = { ...sig, repository: 'autoland' };
+        if (sig.suite === 'nav-bench-overall' && sig.application === 'firefox' && !isProfilingSignature(sig)) {
+          candidateSignatures.push({ ...sig, id: sig.id ?? Number(sigId), repository: 'autoland' });
         }
       }
     }
 
-    console.log(`Found ${Object.keys(allSignatures).length} nav-bench-overall signatures`);
+    // Collapse instrumented/variant signatures (gecko-profile, etw-profile, ...) to the one
+    // canonical measurement series per (platform, test), so profiling runs never mix into the charts.
+    const allSignatures = {};
+    for (const sig of PerfSignatures.selectCanonicalSignatures(candidateSignatures)) {
+      allSignatures[sig.id] = sig;
+    }
+
+    console.log(`Found ${Object.keys(allSignatures).length} nav-bench-overall signatures (${candidateSignatures.length} before collapsing variants)`);
     window.navBenchData.signatures = allSignatures;
 
     // '' = overall geomean (put first), rest alphabetically
@@ -217,8 +324,9 @@ function displayChart(data, testName) {
     }
   }
 
-  // defaultWebsite = selected test name (for pre-selecting website in video panel)
-  const defaultWebsite = testName !== '' ? testName : null;
+  // Pre-select the matching video in the panel: 'amazon-nav-load-score' -> 'amazon-nav-load'
+  const defaultWebsite = testName !== '' ? testToVideoKey(testName) : null;
+  const chartAnnotations = getNavAnnotations(testName);
 
   const datasets = [{
     label: 'Firefox',
@@ -251,8 +359,9 @@ function displayChart(data, testName) {
       aspectRatio: 1.5,
       onClick: async (event, elements) => {
         if (elements && elements.length > 0) {
-          const dp = timeChart.data.datasets[elements[0].datasetIndex].data[elements[0].index];
-          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, defaultWebsite);
+          const ds = timeChart.data.datasets[elements[0].datasetIndex];
+          const dp = ds.data[elements[0].index];
+          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, defaultWebsite, ds.label);
         }
       },
       onHover: (event, activeElements) => {
@@ -276,10 +385,17 @@ function displayChart(data, testName) {
             },
             afterLabel: function() {
               return 'Click to view video';
+            },
+            afterBody: function(context) {
+              if (context.length === 0) return [];
+              return annotationTooltipLines(chartAnnotations, context[0].parsed.x);
             }
           }
         },
-        annotation: { annotations: {} }
+        annotation: {
+          interaction: { mode: 'point', intersect: true },
+          annotations: buildAnnotationLines(chartAnnotations)
+        }
       },
       scales: {
         x: {
@@ -298,7 +414,34 @@ function displayChart(data, testName) {
 
 // --- Video panel ---
 
-async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) {
+// Perfherder subtest 'google-docs-nav-warm-score' -> video key 'google-docs-nav-warm'.
+// Video keys match the scenario directory in the browsertime archive
+// (.../pages/docs_google_com/google-docs-nav-warm/data/video/1.mp4).
+function testToVideoKey(testName) {
+  return testName.replace(/-score$/, '');
+}
+
+// 'google-docs-nav-warm' -> 'Google Docs - warm'
+function videoKeyDisplayName(key) {
+  const [sitePart, scenarioPart] = key.split('-nav-');
+  const site = sitePart.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  return scenarioPart ? `${site} - ${scenarioPart}` : site;
+}
+
+// Pull the '<site>-nav-<scenario>' directory out of a video path. Returns null when
+// the path doesn't contain one (e.g. a stray file we don't know how to group).
+function videoKeyFromPath(path) {
+  const segments = path.toLowerCase().replace(/_/g, '-').split('/');
+  return segments.find(seg => /^[a-z0-9]+(?:-[a-z0-9]+)*-nav-[a-z0-9]+$/.test(seg)) || null;
+}
+
+// Numeric sort so '10.mp4' sorts after '9.mp4' and indices line up with replicates.
+function replicateNumber(path) {
+  const m = path.match(/(\d+)\.(?:mp4|webm)$/i);
+  return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER;
+}
+
+async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite, seriesLabel = 'Firefox') {
   const videoContainer = document.getElementById('video-container');
   const videoElement = document.getElementById('perf-video');
   const videoLoading = document.getElementById('video-loading');
@@ -320,7 +463,7 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
   replicateSelect.innerHTML = '<option>Loading...</option>';
 
   const dateStr = new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  dataPointInfo.innerHTML = `<strong>Firefox</strong> | ${dateStr} | <strong>${round(value, 2)}</strong>`;
+  dataPointInfo.innerHTML = `<strong>${seriesLabel}</strong> | ${dateStr} | <strong>${round(value, 2)}</strong>`;
   jobLink.href = '#';
   jobLink.textContent = 'View Job in Treeherder';
 
@@ -358,9 +501,9 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
       return;
     }
 
-    // Load replicate SpeedIndex values from perfherder-data.json.
-    // The file lives at public/test_info/perfherder-data.json.
-    // Subtest names are like "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex".
+    // Load per-replicate scores from perfherder-data.json (public/test_info/perfherder-data.json).
+    // nav-bench-overall subtests are named "<site>-nav-<scenario>-score", e.g.
+    // "amazon-nav-load-score", "bbc-nav-subnav-score", "google-docs-nav-warm-score".
     const replicatesBySubtest = {};
     const perfherderArtifact = artifactsData.artifacts.find(a => a.name === 'public/test_info/perfherder-data.json')
       || artifactsData.artifacts.find(a => a.name.includes('perfherder-data') && a.name.endsWith('.json') && !a.name.includes('mozharness') && !a.name.includes('fetch'));
@@ -389,44 +532,30 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
     // Log file names once so we can verify the grouping key extraction
     console.log('Video files in archive:', extractedFiles.filter(f => f.name.match(/\.(mp4|webm)$/i)).map(f => f.name));
 
-    // Group by site name (matched from filename) then by scenario (pageload vs subnav).
-    // Normalise separators so duckduckgo-subnav and duckduckgo_subnav are equivalent.
-    const KNOWN_SITES = ['amazon', 'bbc', 'duckduckgo', 'reddit', 'wikipedia'];
-    const normPath = s => s.toLowerCase().replace(/[-_]/g, '-');
-
+    // Group videos by their '<site>-nav-<scenario>' directory. This is derived from the
+    // archive layout rather than a fixed site list, so new subtests appear automatically.
     const videosByWebsite = {};
     for (const file of extractedFiles) {
       if (!file.name.match(/\.(mp4|webm)$/i)) continue;
-      const pathNorm = normPath(file.name);
 
-      const site = KNOWN_SITES.find(s => pathNorm.includes(s));
-      if (!site) {
-        console.warn('Could not match video to a known site:', file.name);
+      const key = videoKeyFromPath(file.name);
+      if (!key) {
+        console.warn('Could not match video to a nav-bench scenario:', file.name);
         continue;
       }
 
-      // Check for subnav indicator in the part of the path that comes after the site name.
-      // Only match "subnav" — not bare "nav" which appears in "nav-bench" in every path.
-      const afterSite = pathNorm.slice(pathNorm.indexOf(site) + site.length);
-      const isSubnav = afterSite.includes('subnav');
-
-      // Key: "amazon-load" or "amazon-subnav"; display: "Amazon - load" / "Amazon - subnav"
-      const key = isSubnav ? `${site}-subnav` : `${site}-load`;
       if (!videosByWebsite[key]) videosByWebsite[key] = [];
       videosByWebsite[key].push({ name: file.name, buffer: file.buffer });
     }
+    for (const videos of Object.values(videosByWebsite)) {
+      videos.sort((a, b) => replicateNumber(a.name) - replicateNumber(b.name));
+    }
 
-    // Resolve SpeedIndex replicates for each video group.
-    // Perfherder subtest names: "amazon-nav-load-speedindex", "bbc-nav-subnav-speedindex", etc.
+    // Video key 'amazon-nav-load' -> perfherder subtest 'amazon-nav-load-score'.
+    // Fall back to any subtest that starts with the key in case the suffix changes.
     function findReplicates(videoKey) {
-      const isSubnavKey = videoKey.endsWith('-subnav');
-      const siteKey = isSubnavKey ? videoKey.slice(0, -7) : videoKey.slice(0, -5); // strip -subnav or -load
-      const scenario = isSubnavKey ? 'subnav' : 'load';
-      const match = Object.keys(replicatesBySubtest).find(k =>
-        k.includes(siteKey) && k.includes(scenario) && k.includes('speedindex')
-      ) || Object.keys(replicatesBySubtest).find(k =>
-        k.includes(siteKey) && k.includes(scenario)
-      );
+      if (replicatesBySubtest[`${videoKey}-score`]) return replicatesBySubtest[`${videoKey}-score`];
+      const match = Object.keys(replicatesBySubtest).find(k => k.startsWith(`${videoKey}-`));
       return match ? replicatesBySubtest[match] : [];
     }
 
@@ -449,9 +578,7 @@ async function loadNavBenchVideo(job_id, revision, date, value, defaultWebsite) 
     for (const key of websites) {
       const option = document.createElement('option');
       option.value = key;
-      // key is "amazon-load" or "bbc-subnav" → display "Amazon - load" / "Bbc - subnav"
-      const [sitePart, scenarioPart] = key.split(/-(?=load|subnav)/);
-      option.textContent = sitePart.charAt(0).toUpperCase() + sitePart.slice(1) + ' - ' + (scenarioPart || '');
+      option.textContent = videoKeyDisplayName(key);
       websiteSelect.appendChild(option);
     }
 
@@ -503,7 +630,7 @@ function selectNavReplicate(index) {
     const autoplay = document.getElementById('autoplay-toggle')?.checked;
     if (autoplay) videoElement.play().catch(() => {});
     const repValue = replicates[index] !== undefined ? ` - Score: ${round(replicates[index], 2)}` : '';
-    videoInfo.textContent = `${website} | Replicate ${index + 1}${repValue}`;
+    videoInfo.textContent = `${videoKeyDisplayName(website)} | Replicate ${index + 1}${repValue}`;
   } else {
     videoInfo.textContent = 'Video not found for this replicate';
   }
@@ -756,6 +883,7 @@ function displaySubtestChart(canvas, data, testName) {
 
   const firefoxData = data.filter(d => d.application === 'firefox' && !d.platform.includes('nightlyasrelease'));
   const firefoxNarData = data.filter(d => d.application === 'firefox' && d.platform.includes('nightlyasrelease'));
+  const chartAnnotations = getNavAnnotations(testName);
 
   const datasets = [{
     label: 'Firefox',
@@ -788,8 +916,9 @@ function displaySubtestChart(canvas, data, testName) {
       aspectRatio: 2,
       onClick: async (event, elements, chart) => {
         if (elements && elements.length > 0) {
-          const dp = chart.data.datasets[elements[0].datasetIndex].data[elements[0].index];
-          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, testName);
+          const ds = chart.data.datasets[elements[0].datasetIndex];
+          const dp = ds.data[elements[0].index];
+          await loadNavBenchVideo(dp.job_id, dp.revision, dp.x, dp.y, testToVideoKey(testName), ds.label);
         }
       },
       onHover: (event, activeElements) => {
@@ -813,8 +942,16 @@ function displaySubtestChart(canvas, data, testName) {
             },
             afterLabel: function() {
               return 'Click to view video';
+            },
+            afterBody: function(context) {
+              if (context.length === 0) return [];
+              return annotationTooltipLines(chartAnnotations, context[0].parsed.x);
             }
           }
+        },
+        annotation: {
+          interaction: { mode: 'point', intersect: true },
+          annotations: buildAnnotationLines(chartAnnotations)
         }
       },
       scales: {

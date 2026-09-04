@@ -15,6 +15,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.0.4/pako.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/js-untar@2.0.0/build/dist/untar.js"></script>
 
+  <script src="assets/signature-utils.js"></script>
   <script src="assets/navbench-metrics.js"></script>
   <style>
     body {
@@ -134,8 +135,9 @@
       <center>
         <div style="max-width: 900px; margin: 0 auto 20px; text-align: left; font-family: sans-serif; font-size: 0.95em; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 14px 18px; box-shadow: 0 1px 4px rgba(0,0,0,0.07);">
           <strong>Navigation Benchmark</strong> tests Firefox navigation performance across real websites:
-          Amazon, BBC, DuckDuckGo, Reddit, and Wikipedia. Sites are tested across a mix of page load and
-          sub-navigation scenarios, scored using SpeedIndex. Per-site and overall scores are geometric means, higher is better.
+          Amazon, BBC, DuckDuckGo, Facebook, Google, Google Docs, Reddit, Wikipedia, and Yahoo. Sites are tested across a mix of
+          page load, sub-navigation, and warm-load scenarios, scored using SpeedIndex. Per-site and overall scores are geometric means, higher is better.
+          Dashed markers on the charts flag benchmark changes; hover for details or click the label to open the bug.
           <br><br>
           <i class="fa-solid fa-book" style="margin-right:4px;"></i>
           <a href="https://firefox-source-docs.mozilla.org/testing/perfdocs/raptor.html#nav-bench" target="_blank" style="padding: 0; color: #3366ff;">Documentation</a>
