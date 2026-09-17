@@ -1,10 +1,63 @@
+const dashboardConfig = window.speedometerDashboardConfig || {};
+const isExperimentalDashboard = dashboardConfig.mode === 'experimental';
+const experimentalRootTest = '__experimental_root__';
+
+const experimentalTestsToDisplay = [
+  experimentalRootTest,
+  'ChatRoom-React/prepare',
+  'ChatRoom-React/total',
+  'Media-Conferencing/prepare',
+  'Media-Conferencing/total',
+  'Media-Streaming/prepare',
+  'Media-Streaming/total',
+  'NewsSite-PostMessage/prepare',
+  'NewsSite-PostMessage/total',
+  'Responsive-Design/prepare',
+  'Responsive-Design/total',
+  'Scrollytelling-Scrollama/prepare',
+  'Scrollytelling-Scrollama/total',
+  'Terminal-Xterm/prepare',
+  'Terminal-Xterm/total',
+  'Timeline-Mithril/prepare',
+  'Timeline-Mithril/total',
+  'TodoMVC-Emoji/prepare',
+  'TodoMVC-Emoji/total',
+  'TodoMVC-Jaspr-Dart2JS-O4/prepare',
+  'TodoMVC-Jaspr-Dart2JS-O4/total',
+  'TodoMVC-Jaspr-Dart2Wasm-O2/prepare',
+  'TodoMVC-Jaspr-Dart2Wasm-O2/total',
+  'TodoMVC-LocalStorage/prepare',
+  'TodoMVC-LocalStorage/total',
+  'TodoMVC-WebComponents-DexieJS/prepare',
+  'TodoMVC-WebComponents-DexieJS/total',
+  'TodoMVC-WebComponents-IndexedDB/prepare',
+  'TodoMVC-WebComponents-IndexedDB/total',
+  'TodoMVC-WebComponents-PostMessage/prepare',
+  'TodoMVC-WebComponents-PostMessage/total',
+  'cpuTime',
+  'perfstats-MajorGC',
+  'perfstats-MinorGC',
+  'perfstats-NonIdleMajorGC',
+  'powerUsage_cpu_cores',
+  'powerUsage_cpu_package',
+  'powerUsage_gpu',
+  'score',
+  'score-internal',
+  'total',
+  'wallclock-for-tracking-only'
+];
+
+const experimentalSubtestNames = experimentalTestsToDisplay.filter(testName =>
+  testName.endsWith('/total')
+);
+
 // Global state
 window.speedometerData = {
   allData: [],
   signatures: {},
-  selectedPlatform: 'windows11-64-shippable-qr',
-  selectedTest: 'score',
-  repository: 'mozilla-central',
+  selectedPlatform: isExperimentalDashboard ? 'windows11-64-24h2-nightlyasrelease' : 'windows11-64-shippable-qr',
+  selectedTest: isExperimentalDashboard ? experimentalRootTest : 'score',
+  repository: isExperimentalDashboard ? 'autoland' : 'mozilla-central',
   framework: 13, // Speedometer framework ID
   alerts: {},
   alertSummaries: {},
@@ -58,14 +111,14 @@ const platformConfigs = {
 };
 
 // Initialize platform
-const osParam = searchParams.get('os') || 'osxm4';
+const osParam = searchParams.get('os') || (isExperimentalDashboard ? 'windows' : 'osxm4');
 const platformConfig = platformConfigs[osParam] || platformConfigs['osxm4'];
 window.speedometerData.selectedPlatform = platformConfig.platforms[0];
 
 // Initialize repository from URL parameter
 const repoParam = searchParams.get('repository') || searchParams.get('repo');
-if (repoParam === 'autoland') {
-  window.speedometerData.repository = 'autoland';
+if (repoParam === 'autoland' || repoParam === 'mozilla-central') {
+  window.speedometerData.repository = repoParam;
 }
 
 // Initialize replicates toggle from URL parameter
@@ -87,6 +140,53 @@ const hiddenDatasets = new Set(hideParam ? hideParam.split(',').map(s => decodeU
 // Initialize time range from URL parameter
 const rangeParam = searchParams.get('range');
 const initialDays = rangeParam === 'year' ? 365 : rangeParam === '3months' ? 90 : rangeParam === '1month' ? 30 : rangeParam === 'week' ? 7 : 90;
+
+function normalizeSignature(sig) {
+  if (isExperimentalDashboard && !sig.test) {
+    return { ...sig, test: experimentalRootTest };
+  }
+  return sig;
+}
+
+function getTestsToDisplay() {
+  if (isExperimentalDashboard) {
+    return experimentalTestsToDisplay;
+  }
+
+  return [
+    'Charts-chartjs/total',
+    'Charts-observable-plot/total',
+    'Editor-CodeMirror/total',
+    'Editor-TipTap/total',
+    'NewsSite-Next/total',
+    'NewsSite-Nuxt/total',
+    'Perf-Dashboard/total',
+    'React-Stockcharts-SVG/total',
+    'TodoMVC-Angular-Complex-DOM/total',
+    'TodoMVC-Backbone/total',
+    'TodoMVC-JavaScript-ES5/total',
+    'TodoMVC-JavaScript-ES6-Webpack-Complex-DOM/total',
+    'TodoMVC-jQuery/total',
+    'TodoMVC-Lit-Complex-DOM/total',
+    'TodoMVC-Preact-Complex-DOM/total',
+    'TodoMVC-React-Complex-DOM/total',
+    'TodoMVC-React-Redux/total',
+    'TodoMVC-Svelte-Complex-DOM/total',
+    'TodoMVC-Vue/total',
+    'TodoMVC-WebComponents/total',
+    'score'
+  ];
+}
+
+function isScoreTest(testName) {
+  return testName === 'score' || (isExperimentalDashboard && testName === experimentalRootTest);
+}
+
+function getExperimentalUnit(testName) {
+  if (isScoreTest(testName) || testName === 'score-internal') return '';
+  if (testName.startsWith('powerUsage_')) return ' uWh';
+  return ' ms';
+}
 
 function round(number, decimals) {
   return Math.round(number * Math.pow(10, decimals)) / Math.pow(10, decimals);
@@ -119,6 +219,21 @@ async function loadSpeedometerData(loadInitialChart = true) {
 
     // Fetch signatures for all platforms
     for (const platform of platforms) {
+      if (isExperimentalDashboard) {
+        console.log(`Fetching Speedometer Experimental signatures for platform: ${platform} from ${window.speedometerData.repository}`);
+        const experimentalSigUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
+        const experimentalSigResponse = await fetch(experimentalSigUrl);
+        const experimentalSignatures = await experimentalSigResponse.json();
+
+        for (const sig of Object.values(experimentalSignatures)) {
+          if (sig.suite === 'speedometer-experimental' &&
+              (sig.application === 'firefox' || sig.application === 'fenix')) {
+            candidateSignatures.push({ ...normalizeSignature(sig), repository: window.speedometerData.repository });
+          }
+        }
+        continue;
+      }
+
       // Fetch Firefox signatures from selected repository
       console.log(`Fetching Firefox signatures for platform: ${platform} from ${window.speedometerData.repository}`);
       const firefoxSigUrl = `https://treeherder.mozilla.org/api/project/${window.speedometerData.repository}/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
@@ -147,36 +262,14 @@ async function loadSpeedometerData(loadInitialChart = true) {
     // Collapse instrumented/variant signatures to one canonical series per test.
     const allSignatures = {};
     for (const sig of PerfSignatures.selectCanonicalSignatures(candidateSignatures)) {
-      allSignatures[sig.id] = sig;
+      const normalizedSig = normalizeSignature(sig);
+      allSignatures[normalizedSig.id] = normalizedSig;
     }
 
     console.log(`Found ${Object.keys(allSignatures).length} total Speedometer signatures`);
     window.speedometerData.signatures = allSignatures;
 
-    // Hardcoded list of tests to display
-    const testsToDisplay = [
-      'Charts-chartjs/total',
-      'Charts-observable-plot/total',
-      'Editor-CodeMirror/total',
-      'Editor-TipTap/total',
-      'NewsSite-Next/total',
-      'NewsSite-Nuxt/total',
-      'Perf-Dashboard/total',
-      'React-Stockcharts-SVG/total',
-      'TodoMVC-Angular-Complex-DOM/total',
-      'TodoMVC-Backbone/total',
-      'TodoMVC-JavaScript-ES5/total',
-      'TodoMVC-JavaScript-ES6-Webpack-Complex-DOM/total',
-      'TodoMVC-jQuery/total',
-      'TodoMVC-Lit-Complex-DOM/total',
-      'TodoMVC-Preact-Complex-DOM/total',
-      'TodoMVC-React-Complex-DOM/total',
-      'TodoMVC-React-Redux/total',
-      'TodoMVC-Svelte-Complex-DOM/total',
-      'TodoMVC-Vue/total',
-      'TodoMVC-WebComponents/total',
-      'score'
-    ];
+    const testsToDisplay = getTestsToDisplay();
 
     // Filter signatures to only the tests we display
     const relevantSignatures = Object.values(allSignatures).filter(
@@ -453,37 +546,52 @@ async function fetchAlertsForTest(testName, platform, days) {
   }
 }
 
+function displayExperimentalTable(testsToDisplay, tbody) {
+  console.log(`Displaying experimental table with ${testsToDisplay.length} tests from ${window.speedometerData.allData.length} data points`);
+
+  testsToDisplay.forEach(testName => {
+    const testData = window.speedometerData.allData.filter(d => d.test === testName);
+    const firefoxData = testData.filter(d =>
+      (d.application === 'firefox' || d.application === 'fenix') &&
+      !d.platform.includes('nightlyasrelease')
+    );
+    const firefoxNarData = testData.filter(d =>
+      (d.application === 'firefox' || d.application === 'fenix') &&
+      d.platform.includes('nightlyasrelease')
+    );
+
+    if (firefoxData.length === 0 && firefoxNarData.length === 0) return;
+
+    const firefoxAvg = calculateAverage(firefoxData);
+    const firefoxNarAvg = calculateAverage(firefoxNarData);
+    const displayName = testName === experimentalRootTest ? 'Overall Score' : testName;
+    const unit = getExperimentalUnit(testName);
+
+    const row = document.createElement('tr');
+    row.style.cursor = 'pointer';
+    row.onclick = () => selectTest(testName);
+    row.innerHTML = `
+      <th scope="row" class="testName">${displayName}</th>
+      <td>${firefoxAvg > 0 ? round(firefoxAvg, 2) + unit : ''}</td>
+      <td>${firefoxNarAvg > 0 ? round(firefoxNarAvg, 2) + unit : ''}</td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
 function displayTable() {
   const tbody = document.getElementById('tableBodyLikely');
   if (!tbody) return;
 
   tbody.innerHTML = '';
 
-  // Hardcoded list of tests to display
-  const testsToDisplay = [
-    'Charts-chartjs/total',
-    'Charts-observable-plot/total',
-    'Editor-CodeMirror/total',
-    'Editor-TipTap/total',
-    'NewsSite-Next/total',
-    'NewsSite-Nuxt/total',
-    'Perf-Dashboard/total',
-    'React-Stockcharts-SVG/total',
-    'TodoMVC-Angular-Complex-DOM/total',
-    'TodoMVC-Backbone/total',
-    'TodoMVC-JavaScript-ES5/total',
-    'TodoMVC-JavaScript-ES6-Webpack-Complex-DOM/total',
-    'TodoMVC-jQuery/total',
-    'TodoMVC-Lit-Complex-DOM/total',
-    'TodoMVC-Preact-Complex-DOM/total',
-    'TodoMVC-React-Complex-DOM/total',
-    'TodoMVC-React-Redux/total',
-    'TodoMVC-Svelte-Complex-DOM/total',
-    'TodoMVC-Vue/total',
-    'TodoMVC-WebComponents/total',
-    'score'
-  ];
+  const testsToDisplay = getTestsToDisplay();
+  if (isExperimentalDashboard) {
+    displayExperimentalTable(testsToDisplay, tbody);
+    return;
+  }
 
+  // Hardcoded list of tests to display
   console.log(`Displaying table with ${testsToDisplay.length} tests from ${window.speedometerData.allData.length} data points`);
 
   // Calculate averages for each test
@@ -611,7 +719,7 @@ function selectTest(testName) {
 
 function updateSubtestURL(testName) {
   const url = new URL(window.location);
-  if (testName && testName !== 'score') {
+  if (testName && !isScoreTest(testName)) {
     url.searchParams.set('subtest', testName);
   } else {
     url.searchParams.delete('subtest');
@@ -1176,7 +1284,7 @@ function displayChart(data, testName) {
   pushlogContainer.innerHTML = '<span style="color: #999;">Select two points to generate pushlog link</span>';
 
   // Update chart title
-  const isScore = testName === 'score';
+  const isScore = isScoreTest(testName);
   const displayName = isScore ? 'Overall Score' : testName.replace('/total', '');
   const betterDirection = isScore ? 'higher is better' : 'lower is better';
 
@@ -1239,8 +1347,17 @@ function displayChart(data, testName) {
   if (safariTPSigId) series.push(`mozilla-central,${safariTPSigId},1,13`);
 
   if (series.length > 0) {
-    const seriesParam = series.join('&series=');
-    const perfherderUrl = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=${seriesParam}`;
+    let perfherderUrl;
+    if (isExperimentalDashboard) {
+      const experimentalSeries = [firefoxSigId, firefoxNarSigId]
+        .filter(Boolean)
+        .filter((sigId, index, ids) => ids.indexOf(sigId) === index)
+        .map(sigId => `${window.speedometerData.signatures[sigId]?.repository || window.speedometerData.repository},${sigId},13`);
+      perfherderUrl = `https://perfherder2.netlify.app/?series=${experimentalSeries.join('&series=')}`;
+    } else {
+      const seriesParam = series.join('&series=');
+      perfherderUrl = `https://treeherder.mozilla.org/perfherder/graphs?highlightAlerts=1&highlightChangelogData=1&highlightCommonAlerts=0&timerange=7776000&series=${seriesParam}`;
+    }
     const titleLink = document.getElementById('chart-title-link');
     if (titleLink) {
       titleLink.href = perfherderUrl;
@@ -1248,7 +1365,7 @@ function displayChart(data, testName) {
   }
 
   const showReplicates = window.speedometerData.showReplicates;
-  const isSubtest = window.speedometerData.selectedTest !== 'score';
+  const isSubtest = !isScoreTest(window.speedometerData.selectedTest);
 
   // Make the points smaller so they overlap less
   let unhoveredPointRadius = 3;
@@ -1276,7 +1393,7 @@ function displayChart(data, testName) {
     return new Date(date.getTime() + Math.random() * msRange);
   }
 
-  const datasets = [
+  let datasets = [
     {
       label: 'Firefox',
       data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
@@ -1336,6 +1453,11 @@ function displayChart(data, testName) {
       }
     }
   ];
+
+  if (isExperimentalDashboard) {
+    // Experimental runs currently report Firefox only.
+    datasets = [datasets[0]];
+  }
 
   if (firefoxNarData.length > 0) {
     datasets.push({
@@ -1514,7 +1636,7 @@ function displayChart(data, testName) {
           beginAtZero: false,
           title: {
             display: true,
-            text: isScore ? 'Score (Higher is better)' : 'Time (ms)'
+            text: isScore ? 'Score (Higher is better)' : `Value${isExperimentalDashboard ? getExperimentalUnit(testName) : ' (ms)'}`
           }
         }
       }
@@ -1844,7 +1966,7 @@ function applyHiddenDatasets(chart) {
   chart.update();
 }
 
-const subtestNames = [
+const standardSubtestNames = [
   'Charts-chartjs/total',
   'Charts-observable-plot/total',
   'Editor-CodeMirror/total',
@@ -1866,6 +1988,8 @@ const subtestNames = [
   'TodoMVC-Vue/total',
   'TodoMVC-WebComponents/total'
 ];
+
+const subtestNames = isExperimentalDashboard ? experimentalSubtestNames : standardSubtestNames;
 
 async function loadAllSubtestCharts() {
   const container = document.getElementById('all-subtests-container');
@@ -2063,7 +2187,7 @@ function displaySubtestChart(canvas, data, testName) {
     return new Date(date.getTime() + Math.random() * msRange);
   }
 
-  const datasets = [
+  let datasets = [
     {
       label: 'Firefox',
       data: firefoxData.map(d => ({ x: dateNoise(d.date), y: d.value, revision: d.revision })),
@@ -2081,6 +2205,11 @@ function displaySubtestChart(canvas, data, testName) {
       pointBorderWidth: unhoveredPointBorderWidth
     }
   ];
+
+  if (isExperimentalDashboard) {
+    // Experimental runs currently report Firefox only.
+    datasets = [datasets[0]];
+  }
 
   if (firefoxNarData.length > 0) {
     datasets.push({
@@ -2221,35 +2350,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Highlight the selected platform button
-  const osParam = searchParams.get('os');
-  if (!osParam || osParam === 'osxm4') {
+  const selectedOsParam = searchParams.get('os') || (isExperimentalDashboard ? 'windows' : 'osxm4');
+  if (selectedOsParam === 'osxm4') {
     const btn = document.getElementById('osxm4button');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'windows') {
+  } else if (selectedOsParam === 'windows') {
     const btn = document.getElementById('windowsbutton');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'windows-hwref') {
+  } else if (selectedOsParam === 'windows-hwref') {
     const btn = document.getElementById('windowshwrefbutton');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'linux') {
+  } else if (selectedOsParam === 'linux') {
     const btn = document.getElementById('linuxbutton');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'linux2404') {
+  } else if (selectedOsParam === 'linux2404') {
     const btn = document.getElementById('linux2404button');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'android-s24') {
+  } else if (selectedOsParam === 'android-s24') {
     const btn = document.getElementById('mobilebutton');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'android-a55') {
+  } else if (selectedOsParam === 'android-a55') {
     const btn = document.getElementById('mobilebutton2');
     if (btn) btn.style.backgroundColor = 'gray';
-  } else if (osParam === 'android-p6') {
+  } else if (selectedOsParam === 'android-p6') {
     const btn = document.getElementById('mobilebutton3');
     if (btn) btn.style.backgroundColor = 'gray';
   }
 
   // Hide Safari columns if not on Mac M4
-  if (!platformConfig.supportsSafari) {
+  if (!isExperimentalDashboard && !platformConfig.supportsSafari) {
     const table = document.getElementById('tableLikely');
     if (table && table.tHead && table.tHead.rows.length > 1) {
       // Adjust column spans in first header row
