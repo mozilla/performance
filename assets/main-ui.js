@@ -26,7 +26,7 @@ if (sidebar !== null) {
       <i class="fa-solid fa-arrow-right" style="display: inline-block; font-size: 0.8em; margin-right: 6px; vertical-align: -0.125em;"></i><span>Job Debug</span>
      </a>
      <a href="speedometer-experimental.html" style="padding-left: 38px; font-size: 0.85em; opacity: 0.8;">
-      <i class="fa-solid fa-arrow-right" style="display: inline-block; font-size: 0.8em; margin-right: 6px; vertical-align: -0.125em;"></i><span>Speedometer Experimental</span>
+      <i class="fa-solid fa-arrow-right" style="display: inline-block; font-size: 0.8em; margin-right: 6px; vertical-align: -0.125em;"></i><span>Experimental</span>
      </a>
     </li>
 
