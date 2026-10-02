@@ -90,6 +90,8 @@ const platformConfigs = {
   },
   'osxm4': {
     platforms: ['macosx1500-aarch64-nightlyasrelease', 'macosx1500-aarch64-shippable'],
+    // Safari and Safari TP run on a dedicated macOS 27 pool (Bug 2075598)
+    safariPlatform: 'macosx2700-aarch64-shippable',
     supportsSafari: true
   },
   'linux': {
@@ -254,6 +256,22 @@ async function loadSpeedometerData(loadInitialChart = true) {
 
       for (const sig of Object.values(chromeSignatures)) {
         if (sig.suite === 'speedometer3' && sig.application !== 'firefox' && sig.application !== 'fenix') {
+          candidateSignatures.push({ ...sig, repository: 'mozilla-central' });
+        }
+      }
+    }
+
+    // Safari runs on a different platform than Firefox; old-platform Safari
+    // signatures were already picked up above, keeping the history.
+    if (!isExperimentalDashboard && platformConfig.safariPlatform) {
+      const platform = platformConfig.safariPlatform;
+      console.log(`Fetching Safari signatures for platform: ${platform} from mozilla-central`);
+      const safariSigUrl = `https://treeherder.mozilla.org/api/project/mozilla-central/performance/signatures/?framework=${window.speedometerData.framework}&platform=${platform}`;
+      const safariSigResponse = await fetch(safariSigUrl);
+      const safariSignatures = await safariSigResponse.json();
+
+      for (const sig of Object.values(safariSignatures)) {
+        if (sig.suite === 'speedometer3' && (sig.application === 'safari' || sig.application === 'safari-tp')) {
           candidateSignatures.push({ ...sig, repository: 'mozilla-central' });
         }
       }
@@ -604,8 +622,10 @@ function displayTable() {
     const firefoxNarData = testData.filter(d => (d.application === 'firefox' || d.application === 'fenix') && d.platform.includes("nightlyasrelease"));
     const chromeData = testData.filter(d => d.application === 'chrome' || d.application === 'chrome-m');
     const carData = testData.filter(d => d.application === 'custom-car' || d.application === 'cstm-car-m');
-    const safariData = testData.filter(d => d.application === 'safari');
-    const safariTPData = testData.filter(d => d.application === 'safari-tp');
+    // Only average Safari from its current platform so the old one doesn't skew the numbers
+    const isCurrentSafariPlatform = d => !platformConfig.safariPlatform || d.platform === platformConfig.safariPlatform;
+    const safariData = testData.filter(d => d.application === 'safari' && isCurrentSafariPlatform(d));
+    const safariTPData = testData.filter(d => d.application === 'safari-tp' && isCurrentSafariPlatform(d));
 
     const firefoxAvg = calculateAverage(firefoxData);
     const firefoxNarAvg = calculateAverage(firefoxNarData);
@@ -1327,8 +1347,9 @@ function displayChart(data, testName) {
   const firefoxnarSigId = firefoxData.length > 0 ? firefoxData[0].signature_id : null;
   const chromeSigId = chromeData.length > 0 ? chromeData[0].signature_id : null;
   const carSigId = carData.length > 0 ? carData[0].signature_id : null;
-  const safariSigId = safariData.length > 0 ? safariData[0].signature_id : null;
-  const safariTPSigId = safariTPData.length > 0 ? safariTPData[0].signature_id : null;
+  // Safari series can span multiple platforms (macOS 15 history, macOS 27 now)
+  const safariSigIds = [...new Set(safariData.map(d => d.signature_id))];
+  const safariTPSigIds = [...new Set(safariTPData.map(d => d.signature_id))];
 
   const series = [];
   if (firefoxSigId) {
@@ -1343,8 +1364,8 @@ function displayChart(data, testName) {
   }
   if (chromeSigId) series.push(`mozilla-central,${chromeSigId},1,13`);
   if (carSigId) series.push(`mozilla-central,${carSigId},1,13`);
-  if (safariSigId) series.push(`mozilla-central,${safariSigId},1,13`);
-  if (safariTPSigId) series.push(`mozilla-central,${safariTPSigId},1,13`);
+  safariSigIds.forEach(sigId => series.push(`mozilla-central,${sigId},1,13`));
+  safariTPSigIds.forEach(sigId => series.push(`mozilla-central,${sigId},1,13`));
 
   if (series.length > 0) {
     let perfherderUrl;
