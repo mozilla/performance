@@ -253,8 +253,15 @@
       const now = new Date();
       const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
+      // Safari runs on a different platform than Firefox on Mac
+      const safariPlatform = window.jetstreamState.safariPlatform;
+      const isSafariApp = row => row.application === 'safari' || row.application === 'safari-tp';
+      const matchesPlatform = row => safariPlatform && isSafariApp(row)
+        ? row.platform === safariPlatform
+        : row.platform === platform;
+
       data.query_result.data.rows.forEach(row => {
-        if (row.platform === platform) {
+        if (matchesPlatform(row)) {
           const testName = row.test.split('/')[0];
           if (!testGroups[testName]) {
             testGroups[testName] = {
@@ -290,7 +297,7 @@
       // First pass to get signature IDs
       const signatureIds = {};
       data.query_result.data.rows.forEach(row => {
-        if (row.platform === platform) {
+        if (matchesPlatform(row)) {
           const testName = row.test.split('/')[0];
           if (!signatureIds[testName]) {
             signatureIds[testName] = {
