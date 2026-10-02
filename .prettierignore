@@ -1,0 +1,14 @@
+# Generated or vendored; nothing here is hand-edited.
+node_modules
+build
+.svelte-kit
+package-lock.json
+test-results
+playwright-report
+
+# Not ours, and reformatting it would obscure the diff against upstream.
+queries
+LICENSE
+
+# Keep Markdown hand-wrapped.
+*.md

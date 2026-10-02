@@ -1,0 +1,79 @@
+:root {
+	/* Surfaces, back to front. */
+	--surface-page: #ececec;
+	--surface-card: #ffffff;
+	--surface-control: #f0f0f0;
+	--surface-control-hover: #e0e0e0;
+	--surface-accent-soft: #dbe4ff;
+	--surface-note: #e8edf5;
+	--surface-row-odd: #f3f3f3;
+	--surface-row-even: #e3e3e3;
+	--surface-row-hover: #d0d0d0;
+
+	/* Borders. */
+	--border-subtle: #dddddd;
+	--border-default: #cccccc;
+	--border-note: #b0bdd4;
+
+	/* Text, most to least prominent. */
+	--ink-primary: #000000;
+	--ink-secondary: #52514e;
+	--ink-muted: #666666;
+	--ink-disabled: #999999;
+	--ink-inverse: #ffffff;
+
+	/* Accents. --accent is overridden per page where a page has its own hue. */
+	--accent: #3366ff;
+	--accent-nav: #1abc9c;
+	--danger: #aa0000;
+
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-7: 32px;
+	--space-8: 40px;
+
+	--radius-sm: 4px;
+	--radius-md: 6px;
+	--radius-lg: 10px;
+
+	--content-max: 1400px;
+
+	/* Charts size from their container, not from an aspect ratio. */
+	--chart-height: clamp(320px, 42vh, 560px);
+	--chart-height-sm: 260px;
+}
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	background: var(--surface-page);
+	color: var(--ink-primary);
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+	font-family: Arial, sans-serif;
+}
+
+.btn {
+	font-size: 14px;
+	text-decoration: none;
+	padding: var(--space-1) var(--space-3);
+	white-space: nowrap;
+	color: var(--ink-primary);
+}
+
+.btn i {
+	margin-right: var(--space-1);
+}
+
+.btn:hover {
+	color: var(--accent-nav);
+}

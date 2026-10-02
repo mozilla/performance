@@ -1,18 +1,19 @@
+# Checks pull requests and publishes main to GitHub Pages.
 name: Deploy Pages
 
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Let an in-progress deploy finish rather than cancelling it half-published.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -21,19 +22,37 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # Just copy the files, i.e. serve what's in the repo unchanged.
-      - name: Assemble the site
-        run: |
-          mkdir -p _site
-          rsync -a --exclude='.git/' --exclude='.jj/' --exclude='_site/' ./ _site/
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run format:check
+      # Report lint findings as annotations; warnings fail the check.
+      - run: npm run lint -- --format=github
+      - run: npm test
+      - run: npm run check
+
+      # No BASE_PATH, on purpose. The site answers on two hostnames with two
+      # different prefixes -- performance.mozilla.org/ and
+      # mozilla.github.io/performance/ -- and a prefix baked in here would break
+      # whichever one it is not.
+      - run: npm run build
 
       - uses: actions/upload-pages-artifact@v5
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         with:
-          path: _site
+          path: build
 
   deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

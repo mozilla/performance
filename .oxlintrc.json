@@ -1,0 +1,26 @@
+{
+	// oxlint, not ESLint, because it runs over the whole tree in ~200ms and the
+	// point of having a linter here is to catch bug-shaped mistakes without being
+	// something anyone waits for. Correctness rules only; formatting is Prettier's
+	// job and types are `svelte-check`'s, so neither is duplicated here.
+	"$schema": "./node_modules/oxlint/configuration_schema.json",
+	"categories": {
+		"correctness": "warn"
+	},
+	"overrides": [
+		{
+			// oxlint reads the `<script>` block of a `.svelte` file and nothing else,
+			// so anything the template does is invisible to it. `bind:this={canvas}`
+			// is an assignment it cannot see, which makes a variable the script reads
+			// but never writes look permanently undefined -- see Chart.svelte, the
+			// one place this happens today. The rule is right about plain TypeScript
+			// and structurally cannot be right about a Svelte component, so it is off
+			// here rather than suppressed at the call site.
+			"files": ["**/*.svelte"],
+			"rules": {
+				"no-unassigned-vars": "off"
+			}
+		}
+	],
+	"ignorePatterns": ["build", ".svelte-kit", "node_modules", "test-results"]
+}
