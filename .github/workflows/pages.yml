@@ -19,20 +19,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Just copy the files, i.e. serve what's in the repo unchanged.
       - name: Assemble the site
         run: |
           mkdir -p _site
           rsync -a --exclude='.git/' --exclude='.jj/' --exclude='_site/' ./ _site/
-          # Harmless today, since nothing here lives in an underscore-prefixed
-          # directory, but the branch deploy ran Jekyll and this artifact does
-          # not. Being explicit costs nothing and starts mattering as soon as a
-          # build step emits such paths, which bundlers tend to.
-          touch _site/.nojekyll
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
 
@@ -44,4 +39,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
