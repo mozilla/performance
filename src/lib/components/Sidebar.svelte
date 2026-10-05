@@ -75,7 +75,7 @@
 		display: block;
 		padding: var(--space-4) var(--space-3) var(--space-4) var(--space-6);
 		font-size: 14px;
-		transition: color 200ms ease-in;
+		transition: color 80ms ease-out;
 	}
 
 	a:hover {
