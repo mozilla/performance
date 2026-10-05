@@ -260,3 +260,23 @@ test('picking a subtest in the breakdown table does scroll back to the chart', a
 	// which of the two won the race.
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+for (const path of ['/speedometer', '/jetstream']) {
+	test(`the breakdown table on ${path} stays inside the page`, async ({ page }) => {
+		// The stubbed data has fewer browsers than live data, so its table fits
+		// the default viewport.
+		await page.setViewportSize({ width: 900, height: 720 });
+		await page.goto(path);
+		await waitForLoaded(page);
+
+		// Too wide to fit is fine, it scrolls; spilling over the sidebar, or
+		// past the window's right edge, is not.
+		const content = await page.locator('.page').boundingBox();
+		const table = await page.locator('table.styled-table').boundingBox();
+		expect(table!.width, 'the table fits, so this proves nothing').toBeGreaterThan(content!.width);
+		expect(table!.x).toBeGreaterThanOrEqual(content!.x);
+		expect(
+			await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+		).toBe(0);
+	});
+}

@@ -36,79 +36,88 @@
 	};
 </script>
 
-<table class="styled-table">
-	<!-- Sorting reorders the rows in place, so keep the scroll position. Row
-	     links still scroll to the top, where the selected test's chart is. -->
-	<thead data-sveltekit-noscroll>
-		<tr>
-			<th rowspan="2" class="name-header" aria-sort={ariaSort(TEST_COLUMN)}>
-				<a href={nextHref(TEST_COLUMN)} class:sorted={sort === TEST_COLUMN}>
-					Test Name<span class="arrow" aria-hidden="true"
-						>{sort === TEST_COLUMN ? (dir === 'asc' ? '▲' : '▼') : ''}</span
-					>
-				</a>
-			</th>
-			<th colspan={table.valueColumns.length} scope="colgroup">Value<br />7 day average</th>
-			<!-- Firefox-only pages have nothing to compare against, and a group
-			     header spanning zero columns renders as a stray empty cell. -->
-			{#if table.diffColumns.length > 0}
-				<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Firefox</th>
-			{/if}
-		</tr>
-		<tr class="browser-row">
-			{#each table.valueColumns as column (column.key)}
-				{@const key = valueColumnKey(column.key)}
-				<th scope="col" aria-sort={ariaSort(key)}>
-					<a href={nextHref(key)} class:sorted={sort === key}>
-						{column.browser.label}<span class="arrow" aria-hidden="true"
-							>{sort === key ? (dir === 'asc' ? '▲' : '▼') : ''}</span
+<!-- Scrolls sideways when the browser columns are wider than the page. -->
+<div class="table-scroll">
+	<table class="styled-table">
+		<!-- Sorting reorders the rows in place, so keep the scroll position. Row
+		     links still scroll to the top, where the selected test's chart is. -->
+		<thead data-sveltekit-noscroll>
+			<tr>
+				<th rowspan="2" class="name-header" aria-sort={ariaSort(TEST_COLUMN)}>
+					<a href={nextHref(TEST_COLUMN)} class:sorted={sort === TEST_COLUMN}>
+						Test Name<span class="arrow" aria-hidden="true"
+							>{sort === TEST_COLUMN ? (dir === 'asc' ? '▲' : '▼') : ''}</span
 						>
 					</a>
 				</th>
-			{/each}
-			{#each table.diffColumns as column (`diff-${column.key}`)}
-				{@const key = diffColumnKey(column.key)}
-				<th scope="col" aria-sort={ariaSort(key)}>
-					<a href={nextHref(key)} class:sorted={sort === key}>
-						{column.browser.label}<span class="arrow" aria-hidden="true"
-							>{sort === key ? (dir === 'asc' ? '▲' : '▼') : ''}</span
-						>
-					</a>
-				</th>
-			{/each}
-		</tr>
-	</thead>
-	<tbody>
-		{#each rows as row (row.test)}
-			<tr class:selected={row.test === selected}>
-				<th scope="row" class="test-name">
-					<a href={href(row.test)}>{row.label}</a>
-				</th>
+				<th colspan={table.valueColumns.length} scope="colgroup">Value<br />7 day average</th>
+				<!-- Firefox-only pages have nothing to compare against, and a group
+				     header spanning zero columns renders as a stray empty cell. -->
+				{#if table.diffColumns.length > 0}
+					<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Firefox</th>
+				{/if}
+			</tr>
+			<tr class="browser-row">
 				{#each table.valueColumns as column (column.key)}
-					<td>{row.values[column.key].formatted}</td>
+					{@const key = valueColumnKey(column.key)}
+					<th scope="col" aria-sort={ariaSort(key)}>
+						<a href={nextHref(key)} class:sorted={sort === key}>
+							{column.browser.label}<span class="arrow" aria-hidden="true"
+								>{sort === key ? (dir === 'asc' ? '▲' : '▼') : ''}</span
+							>
+						</a>
+					</th>
 				{/each}
 				{#each table.diffColumns as column (`diff-${column.key}`)}
-					<td style:color={row.diffs[column.key].color}>{row.diffs[column.key].formatted}</td>
+					{@const key = diffColumnKey(column.key)}
+					<th scope="col" aria-sort={ariaSort(key)}>
+						<a href={nextHref(key)} class:sorted={sort === key}>
+							{column.browser.label}<span class="arrow" aria-hidden="true"
+								>{sort === key ? (dir === 'asc' ? '▲' : '▼') : ''}</span
+							>
+						</a>
+					</th>
 				{/each}
 			</tr>
-		{/each}
-	</tbody>
-</table>
+		</thead>
+		<tbody>
+			{#each rows as row (row.test)}
+				<tr class:selected={row.test === selected}>
+					<th scope="row" class="test-name">
+						<a href={href(row.test)}>{row.label}</a>
+					</th>
+					{#each table.valueColumns as column (column.key)}
+						<td>{row.values[column.key].formatted}</td>
+					{/each}
+					{#each table.diffColumns as column (`diff-${column.key}`)}
+						<td style:color={row.diffs[column.key].color}>{row.diffs[column.key].formatted}</td>
+					{/each}
+				</tr>
+			{/each}
+		</tbody>
+	</table>
+</div>
 
 {#if table.rows.length === 0}
 	<p class="empty">No data for this platform.</p>
 {/if}
 
 <style>
+	/* The shadow lives here rather than on the table, since overflow would
+	   clip it there. */
+	.table-scroll {
+		max-width: 100%;
+		overflow-x: auto;
+		margin: var(--space-6) 0;
+		box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+		background: var(--surface-card);
+	}
+
 	.styled-table {
 		border-collapse: collapse;
-		margin: var(--space-6) 0;
 		font-size: 0.9em;
 		font-family: sans-serif;
 		min-width: 400px;
-		max-width: 1200px;
-		box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-		background: var(--surface-card);
 	}
 
 	thead th {
