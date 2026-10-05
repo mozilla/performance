@@ -83,8 +83,8 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 	},
 	{
 		key: 'osx',
-		label: 'Mac (10.15)',
-		platforms: ['macosx1015-64-nightlyasrelease-qr', 'macosx1015-64-shippable-qr'],
+		label: 'Mac (Intel)',
+		platforms: ['macosx1470-64-nightlyasrelease', 'macosx1470-64-shippable'],
 		supportsSafari: false,
 		group: 'desktop'
 	},
