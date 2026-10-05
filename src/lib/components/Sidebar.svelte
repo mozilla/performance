@@ -75,7 +75,7 @@
 		display: block;
 		padding: var(--space-4) var(--space-3) var(--space-4) var(--space-6);
 		font-size: 14px;
-		transition: color 200ms ease-in;
+		transition: color 80ms ease-out;
 	}
 
 	a:hover {
@@ -109,6 +109,12 @@
 		padding: var(--space-3) var(--space-3) var(--space-3) var(--space-8);
 		font-size: 13px;
 		opacity: 0.85;
+	}
+
+	/* Full opacity so the accent colour keeps its contrast. */
+	.sub a:hover,
+	.sub a.active {
+		opacity: 1;
 	}
 
 	/* Tighter gutters once the column narrows, so long labels like
