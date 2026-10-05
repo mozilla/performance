@@ -168,6 +168,11 @@ const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Loc
 		name: 'the machine legend',
 		path: '/speedometer_job_debug',
 		control: (page) => page.locator('[aria-label="Machines"] a').nth(1)
+	},
+	{
+		name: 'a breakdown table sort header',
+		path: '/speedometer',
+		control: (page) => page.locator('.browser-row a').first()
 	}
 	// The platform picker is deliberately absent: it sits at the very top of the
 	// page, so `click()` scrolls the page up to reach it and the test measures

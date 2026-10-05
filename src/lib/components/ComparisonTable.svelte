@@ -37,7 +37,9 @@
 </script>
 
 <table class="styled-table">
-	<thead>
+	<!-- Sorting reorders the rows in place, so keep the scroll position. Row
+	     links still scroll to the top, where the selected test's chart is. -->
+	<thead data-sveltekit-noscroll>
 		<tr>
 			<th rowspan="2" class="name-header" aria-sort={ariaSort(TEST_COLUMN)}>
 				<a href={nextHref(TEST_COLUMN)} class:sorted={sort === TEST_COLUMN}>
