@@ -49,7 +49,7 @@ export interface AndroidTest {
 	lowerIsBetter: boolean;
 	/**
 	 * Whether the job publishes a `<suite>.tgz` of per-replicate screen
-	 * recordings. Only the four applink/homeview/restore tests do.
+	 * recordings. Only the applink, homeview and tab restore tests do.
 	 */
 	hasVideo: boolean;
 }
@@ -92,9 +92,9 @@ export const TESTS: readonly AndroidTest[] = [
 		hasVideo: true
 	},
 	{
-		key: 'restore-startup',
-		label: 'Tab restore (Shopify)',
-		suite: 'tab-restore-shopify',
+		key: 'newssite-tab-restore',
+		label: 'Tab restore (NewsSite)',
+		suite: 'tab-restore-newssite',
 		test: 'tab_restore',
 		framework: MOZPERFTEST_FRAMEWORK,
 		unit: 'ms',
