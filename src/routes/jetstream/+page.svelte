@@ -241,7 +241,7 @@
 		{/if}
 	</div>
 
-	<h3>Breakdown: JetStream 3 Subtests</h3>
+	<h3 class="breakdown-title">Breakdown: JetStream 3 Subtests</h3>
 
 	{#if snapshot.error}
 		<p class="error">Could not load the JetStream snapshot: {String(snapshot.error)}</p>
@@ -379,7 +379,11 @@
 	}
 
 	.chart-title {
-		margin: var(--space-5) 0;
+		margin: var(--space-7) 0 var(--space-5);
+	}
+
+	.breakdown-title {
+		margin: var(--space-7) 0 var(--space-3);
 	}
 
 	.chart-title a {
