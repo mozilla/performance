@@ -158,7 +158,13 @@ test('NavBench: recordings are grouped by site and open on the charted one', asy
  * control that suppressed the reset some other way would be equally correct.
  * So these click the real thing and look at where the page ended up.
  */
-const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Locator }> = [
+const SCROLL_CASES: Array<{
+	name: string;
+	path: string;
+	control(page: Page): Locator;
+	/** For pages too short to scroll at the default viewport. */
+	viewportHeight?: number;
+}> = [
 	{
 		name: 'the range picker',
 		path: '/speedometer',
@@ -173,6 +179,24 @@ const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Loc
 		name: 'a breakdown table sort header',
 		path: '/speedometer',
 		control: (page) => page.locator('.browser-row a').first()
+	},
+	{
+		name: 'a JetStream filter preset',
+		// From a filtered table to the full one: the other way round, the stubbed
+		// table gets too short to scroll, and a jump to the top goes unnoticed.
+		path: '/jetstream?filter=wasm',
+		control: (page) => page.getByRole('link', { name: 'All Tests' }),
+		viewportHeight: 400
+	},
+	{
+		name: 'the Speedometer subtest charts toggle',
+		path: '/speedometer',
+		control: (page) => page.getByRole('link', { name: 'Load All Subtest Charts' })
+	},
+	{
+		name: 'the Nav Bench subtest charts toggle',
+		path: '/navbench',
+		control: (page) => page.getByRole('link', { name: 'Load All Subtest Charts' })
 	}
 	// The platform picker is deliberately absent: it sits at the very top of the
 	// page, so `click()` scrolls the page up to reach it and the test measures
@@ -180,8 +204,11 @@ const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Loc
 	// instead, which is the one place a mechanism assertion earns its keep.
 ];
 
-for (const { name, path, control } of SCROLL_CASES) {
+for (const { name, path, control, viewportHeight } of SCROLL_CASES) {
 	test(`${name} does not scroll the page to the top`, async ({ page }) => {
+		if (viewportHeight !== undefined) {
+			await page.setViewportSize({ width: page.viewportSize()!.width, height: viewportHeight });
+		}
 		await page.goto(path);
 		await waitForLoaded(page);
 		await waitForChart(page);
@@ -233,3 +260,23 @@ test('picking a subtest in the breakdown table does scroll back to the chart', a
 	// which of the two won the race.
 	await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+for (const path of ['/speedometer', '/jetstream']) {
+	test(`the breakdown table on ${path} stays inside the page`, async ({ page }) => {
+		// The stubbed data has fewer browsers than live data, so its table fits
+		// the default viewport.
+		await page.setViewportSize({ width: 900, height: 720 });
+		await page.goto(path);
+		await waitForLoaded(page);
+
+		// Too wide to fit is fine, it scrolls; spilling over the sidebar, or
+		// past the window's right edge, is not.
+		const content = await page.locator('.page').boundingBox();
+		const table = await page.locator('table.styled-table').boundingBox();
+		expect(table!.width, 'the table fits, so this proves nothing').toBeGreaterThan(content!.width);
+		expect(table!.x).toBeGreaterThanOrEqual(content!.x);
+		expect(
+			await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
+		).toBe(0);
+	});
+}

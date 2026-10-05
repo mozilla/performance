@@ -21,6 +21,7 @@
 	import {
 		displayName,
 		JETSTREAM_FRAMEWORK,
+		JETSTREAM_NAMING,
 		JETSTREAM_SUITE,
 		PLATFORMS,
 		platformByKey,
@@ -62,7 +63,10 @@
 	const visibleTests = $derived(filterTests(tests, view.filter));
 
 	const table = $derived(
-		buildComparisonTable(tableMeasurements, visibleTests, { supportsSafari: true })
+		buildComparisonTable(tableMeasurements, visibleTests, {
+			supportsSafari: true,
+			naming: JETSTREAM_NAMING
+		})
 	);
 
 	// One field at a time: `view` is a fresh object per URL change, so reading it
@@ -241,7 +245,7 @@
 		{/if}
 	</div>
 
-	<h3>Breakdown: JetStream 3 Subtests</h3>
+	<h3 class="breakdown-title">Breakdown: JetStream 3 Subtests</h3>
 
 	{#if snapshot.error}
 		<p class="error">Could not load the JetStream snapshot: {String(snapshot.error)}</p>
@@ -264,7 +268,7 @@
 				value={view.filter}
 				oninput={(event) => apply({ filter: event.currentTarget.value })}
 			/>
-			<span class="presets">
+			<span class="presets" data-sveltekit-noscroll>
 				<strong>Presets:</strong>
 				{#each FILTER_PRESETS as preset (preset.label)}
 					<a href={href({ filter: preset.value })} class:active={view.filter === preset.value}>
@@ -379,7 +383,11 @@
 	}
 
 	.chart-title {
-		margin: var(--space-5) 0;
+		margin: var(--space-7) 0 var(--space-5);
+	}
+
+	.breakdown-title {
+		margin: var(--space-7) 0 var(--space-3);
 	}
 
 	.chart-title a {

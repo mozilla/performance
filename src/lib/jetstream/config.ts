@@ -6,6 +6,7 @@
  * from here.
  */
 import { FRAMEWORK } from '$lib/api/treeherder';
+import type { RowNaming } from '$lib/speedometer/table';
 
 export const JETSTREAM_FRAMEWORK = FRAMEWORK.browsertime;
 export const JETSTREAM_SUITE = 'jetstream3';
@@ -57,3 +58,13 @@ export function lowerIsBetter(): boolean {
 export function displayName(test: string): string {
 	return test === SCORE_TEST ? 'Overall Score' : test;
 }
+
+/**
+ * For the comparison table. Without it the table falls back to the Speedometer
+ * naming, which reads every subtest as a time in ms where lower is better.
+ */
+export const JETSTREAM_NAMING: RowNaming = {
+	label: displayName,
+	unit: () => '',
+	lowerIsBetter
+};
