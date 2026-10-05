@@ -21,6 +21,7 @@
 	import {
 		displayName,
 		JETSTREAM_FRAMEWORK,
+		JETSTREAM_NAMING,
 		JETSTREAM_SUITE,
 		PLATFORMS,
 		platformByKey,
@@ -62,7 +63,10 @@
 	const visibleTests = $derived(filterTests(tests, view.filter));
 
 	const table = $derived(
-		buildComparisonTable(tableMeasurements, visibleTests, { supportsSafari: true })
+		buildComparisonTable(tableMeasurements, visibleTests, {
+			supportsSafari: true,
+			naming: JETSTREAM_NAMING
+		})
 	);
 
 	// One field at a time: `view` is a fresh object per URL change, so reading it
