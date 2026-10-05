@@ -111,6 +111,12 @@
 		opacity: 0.85;
 	}
 
+	/* Full opacity so the accent colour keeps its contrast. */
+	.sub a:hover,
+	.sub a.active {
+		opacity: 1;
+	}
+
 	/* Tighter gutters once the column narrows, so long labels like
 	   "Navigation Benchmark" wrap over two lines rather than three. */
 	@media (max-width: 64rem) {

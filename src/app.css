@@ -24,7 +24,8 @@
 
 	/* Accents. --accent is overridden per page where a page has its own hue. */
 	--accent: #3366ff;
-	--accent-nav: #1abc9c;
+	/* #1abc9c darkened to 5:1 contrast on --surface-page. */
+	--accent-nav: #0f705d;
 	--danger: #aa0000;
 
 	--space-1: 4px;
