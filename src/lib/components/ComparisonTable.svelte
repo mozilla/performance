@@ -37,7 +37,9 @@
 </script>
 
 <table class="styled-table">
-	<thead>
+	<!-- Sorting reorders the rows in place, so keep the scroll position. Row
+	     links still scroll to the top, where the selected test's chart is. -->
+	<thead data-sveltekit-noscroll>
 		<tr>
 			<th rowspan="2" class="name-header" aria-sort={ariaSort(TEST_COLUMN)}>
 				<a href={nextHref(TEST_COLUMN)} class:sorted={sort === TEST_COLUMN}>
@@ -53,7 +55,7 @@
 				<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Firefox</th>
 			{/if}
 		</tr>
-		<tr>
+		<tr class="browser-row">
 			{#each table.valueColumns as column (column.key)}
 				{@const key = valueColumnKey(column.key)}
 				<th scope="col" aria-sort={ariaSort(key)}>
@@ -128,6 +130,11 @@
 		white-space: nowrap;
 	}
 
+	/* The browser-name row is the table's widest part, so it gets tighter padding. */
+	.browser-row a {
+		padding: 5px;
+	}
+
 	thead th a:hover {
 		text-decoration: underline;
 	}
@@ -148,7 +155,8 @@
 
 	td {
 		text-align: right;
-		padding: var(--space-3) var(--space-5);
+		padding: var(--space-3) var(--space-2);
+		white-space: nowrap;
 	}
 
 	tbody tr {
