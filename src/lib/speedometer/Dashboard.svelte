@@ -272,7 +272,7 @@
 		<p class="hint">Loading alerts…</p>
 	{/if}
 
-	<div class="subtest-toggle">
+	<div class="subtest-toggle" data-sveltekit-noscroll>
 		<a class="button" href={href({ subtestCharts: !view.subtestCharts })}>
 			{view.subtestCharts ? 'Hide' : 'Load'} All Subtest Charts
 		</a>

@@ -264,7 +264,7 @@
 				value={view.filter}
 				oninput={(event) => apply({ filter: event.currentTarget.value })}
 			/>
-			<span class="presets">
+			<span class="presets" data-sveltekit-noscroll>
 				<strong>Presets:</strong>
 				{#each FILTER_PRESETS as preset (preset.label)}
 					<a href={href({ filter: preset.value })} class:active={view.filter === preset.value}>

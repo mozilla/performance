@@ -158,7 +158,13 @@ test('NavBench: recordings are grouped by site and open on the charted one', asy
  * control that suppressed the reset some other way would be equally correct.
  * So these click the real thing and look at where the page ended up.
  */
-const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Locator }> = [
+const SCROLL_CASES: Array<{
+	name: string;
+	path: string;
+	control(page: Page): Locator;
+	/** For pages too short to scroll at the default viewport. */
+	viewportHeight?: number;
+}> = [
 	{
 		name: 'the range picker',
 		path: '/speedometer',
@@ -173,6 +179,24 @@ const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Loc
 		name: 'a breakdown table sort header',
 		path: '/speedometer',
 		control: (page) => page.locator('.browser-row a').first()
+	},
+	{
+		name: 'a JetStream filter preset',
+		// From a filtered table to the full one: the other way round, the stubbed
+		// table gets too short to scroll, and a jump to the top goes unnoticed.
+		path: '/jetstream?filter=wasm',
+		control: (page) => page.getByRole('link', { name: 'All Tests' }),
+		viewportHeight: 400
+	},
+	{
+		name: 'the Speedometer subtest charts toggle',
+		path: '/speedometer',
+		control: (page) => page.getByRole('link', { name: 'Load All Subtest Charts' })
+	},
+	{
+		name: 'the Nav Bench subtest charts toggle',
+		path: '/navbench',
+		control: (page) => page.getByRole('link', { name: 'Load All Subtest Charts' })
 	}
 	// The platform picker is deliberately absent: it sits at the very top of the
 	// page, so `click()` scrolls the page up to reach it and the test measures
@@ -180,8 +204,11 @@ const SCROLL_CASES: Array<{ name: string; path: string; control(page: Page): Loc
 	// instead, which is the one place a mechanism assertion earns its keep.
 ];
 
-for (const { name, path, control } of SCROLL_CASES) {
+for (const { name, path, control, viewportHeight } of SCROLL_CASES) {
 	test(`${name} does not scroll the page to the top`, async ({ page }) => {
+		if (viewportHeight !== undefined) {
+			await page.setViewportSize({ width: page.viewportSize()!.width, height: viewportHeight });
+		}
 		await page.goto(path);
 		await waitForLoaded(page);
 		await waitForChart(page);
