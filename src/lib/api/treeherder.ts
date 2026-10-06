@@ -65,11 +65,22 @@ export interface Measurement {
 	extraOptions: string[];
 }
 
+/**
+ * One signature per application/platform/suite/test: the Fission run if there
+ * is one, then the fewest extra_options (so not a profiled or other variant).
+ * Desktop always runs with Fission; Android also has a non-Fission job, which
+ * is not the one to chart.
+ */
 export function selectCanonicalSignatures(signatures: PerfSignature[]): PerfSignature[] {
 	const canonicalKey = (sig: PerfSignature) =>
 		[sig.application, sig.machine_platform, sig.suite, sig.test].join('|');
 
+	const hasFission = (sig: PerfSignature) => (sig.extra_options ?? []).includes('fission');
+
 	const isMoreCanonical = (candidate: PerfSignature, current: PerfSignature) => {
+		if (hasFission(candidate) !== hasFission(current)) {
+			return hasFission(candidate);
+		}
 		const candidateOptions = (candidate.extra_options ?? []).length;
 		const currentOptions = (current.extra_options ?? []).length;
 		if (candidateOptions !== currentOptions) {

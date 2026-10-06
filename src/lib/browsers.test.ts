@@ -41,10 +41,10 @@ describe('classify', () => {
 		).toBeUndefined();
 	});
 
-	it('excludes fission variants from fenix', () => {
-		expect(
-			classify(measurement({ application: 'fenix', extraOptions: ['fission'] }))
-		).toBeUndefined();
+	it('keeps fenix with a fission option', () => {
+		expect(classify(measurement({ application: 'fenix', extraOptions: ['fission'] }))?.key).toBe(
+			'firefox'
+		);
 	});
 
 	it('keeps desktop Firefox with a fission option', () => {

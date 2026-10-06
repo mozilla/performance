@@ -14,9 +14,7 @@ const isFirefoxFamily = (m: Measurement) =>
 	m.application === 'firefox' || m.application === 'fenix';
 
 /** Instrumented or otherwise non-comparable variants of the base Firefox job. */
-const isVariant = (m: Measurement) =>
-	m.extraOptions.includes('nova') ||
-	(m.application === 'fenix' && m.extraOptions.includes('fission'));
+const isVariant = (m: Measurement) => m.extraOptions.includes('nova');
 
 /**
  * Safari and Safari TP. On Mac they run on a different machine pool from
