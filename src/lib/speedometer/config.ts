@@ -84,21 +84,30 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 	{
 		key: 'android-s24',
 		label: 'Android (S24)',
-		platforms: ['android-hw-s24-14-0-aarch64-shippable'],
+		platforms: [
+			'android-hw-s24-14-0-aarch64-nightlyasrelease',
+			'android-hw-s24-14-0-aarch64-shippable'
+		],
 		supportsSafari: false,
 		group: 'mobile'
 	},
 	{
 		key: 'android-a55',
 		label: 'Android (A55)',
-		platforms: ['android-hw-a55-14-0-aarch64-shippable'],
+		platforms: [
+			'android-hw-a55-14-0-aarch64-nightlyasrelease',
+			'android-hw-a55-14-0-aarch64-shippable'
+		],
 		supportsSafari: false,
 		group: 'mobile'
 	},
 	{
 		key: 'android-p6',
 		label: 'Android (P6)',
-		platforms: ['android-hw-p6-13-0-aarch64-shippable'],
+		platforms: [
+			'android-hw-p6-13-0-aarch64-nightlyasrelease',
+			'android-hw-p6-13-0-aarch64-shippable'
+		],
 		supportsSafari: false,
 		group: 'mobile'
 	}
