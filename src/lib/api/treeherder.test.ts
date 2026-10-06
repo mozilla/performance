@@ -57,10 +57,7 @@ describe('selectCanonicalSignatures', () => {
 		expect(selectCanonicalSignatures([older, newer])).toEqual([newer]);
 	});
 
-	// On Android the base job is the one *without* 'fission', which the
-	// fewest-options rule yields for free. That property is the reason the rule
-	// is expressed this way rather than as a blocklist, so it is worth pinning.
-	it('yields the non-fission Android job without naming fission', () => {
+	it('prefers the Fission Android job over the non-Fission one', () => {
 		const nonFission = signature({
 			id: 1,
 			application: 'fenix',
@@ -74,7 +71,15 @@ describe('selectCanonicalSignatures', () => {
 			extra_options: ['fission']
 		});
 
-		expect(selectCanonicalSignatures([fission, nonFission])).toEqual([nonFission]);
+		expect(selectCanonicalSignatures([fission, nonFission])).toEqual([fission]);
+		expect(selectCanonicalSignatures([nonFission, fission])).toEqual([fission]);
+	});
+
+	it('prefers the fewest extra_options among Fission jobs', () => {
+		const base = signature({ id: 1, extra_options: ['fission', 'webrender'] });
+		const profiled = signature({ id: 2, extra_options: ['fission', 'simpleperf', 'webrender'] });
+
+		expect(selectCanonicalSignatures([profiled, base])).toEqual([base]);
 	});
 
 	it('returns nothing for no input', () => {
