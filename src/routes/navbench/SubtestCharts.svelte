@@ -7,10 +7,12 @@
 	interface Props {
 		signatures: PerfSignature[];
 		days: number;
+		/** Platform key, for platform-specific annotations. */
+		os: string;
 		href(test: string): string;
 	}
 
-	let { signatures, days, href }: Props = $props();
+	let { signatures, days, os, href }: Props = $props();
 
 	// The per-site tests only. The overall score is already the chart at the top
 	// of the page, so repeating it here would be a duplicate rather than a
@@ -25,7 +27,7 @@
 	{/if}
 
 	{#each tests as test (test)}
-		<SubtestChart {test} {signatures} {days} href={href(test)} />
+		<SubtestChart {test} {signatures} {days} {os} href={href(test)} />
 	{/each}
 </div>
 

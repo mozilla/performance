@@ -61,14 +61,22 @@ describe('annotationsFor', () => {
 	const untargeted = { date: '2026-09-03', label: 'Everywhere' };
 	const targeted = { date: '2026-09-04', label: 'Amazon only', tests: ['amazon-nav-load-score'] };
 
+	const windowsOnly = { date: '2026-07-01', label: 'Windows only', platforms: ['windows'] };
+
 	it('puts an untargeted annotation on every chart, the overall included', () => {
-		expect(annotationsFor(OVERALL_TEST, [untargeted])).toEqual([untargeted]);
-		expect(annotationsFor('bbc-nav-load-score', [untargeted])).toEqual([untargeted]);
+		expect(annotationsFor(OVERALL_TEST, 'linux', [untargeted])).toEqual([untargeted]);
+		expect(annotationsFor('bbc-nav-load-score', 'windows', [untargeted])).toEqual([untargeted]);
 	});
 
 	it('keeps a targeted annotation to the charts it names', () => {
-		expect(annotationsFor('amazon-nav-load-score', [targeted])).toEqual([targeted]);
-		expect(annotationsFor('bbc-nav-load-score', [targeted])).toEqual([]);
-		expect(annotationsFor(OVERALL_TEST, [targeted])).toEqual([]);
+		expect(annotationsFor('amazon-nav-load-score', 'linux', [targeted])).toEqual([targeted]);
+		expect(annotationsFor('bbc-nav-load-score', 'linux', [targeted])).toEqual([]);
+		expect(annotationsFor(OVERALL_TEST, 'linux', [targeted])).toEqual([]);
+	});
+
+	it('keeps a platform-targeted annotation to the platforms it names', () => {
+		expect(annotationsFor(OVERALL_TEST, 'windows', [windowsOnly])).toEqual([windowsOnly]);
+		expect(annotationsFor('bbc-nav-load-score', 'windows', [windowsOnly])).toEqual([windowsOnly]);
+		expect(annotationsFor(OVERALL_TEST, 'osxm4', [windowsOnly])).toEqual([]);
 	});
 });

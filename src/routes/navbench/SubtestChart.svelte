@@ -12,11 +12,13 @@
 		test: string;
 		signatures: PerfSignature[];
 		days: number;
+		/** Platform key, for platform-specific annotations. */
+		os: string;
 		/** Link that makes this test the main chart. */
 		href: string;
 	}
 
-	let { test, signatures, days, href }: Props = $props();
+	let { test, signatures, days, os, href }: Props = $props();
 
 	// One resource per chart, all started at once and paced by the shared
 	// concurrency limiter in http.ts -- the same arrangement as Speedometer's
@@ -33,7 +35,7 @@
 		hidden: new Set<string>(),
 		replicates: false,
 		markers: [],
-		annotations: annotationsWithinDays(annotationsFor(test), days),
+		annotations: annotationsWithinDays(annotationsFor(test, os), days),
 		reference: null,
 		yLabel: 'Score (higher is better)',
 		beginAtZero: true
