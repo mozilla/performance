@@ -73,10 +73,12 @@ export function displayName(test: string): string {
  * Events worth calling out on the charts, drawn as dashed markers.
  *
  * `date` is the autoland push time. `tests` limits an annotation to the charts
- * of those tests; without it, the annotation appears on every chart.
+ * of those tests, and `platforms` to those platform keys; without them, the
+ * annotation appears on every chart.
  */
 export interface NavBenchAnnotation extends ChartAnnotation {
 	tests?: readonly string[];
+	platforms?: readonly string[];
 }
 
 export const NAVBENCH_ANNOTATIONS: readonly NavBenchAnnotation[] = [
@@ -86,15 +88,27 @@ export const NAVBENCH_ANNOTATIONS: readonly NavBenchAnnotation[] = [
 		description:
 			'Added google, facebook, yahoo and google-docs to the benchmark; overall score is now a geomean over more sites',
 		url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2043896'
+	},
+	{
+		date: '2026-07-01T20:28:07Z',
+		label: 'Bug 2050165',
+		description: 'Cleaned up nav-bench output data and fixed annotated videos on Windows',
+		url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2050165',
+		platforms: ['windows', 'windows-hwref']
 	}
 ];
 
-/** The annotations to draw on one test's chart. */
+/** The annotations to draw on one test's chart on one platform. */
 export function annotationsFor(
 	test: string,
+	platform: string,
 	annotations: readonly NavBenchAnnotation[] = NAVBENCH_ANNOTATIONS
 ): ChartAnnotation[] {
-	return annotations.filter((annotation) => !annotation.tests || annotation.tests.includes(test));
+	return annotations.filter(
+		(annotation) =>
+			(!annotation.tests || annotation.tests.includes(test)) &&
+			(!annotation.platforms || annotation.platforms.includes(platform))
+	);
 }
 
 export function videoScenario(test: string): string | undefined {

@@ -130,7 +130,7 @@
 		hidden: new Set<string>(),
 		replicates: false,
 		markers: [],
-		annotations: annotationsWithinDays(annotationsFor(selectedTest), range),
+		annotations: annotationsWithinDays(annotationsFor(selectedTest, os), range),
 		reference: selection,
 		yLabel: 'Score (higher is better)',
 		beginAtZero: true
@@ -303,6 +303,7 @@
 		<SubtestCharts
 			signatures={signatures.value ?? []}
 			days={view.range}
+			{os}
 			href={(test) => href(withVideoClosed({ test }))}
 		/>
 	{/if}
