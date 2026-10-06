@@ -35,7 +35,8 @@
 		markers: [],
 		annotations: annotationsWithinDays(annotationsFor(test), days),
 		reference: null,
-		yLabel: 'Score (higher is better)'
+		yLabel: 'Score (higher is better)',
+		beginAtZero: true
 	});
 
 	const chartData = $derived(buildChartData(inputs));

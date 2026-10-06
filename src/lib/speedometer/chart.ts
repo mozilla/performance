@@ -41,6 +41,8 @@ export interface ChartInputs {
 	 * score; Android also charts mWh, so it supplies its own.
 	 */
 	yLabel?: string;
+	/** Anchor the y axis at zero rather than fitting it to the data. */
+	beginAtZero?: boolean;
 }
 
 function stableJitter(seed: number): number {
@@ -261,7 +263,7 @@ export function buildChartOptions(
 				title: { display: true, text: 'Date' }
 			},
 			y: {
-				beginAtZero: false,
+				beginAtZero: inputs.beginAtZero ?? false,
 				title: { display: true, text: yLabel }
 			}
 		}
