@@ -132,7 +132,8 @@
 		markers: [],
 		annotations: annotationsWithinDays(annotationsFor(selectedTest), range),
 		reference: selection,
-		yLabel: 'Score (higher is better)'
+		yLabel: 'Score (higher is better)',
+		beginAtZero: true
 	});
 
 	const chartConfig = $derived(buildChartData(chartInputs));
