@@ -82,13 +82,6 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 		group: 'desktop'
 	},
 	{
-		key: 'osx',
-		label: 'Mac (Intel)',
-		platforms: ['macosx1470-64-nightlyasrelease', 'macosx1470-64-shippable'],
-		supportsSafari: false,
-		group: 'desktop'
-	},
-	{
 		key: 'android-s24',
 		label: 'Android (S24)',
 		platforms: ['android-hw-s24-14-0-aarch64-shippable'],
