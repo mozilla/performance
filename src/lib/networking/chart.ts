@@ -85,8 +85,10 @@ export function buildSeriesChartOptions(
 	const unit = config.unit ?? (stacked ? '%' : '');
 	const lines = buildAnnotationLines(annotations, ANNOTATION_STYLE);
 
+	// Whole milliseconds; keep a decimal for percentages so small shares survive.
+	const precision = unit === 'ms' ? 1 : 10;
 	const format = (value: number | null) =>
-		value === null ? 'N/A' : `${Math.round(value * 10) / 10}${unit}`;
+		value === null ? 'N/A' : `${Math.round(value * precision) / precision}${unit}`;
 
 	return {
 		responsive: true,
@@ -126,7 +128,7 @@ export function buildSeriesChartOptions(
 			},
 			tooltip: {
 				callbacks: {
-					label: (item) => `${item.dataset.label}: ${item.parsed.y}${unit}`,
+					label: (item) => `${item.dataset.label}: ${format(item.parsed.y)}`,
 					afterBody: (items) => {
 						const time = items[0]?.parsed.x;
 						if (time === undefined || time === null) return '';
