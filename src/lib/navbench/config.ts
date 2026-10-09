@@ -83,6 +83,13 @@ export interface NavBenchAnnotation extends ChartAnnotation {
 
 export const NAVBENCH_ANNOTATIONS: readonly NavBenchAnnotation[] = [
 	{
+		date: '2026-10-08T21:44:57Z',
+		label: 'Bug 2073531',
+		description:
+			'mitmproxy playback switched from proxy to direct mode; connections now include TLS and direct-connection network optimizations',
+		url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2073531'
+	},
+	{
 		date: '2026-09-03T16:54:43Z',
 		label: 'Bug 2043896',
 		description:
