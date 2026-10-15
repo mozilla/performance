@@ -1,0 +1,14 @@
+# Dashboard pages fetch their data in the browser from Treeherder, and one
+# load of a Treeherder-backed page makes roughly 10-60 API requests. Keep
+# crawlers off those pages, and off every URL-parameter variant, so indexing
+# the site does not turn into load on Treeherder.
+#
+# `/speedometer` also covers `/speedometer_job_debug` and
+# `/speedometer-experimental`, since rules match by prefix.
+
+User-agent: *
+Disallow: /speedometer
+Disallow: /jetstream
+Disallow: /android
+Disallow: /navbench
+Disallow: /*?
