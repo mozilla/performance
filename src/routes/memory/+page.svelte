@@ -134,7 +134,6 @@
 		/* Memory uses the version palette's blue as its accent. */
 		--accent: #2a78d6;
 		width: 100%;
-		max-width: 1200px;
 	}
 
 	h1 {
@@ -224,9 +223,15 @@
 		border-bottom: 1px solid var(--border-subtle);
 	}
 
+	/* At most two columns: each track is at least half the row (minus the gap),
+	   so a third never fits. When half the row is narrower than 480px, there is
+	   one column. The outer min() keeps that column from overflowing on phones. */
 	.charts-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+		grid-template-columns: repeat(
+			auto-fit,
+			minmax(min(100%, max(480px, calc((100% - var(--space-4)) / 2))), 1fr)
+		);
 		gap: var(--space-4);
 	}
 
