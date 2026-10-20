@@ -57,7 +57,7 @@
 	/* Fixed height with maintainAspectRatio false, so the grid rows line up
 	   regardless of how many legend entries each chart has. */
 	.chart-wrapper {
-		height: var(--chart-height-sm);
+		height: var(--chart-height);
 		position: relative;
 	}
 
