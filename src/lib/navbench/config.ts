@@ -7,8 +7,12 @@ export const NAVBENCH_FRAMEWORK = FRAMEWORK.browsertime;
 
 export const NAVBENCH_REPOSITORY = 'autoland' as const;
 
-/** The desktop platforms the benchmark runs on, from the shared platform table. */
-const NAVBENCH_PLATFORM_KEYS = ['linux', 'osxm4', 'windows', 'windows-hwref'];
+/**
+ * The platforms the benchmark runs on, from the shared platform table. Android
+ * runs the mobile variant (nav-bench-m) in Fenix, which reports under the same
+ * suite name.
+ */
+const NAVBENCH_PLATFORM_KEYS = ['linux', 'osxm4', 'windows', 'windows-hwref', 'android-a55'];
 
 export const NAVBENCH_PLATFORMS: readonly PlatformConfig[] = PLATFORMS.filter((platform) =>
 	NAVBENCH_PLATFORM_KEYS.includes(platform.key)
@@ -53,20 +57,72 @@ const SITE_LABELS: Record<string, string> = {
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
 
 /**
+ * A test's site and scenario: `google-docs` and `warm` from
+ * `google-docs-nav-warm-score`.
+ *
+ * Split at `-nav-` rather than at the first hyphen, so a hyphenated site name
+ * stays together.
+ */
+function parseTest(test: string): { site: string; scenario?: string } {
+	const name = test.replace(/-score$/, '');
+	const split = name.indexOf('-nav-');
+	return split === -1
+		? { site: name }
+		: { site: name.slice(0, split), scenario: name.slice(split + '-nav-'.length) };
+}
+
+const siteLabel = (site: string) => SITE_LABELS[site] ?? site.split('-').map(capitalize).join(' ');
+
+/**
  * `BBC nav subnav` from `bbc-nav-subnav-score`.
  *
  * Every test in this suite is a score, so the suffix carries no information in
- * a table whose header already says so. Split at `-nav-` rather than at the
- * first hyphen, so `google-docs-nav-warm-score` is Google Docs and not Google.
+ * a table whose header already says so.
  */
 export function displayName(test: string): string {
 	if (test === OVERALL_TEST) return 'Overall Score';
 
-	const name = test.replace(/-score$/, '');
-	const split = name.indexOf('-nav-');
-	const site = split === -1 ? name : name.slice(0, split);
-	const label = SITE_LABELS[site] ?? site.split('-').map(capitalize).join(' ');
-	return split === -1 ? label : `${label} nav ${name.slice(split + '-nav-'.length)}`;
+	const { site, scenario } = parseTest(test);
+	return scenario === undefined ? siteLabel(site) : `${siteLabel(site)} nav ${scenario}`;
+}
+
+/** The sites among these tests, labelled and alphabetical. */
+export function sitesIn(tests: readonly string[]): string[] {
+	const sites = new Set(
+		tests.filter((test) => test !== OVERALL_TEST).map((test) => siteLabel(parseTest(test).site))
+	);
+	return [...sites].sort((a, b) => a.localeCompare(b));
+}
+
+const SCENARIO_LABELS: Record<string, string> = {
+	load: 'page load',
+	subnav: 'sub-navigation',
+	warm: 'warm-load'
+};
+
+/** The scenarios among these tests, in prose, in the order above. */
+export function scenariosIn(tests: readonly string[]): string[] {
+	const scenarios = new Set(
+		tests.flatMap((test) => {
+			const { scenario } = parseTest(test);
+			return test === OVERALL_TEST || scenario === undefined ? [] : [scenario];
+		})
+	);
+	const known = Object.keys(SCENARIO_LABELS);
+	return [...scenarios]
+		.sort((a, b) => {
+			const rank = (scenario: string) =>
+				known.includes(scenario) ? known.indexOf(scenario) : known.length;
+			return rank(a) - rank(b) || a.localeCompare(b);
+		})
+		.map((scenario) => SCENARIO_LABELS[scenario] ?? scenario);
+}
+
+/** `a, b and c`, matching the explainer's house style (no serial comma). */
+export function proseList(items: readonly string[]): string {
+	return items.length <= 1
+		? (items[0] ?? '')
+		: `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
 }
 
 /**
