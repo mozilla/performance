@@ -15,7 +15,11 @@
 		NAVBENCH_FRAMEWORK,
 		NAVBENCH_PLATFORMS,
 		NAVBENCH_REPOSITORY,
-		OVERALL_TEST
+		OVERALL_TEST,
+		platformByKey,
+		proseList,
+		scenariosIn,
+		sitesIn
 	} from '$lib/navbench/config';
 	import {
 		loadNavBenchMeasurements,
@@ -55,6 +59,14 @@
 	const signatures = resource((signal) => loadNavBenchSignatures(os, signal));
 
 	const tests = $derived(testsIn(signatures.value ?? []));
+
+	// The explainer describes what runs on this platform: Android runs fewer
+	// sites and scenarios than desktop. Empty until the signatures load.
+	const browserName = $derived(
+		platformByKey(os).group === 'mobile' ? 'Firefox for Android' : 'Firefox'
+	);
+	const sites = $derived(proseList(sitesIn(tests)));
+	const scenarios = $derived(proseList(scenariosIn(tests)));
 
 	const chartData = resource(async (signal) => {
 		const all = signatures.value;
@@ -204,12 +216,13 @@
 
 <div class="page">
 	<div class="explainer">
-		<strong>Navigation Benchmark</strong> tests Firefox navigation performance across real websites:
-		Amazon, BBC, DuckDuckGo, Facebook, Google, Google Docs, Reddit, Wikipedia and Yahoo. Sites are
-		tested across a mix of page load, sub-navigation and warm-load scenarios, scored using
-		SpeedIndex. Per-site and overall scores are geometric means; higher is better. Click a point to
-		play the screen recordings that run made. Dashed markers on the charts flag benchmark changes;
-		hover for details, or click the label to open the bug.
+		<strong>Navigation Benchmark</strong> tests {browserName} navigation performance across real websites{#if sites}:
+			{sites}{/if}.{' '}{#if scenarios}
+			Sites are tested across a mix of {scenarios} scenarios, scored using SpeedIndex.{:else}
+			Sites are scored using SpeedIndex.{/if}
+		Per-site and overall scores are geometric means; higher is better. Click a point to play the screen
+		recordings that run made. Dashed markers on the charts flag benchmark changes; hover for details,
+		or click the label to open the bug.
 		<p class="links">
 			<a
 				href="https://firefox-source-docs.mozilla.org/testing/perfdocs/raptor.html#nav-bench"

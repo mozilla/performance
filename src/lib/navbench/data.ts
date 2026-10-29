@@ -25,7 +25,10 @@ import {
 /** Days of history behind the comparison table, independent of the chart range. */
 export const TABLE_WINDOW_DAYS = 30;
 
-/** Every nav-bench signature on a platform, both Firefox and Nightly-as-Release. */
+/**
+ * Every nav-bench signature on a platform, both Firefox and Nightly-as-Release.
+ * On Android the application is Fenix rather than Firefox.
+ */
 export async function loadNavBenchSignatures(
 	platformKey: string,
 	signal?: AbortSignal
@@ -47,7 +50,11 @@ export async function loadNavBenchSignatures(
 
 	const navBench = perPlatform
 		.flat()
-		.filter((sig) => sig.suite === NAVBENCH_SUITE && sig.application === 'firefox');
+		.filter(
+			(sig) =>
+				sig.suite === NAVBENCH_SUITE &&
+				(sig.application === 'firefox' || sig.application === 'fenix')
+		);
 
 	return selectCanonicalSignatures(navBench);
 }

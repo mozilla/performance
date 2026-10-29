@@ -3,7 +3,10 @@ import {
 	annotationsFor,
 	displayName,
 	OVERALL_TEST,
+	proseList,
+	scenariosIn,
 	signatureTest,
+	sitesIn,
 	testKey,
 	videoScenario
 } from './config';
@@ -78,5 +81,39 @@ describe('annotationsFor', () => {
 		expect(annotationsFor(OVERALL_TEST, 'windows', [windowsOnly])).toEqual([windowsOnly]);
 		expect(annotationsFor('bbc-nav-load-score', 'windows', [windowsOnly])).toEqual([windowsOnly]);
 		expect(annotationsFor(OVERALL_TEST, 'osxm4', [windowsOnly])).toEqual([]);
+	});
+});
+
+describe('the explainer lists', () => {
+	const tests = [
+		OVERALL_TEST,
+		'wikipedia-nav-subnav-score',
+		'amazon-nav-load-score',
+		'amazon-nav-subnav-score',
+		'google-docs-nav-warm-score'
+	];
+
+	it('names each site once, alphabetically, without the overall', () => {
+		expect(sitesIn(tests)).toEqual(['Amazon', 'Google Docs', 'Wikipedia']);
+	});
+
+	it('names each scenario once, in a fixed order', () => {
+		expect(scenariosIn(tests)).toEqual(['page load', 'sub-navigation', 'warm-load']);
+		expect(scenariosIn(['amazon-nav-subnav-score', 'amazon-nav-load-score'])).toEqual([
+			'page load',
+			'sub-navigation'
+		]);
+	});
+
+	it('is empty before any tests have loaded', () => {
+		expect(sitesIn([OVERALL_TEST])).toEqual([]);
+		expect(scenariosIn([OVERALL_TEST])).toEqual([]);
+	});
+
+	it('joins items without a serial comma', () => {
+		expect(proseList([])).toBe('');
+		expect(proseList(['A'])).toBe('A');
+		expect(proseList(['A', 'B'])).toBe('A and B');
+		expect(proseList(['A', 'B', 'C'])).toBe('A, B and C');
 	});
 });
