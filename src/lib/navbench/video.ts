@@ -12,15 +12,15 @@ import {
 	findPerfherderArtifact,
 	type PerfherderData,
 	type TaskArtifact
-} from '$lib/api/taskcluster';
-import type { TarEntry } from '$lib/api/targz';
-import { fetchTaskRef, type TaskRef } from '$lib/api/treeherder';
+} from '#lib/api/taskcluster.js';
+import type { TarEntry } from '#lib/api/targz.js';
+import { fetchTaskRef, type TaskRef } from '#lib/api/treeherder.js';
 import {
 	isVideo,
 	NoVideoError,
 	pairVideosWithReplicates,
 	type VideoGroup
-} from '$lib/replicate-videos';
+} from '#lib/replicate-videos.js';
 import { displayName, NAVBENCH_REPOSITORY, NAVBENCH_SUITE, videoScenario } from './config';
 
 const ARCHIVE_PREFERENCE = [

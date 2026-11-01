@@ -1,4 +1,4 @@
-import type { ChartAnnotation } from '$lib/annotations';
+import type { ChartAnnotation } from '#lib/annotations.js';
 
 export type Platform = 'desktop' | 'android';
 export type Channel = 'release' | 'nightly';

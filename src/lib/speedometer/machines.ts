@@ -1,4 +1,4 @@
-import type { Measurement } from '$lib/api/treeherder';
+import type { Measurement } from '#lib/api/treeherder.js';
 
 export const MACHINE_COLORS = [
 	'#e6194b',

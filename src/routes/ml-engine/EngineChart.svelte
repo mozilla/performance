@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ChartData, ChartOptions } from 'chart.js';
-	import Chart from '$lib/components/Chart.svelte';
-	import type { EnginePoint } from '$lib/ml/engine';
+	import Chart from '#lib/components/Chart.svelte';
+	import type { EnginePoint } from '#lib/ml/engine.js';
 
 	interface Props {
 		points: EnginePoint[];

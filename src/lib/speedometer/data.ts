@@ -12,8 +12,8 @@ import {
 	type PerfSignature,
 	type Repository,
 	selectCanonicalSignatures
-} from '$lib/api/treeherder';
-import { isSafariApplication } from '$lib/browsers';
+} from '#lib/api/treeherder.js';
+import { isSafariApplication } from '#lib/browsers.js';
 import { type AlertData, fetchAlertsForTest, mergeAlertData } from './alerts';
 import {
 	ALL_TESTS,

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ChartData, ChartOptions } from 'chart.js';
-	import Chart from '$lib/components/Chart.svelte';
-	import type { MlPoint } from '$lib/ml/data';
+	import Chart from '#lib/components/Chart.svelte';
+	import type { MlPoint } from '#lib/ml/data.js';
 
 	interface Props {
 		points: MlPoint[];

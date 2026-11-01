@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import MlChart from './MlChart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import { resource } from '$lib/resource.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import { resource } from '#lib/resource.svelte.js';
 	import {
 		DEFAULT_PLATFORM,
 		fetchMlData,
@@ -13,8 +13,8 @@
 		PLATFORMS,
 		type PlatformKey,
 		valuesFor
-	} from '$lib/ml/data';
-	import { parseState, patchUrl, str } from '$lib/url-state';
+	} from '#lib/ml/data.js';
+	import { parseState, patchUrl, str } from '#lib/url-state.js';
 
 	const schema = { platform: str(DEFAULT_PLATFORM, PLATFORM_KEYS) };
 
@@ -69,7 +69,7 @@
 <div class="page">
 	<h1>Firefox AI Runtime</h1>
 
-	<nav class="platforms" aria-label="Platform" data-sveltekit-noscroll>
+	<nav class="platforms" aria-label="Platform" data-sveltekit-reset="false">
 		{#each PLATFORM_KEYS as key (key)}
 			<a href={href({ platform: key })} class:active={platformKey === key}>
 				{PLATFORM_LABELS[key]}

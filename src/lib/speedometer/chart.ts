@@ -3,9 +3,9 @@ import {
 	annotationTooltipLines,
 	buildAnnotationLines,
 	type ChartAnnotation
-} from '$lib/annotations';
-import type { Measurement } from '$lib/api/treeherder';
-import { groupByBrowser } from '$lib/browsers';
+} from '#lib/annotations.js';
+import type { Measurement } from '#lib/api/treeherder.js';
+import { groupByBrowser } from '#lib/browsers.js';
 import type { AlertMarker } from './alerts';
 import { lowerIsBetter } from './config';
 import type { RowNaming } from './table';

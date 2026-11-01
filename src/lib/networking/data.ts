@@ -1,4 +1,4 @@
-import { type CsvRow, fetchCsv, numeric } from '$lib/api/csv';
+import { type CsvRow, fetchCsv, numeric } from '#lib/api/csv.js';
 import type { ChartConfig } from './config';
 
 export interface SeriesData {

@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { ReplicateVideo, VideoGroup } from '$lib/replicate-videos';
-	import { taskclusterTaskUrl, type TaskRef } from '$lib/api/treeherder';
+	import type { ReplicateVideo, VideoGroup } from '#lib/replicate-videos.js';
+	import { taskclusterTaskUrl, type TaskRef } from '#lib/api/treeherder.js';
 
 	interface Props {
 		/**

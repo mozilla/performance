@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { defaultGroup, groupByScenario, replicatesByTest, scenarioOf } from './video';
-import type { PerfherderData } from '$lib/api/taskcluster';
-import type { TarEntry } from '$lib/api/targz';
-import type { VideoGroup } from '$lib/replicate-videos';
+import type { PerfherderData } from '#lib/api/taskcluster.js';
+import type { TarEntry } from '#lib/api/targz.js';
+import type { VideoGroup } from '#lib/replicate-videos.js';
 
 const entry = (name: string): TarEntry => ({ name, data: new Uint8Array(0) });
 

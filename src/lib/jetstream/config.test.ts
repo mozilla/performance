@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildComparisonTable } from '$lib/speedometer/table';
+import { buildComparisonTable } from '#lib/speedometer/table.js';
 import { JETSTREAM_NAMING } from './config';
 import { toMeasurements } from './data';
 

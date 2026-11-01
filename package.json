@@ -19,27 +19,31 @@
 		"test:e2e:ui": "playwright test --ui"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.62.1",
-		"@sveltejs/adapter-static": "^3.0.8",
-		"@sveltejs/kit": "^2.20.0",
-		"@sveltejs/vite-plugin-svelte": "^5.0.3",
+		"@playwright/test": "^1.64.1",
+		"@sveltejs/adapter-static": "^4.0.1",
+		"@sveltejs/kit": "^3.1.1",
+		"@sveltejs/vite-plugin-svelte": "^7.3.1",
 		"@testing-library/jest-dom": "^7.0.1",
 		"@testing-library/svelte": "^5.4.2",
-		"@vitest/coverage-v8": "^4.1.11",
+		"@types/node": "^24.19.2",
+		"@vitest/coverage-v8": "^5.0.5",
 		"jsdom": "^29.1.1",
 		"oxlint": "^1.79.0",
 		"prettier": "^3.9.6",
 		"prettier-plugin-svelte": "^4.1.1",
-		"svelte": "^5.20.0",
-		"svelte-check": "^4.1.4",
-		"typescript": "^5.7.3",
-		"vite": "^6.0.11",
-		"vitest": "^4.1.11"
+		"svelte": "^5.57.3",
+		"svelte-check": "^4.7.7",
+		"typescript": "^6.0.3",
+		"vite": "^8.3.5",
+		"vitest": "^5.0.5"
 	},
 	"dependencies": {
 		"chart.js": "^4.4.7",
 		"chartjs-adapter-date-fns": "^3.0.0",
 		"chartjs-plugin-annotation": "^3.1.0",
 		"date-fns": "^4.1.0"
+	},
+	"imports": {
+		"#lib/*": "./src/lib/*"
 	}
 }

@@ -6,7 +6,7 @@ import RangePicker from './RangePicker.svelte';
 /**
  * The scroll rule is tested by behaviour, not by attribute, in
  * `e2e/layout.spec.ts` -- clicking each control and looking at where the page
- * ends up. Asserting that `data-sveltekit-noscroll` is present says nothing
+ * ends up. Asserting that `data-sveltekit-reset="false"` is present says nothing
  * about whether the page actually stays put, and fails on a change that
  * suppressed the reset some other way and worked fine.
  *
@@ -16,12 +16,12 @@ import RangePicker from './RangePicker.svelte';
  * runner rather than the app.
  */
 describe('PlatformPicker scroll suppression', () => {
-	it('keeps every option inside a noscroll region', () => {
+	it('keeps every option inside a no-reset region', () => {
 		const { container } = render(PlatformPicker, {
 			props: { selected: 'osxm4', href: (key: string) => `/speedometer/?os=${key}` }
 		});
 
-		const region = container.querySelector('[data-sveltekit-noscroll]');
+		const region = container.querySelector('[data-sveltekit-reset="false"]');
 		expect(region).not.toBeNull();
 
 		const links = container.querySelectorAll('a');

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { MachineGroup } from '$lib/speedometer/machines';
+	import type { MachineGroup } from '#lib/speedometer/machines.js';
 
 	interface Props {
 		groups: MachineGroup[];
@@ -17,7 +17,7 @@
 	onmouseleave={() => onhover(null)}
 	role="group"
 	aria-label="Machines"
-	data-sveltekit-noscroll
+	data-sveltekit-reset="false"
 >
 	<span class="heading">Machines:</span>
 	{#each groups as group (group.name)}

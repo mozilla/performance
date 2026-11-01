@@ -1,5 +1,5 @@
 /** Test helpers for building Treeherder-shaped fixtures. */
-import type { Measurement, PerfSignature } from '$lib/api/treeherder';
+import type { Measurement, PerfSignature } from '#lib/api/treeherder.js';
 
 let nextId = 1;
 

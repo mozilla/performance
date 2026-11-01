@@ -6,7 +6,7 @@
  * recording per replicate, NavBench has one per replicate per site/scenario --
  * but the pairing rule and the failure modes are the same.
  */
-import type { TarEntry } from '$lib/api/targz';
+import type { TarEntry } from '#lib/api/targz.js';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm'];
 

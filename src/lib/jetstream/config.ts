@@ -5,8 +5,8 @@
  * still called "jetstream"; both are load-bearing and neither can be renamed
  * from here.
  */
-import { FRAMEWORK } from '$lib/api/treeherder';
-import type { RowNaming } from '$lib/speedometer/table';
+import { FRAMEWORK } from '#lib/api/treeherder.js';
+import type { RowNaming } from '#lib/speedometer/table.js';
 
 export const JETSTREAM_FRAMEWORK = FRAMEWORK.browsertime;
 export const JETSTREAM_SUITE = 'jetstream3';

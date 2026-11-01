@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FRAMEWORK } from '$lib/api/treeherder';
+import { FRAMEWORK } from '#lib/api/treeherder.js';
 import {
 	type AndroidTest,
 	axisLabel,

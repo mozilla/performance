@@ -1,7 +1,7 @@
 import { render } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import MachineLegend from './MachineLegend.svelte';
-import { groupByMachine } from '$lib/speedometer/machines';
+import { groupByMachine } from '#lib/speedometer/machines.js';
 import { measurement } from '../../tests/factories';
 
 const groups = groupByMachine([

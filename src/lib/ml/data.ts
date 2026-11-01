@@ -5,7 +5,7 @@
  * (date, test, suite, platform, repository, value) rows -- ~144k of them --
  * which the dashboard renames and indexes before charting.
  */
-import { fetchJson } from '$lib/api/http';
+import { fetchJson } from '#lib/api/http.js';
 
 export const ML_DATA_URL =
 	'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/ml-data.json';

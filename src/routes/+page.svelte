@@ -1,11 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import PieChart from '$lib/components/PieChart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import { resource } from '$lib/resource.svelte';
-	import { fetchBugzillaData } from '$lib/bugs/api';
-	import * as links from '$lib/bugs/links';
+	import PieChart from '#lib/components/PieChart.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import { resource } from '#lib/resource.svelte.js';
+	import { fetchBugzillaData } from '#lib/bugs/api.js';
+	import * as links from '#lib/bugs/links.js';
 	import {
 		allRatedBugs,
 		byComponent,
@@ -17,9 +17,9 @@
 		isoDate,
 		triageCounts,
 		type Slice
-	} from '$lib/bugs/stats';
-	import { nextSort, sortRows, type ColumnType, type SortState } from '$lib/sort';
-	import { parseState, patchUrl, str } from '$lib/url-state';
+	} from '#lib/bugs/stats.js';
+	import { nextSort, sortRows, type ColumnType, type SortState } from '#lib/sort.js';
+	import { parseState, patchUrl, str } from '#lib/url-state.js';
 
 	const schema = {
 		q: str(''),
@@ -29,8 +29,7 @@
 
 	const view = $derived(parseState(schema, page.url));
 	const href = (patch: Partial<typeof view>) => patchUrl(schema, page.url, patch);
-	const apply = (patch: Partial<typeof view>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+	const apply = (patch: Partial<typeof view>) => goto(href(patch), { replace: true, reset: false });
 
 	const bugs = resource((signal) => fetchBugzillaData(signal));
 
@@ -163,7 +162,7 @@
 			<p class="count">Results found: {sorted.length}</p>
 
 			<div class="table-scroll">
-				<table data-sveltekit-noscroll>
+				<table data-sveltekit-reset="false">
 					<thead>
 						<tr>
 							{#each COLUMNS as column (column.key)}

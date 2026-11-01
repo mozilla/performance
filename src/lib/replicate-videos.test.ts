@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pairVideosWithReplicates, videoIndex } from './replicate-videos';
-import type { TarEntry } from '$lib/api/targz';
+import type { TarEntry } from '#lib/api/targz.js';
 
 const entry = (name: string): TarEntry => ({ name, data: new Uint8Array(0) });
 

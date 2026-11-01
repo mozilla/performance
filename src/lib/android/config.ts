@@ -1,4 +1,4 @@
-import { FRAMEWORK } from '$lib/api/treeherder';
+import { FRAMEWORK } from '#lib/api/treeherder.js';
 
 export const MOZPERFTEST_FRAMEWORK = 15;
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { PerfSignature } from '$lib/api/treeherder';
+	import type { PerfSignature } from '#lib/api/treeherder.js';
 	import type { SpeedometerSuite } from './suite';
 	import type { RowNaming } from './table';
 	import SubtestChart from './SubtestChart.svelte';

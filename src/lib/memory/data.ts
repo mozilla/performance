@@ -6,7 +6,7 @@
  * exactly the shape the default display mode reads -- and with no per-version
  * rows there are no release markers either.
  */
-import { type CsvRow, fetchCsv, numeric } from '$lib/api/csv';
+import { type CsvRow, fetchCsv, numeric } from '#lib/api/csv.js';
 import { ALL, CHANNEL_URLS, type Channel, type Probe } from './config';
 
 /** Columns that describe a row rather than carry a probe value. */

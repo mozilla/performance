@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { annotationsWithinDays } from '$lib/annotations';
+	import { annotationsWithinDays } from '#lib/annotations.js';
 	import { page } from '$app/state';
-	import Chart from '$lib/components/Chart.svelte';
-	import ComparisonTable from '$lib/components/ComparisonTable.svelte';
-	import RangePicker from '$lib/components/RangePicker.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import VideoPanel from '$lib/components/VideoPanel.svelte';
-	import { perfherderGraphsUrl, pushlogUrl, treeherderJobUrl } from '$lib/api/treeherder';
-	import { resource } from '$lib/resource.svelte';
+	import Chart from '#lib/components/Chart.svelte';
+	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
+	import RangePicker from '#lib/components/RangePicker.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import VideoPanel from '#lib/components/VideoPanel.svelte';
+	import { perfherderGraphsUrl, pushlogUrl, treeherderJobUrl } from '#lib/api/treeherder.js';
+	import { resource } from '#lib/resource.svelte.js';
 	import {
 		annotationsFor,
 		displayName,
@@ -20,7 +20,7 @@
 		proseList,
 		scenariosIn,
 		sitesIn
-	} from '$lib/navbench/config';
+	} from '#lib/navbench/config.js';
 	import {
 		loadNavBenchMeasurements,
 		loadNavBenchSignatures,
@@ -28,7 +28,7 @@
 		signaturesForTest,
 		TABLE_WINDOW_DAYS,
 		testsIn
-	} from '$lib/navbench/data';
+	} from '#lib/navbench/data.js';
 	import {
 		navBenchHref,
 		type NavBenchState,
@@ -36,18 +36,22 @@
 		openReplicateIndex,
 		parseNavBenchState,
 		withVideoClosed
-	} from '$lib/navbench/state';
-	import { defaultGroup, loadNavBenchVideos } from '$lib/navbench/video';
+	} from '#lib/navbench/state.js';
+	import { defaultGroup, loadNavBenchVideos } from '#lib/navbench/video.js';
 	import SubtestCharts from './SubtestCharts.svelte';
-	import { NoVideoError } from '$lib/replicate-videos';
-	import { buildChartData, buildChartOptions, type ChartPoint } from '$lib/speedometer/chart';
-	import { nextSelection, type SelectedPoint, selectionIsLive } from '$lib/speedometer/selection';
-	import { buildComparisonTable, type RowNaming } from '$lib/speedometer/table';
+	import { NoVideoError } from '#lib/replicate-videos.js';
+	import { buildChartData, buildChartOptions, type ChartPoint } from '#lib/speedometer/chart.js';
+	import {
+		nextSelection,
+		type SelectedPoint,
+		selectionIsLive
+	} from '#lib/speedometer/selection.js';
+	import { buildComparisonTable, type RowNaming } from '#lib/speedometer/table.js';
 
 	const view = $derived(parseNavBenchState(page.url));
 	const href = (patch: Partial<NavBenchState>) => navBenchHref(page.url, patch);
 	const apply = (patch: Partial<NavBenchState>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+		goto(href(patch), { replace: true, reset: false });
 
 	// One field at a time: `view` is a fresh object per URL change, so reading it
 	// inside a resource makes that resource depend on the whole URL -- opening a
@@ -237,7 +241,7 @@
 		</p>
 	</div>
 
-	<nav class="platforms" aria-label="Platform" data-sveltekit-noscroll>
+	<nav class="platforms" aria-label="Platform" data-sveltekit-reset="false">
 		{#each NAVBENCH_PLATFORMS as entry (entry.key)}
 			<a href={href(withVideoClosed({ os: entry.key }))} class:active={view.os === entry.key}>
 				{entry.label}
@@ -306,7 +310,7 @@
 		</div>
 	{/if}
 
-	<div class="subtest-toggle" data-sveltekit-noscroll>
+	<div class="subtest-toggle" data-sveltekit-reset="false">
 		<a class="button" href={href({ subtestCharts: !view.subtestCharts })}>
 			{view.subtestCharts ? 'Hide' : 'Load'} All Subtest Charts
 		</a>

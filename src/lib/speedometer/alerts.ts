@@ -7,7 +7,7 @@ import {
 	fetchAlertSummary,
 	fetchSignatures,
 	type PerfSignature
-} from '$lib/api/treeherder';
+} from '#lib/api/treeherder.js';
 import { SCORE_TEST, SPEEDOMETER_FRAMEWORK, SPEEDOMETER_SUITE } from './config';
 
 /** Perfherder marks an alert invalid with status 3; those are never shown. */

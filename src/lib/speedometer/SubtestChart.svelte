@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { annotationsWithinDays } from '$lib/annotations';
-	import Chart from '$lib/components/Chart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import type { PerfSignature } from '$lib/api/treeherder';
-	import { resource } from '$lib/resource.svelte';
+	import { annotationsWithinDays } from '#lib/annotations.js';
+	import Chart from '#lib/components/Chart.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import type { PerfSignature } from '#lib/api/treeherder.js';
+	import { resource } from '#lib/resource.svelte.js';
 	import { axisLabel, buildChartData, buildChartOptions } from './chart';
 	import { loadMeasurements } from './data';
 	import { signaturesForTests, type SpeedometerSuite } from './suite';

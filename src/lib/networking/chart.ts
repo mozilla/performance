@@ -6,7 +6,7 @@ import {
 	annotationTooltipLines,
 	type AnnotationStyle,
 	buildAnnotationLines
-} from '$lib/annotations';
+} from '#lib/annotations.js';
 import type { Annotation, ChartConfig } from './config';
 import { latestValue, type PieData, type SeriesData } from './data';
 

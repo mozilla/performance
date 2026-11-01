@@ -9,7 +9,7 @@
  * own `measurement_unit` and `lower_is_better`. Upstream's guess got `score`
  * and `score-internal` wrong, charting them as lower-is-better.
  */
-import { perfherder2Url, type PerfSignature } from '$lib/api/treeherder';
+import { perfherder2Url, type PerfSignature } from '#lib/api/treeherder.js';
 import { PLATFORMS, SPEEDOMETER_FRAMEWORK } from './config';
 import { speedometerSchemaFor } from './state';
 import type { SpeedometerSuite } from './suite';

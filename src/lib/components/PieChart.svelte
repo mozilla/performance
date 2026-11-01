@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ChartData, ChartOptions, Plugin } from 'chart.js';
 	import Chart from './Chart.svelte';
-	import type { Slice } from '$lib/bugs/stats';
+	import type { Slice } from '#lib/bugs/stats.js';
 
 	interface Props {
 		slices: Slice[];

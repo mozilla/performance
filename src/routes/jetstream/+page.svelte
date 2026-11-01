@@ -1,23 +1,27 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import Chart from '$lib/components/Chart.svelte';
-	import ComparisonTable from '$lib/components/ComparisonTable.svelte';
-	import RangePicker from '$lib/components/RangePicker.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import ToggleChip from '$lib/components/ToggleChip.svelte';
-	import { perfherderGraphsUrl, pushlogUrl, type Repository } from '$lib/api/treeherder';
-	import { resource } from '$lib/resource.svelte';
+	import Chart from '#lib/components/Chart.svelte';
+	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
+	import RangePicker from '#lib/components/RangePicker.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import ToggleChip from '#lib/components/ToggleChip.svelte';
+	import { perfherderGraphsUrl, pushlogUrl, type Repository } from '#lib/api/treeherder.js';
+	import { resource } from '#lib/resource.svelte.js';
 	import {
 		buildAlertMarkers,
 		fetchAlertsForTest,
 		markersWithinDays,
 		mergeAlertData
-	} from '$lib/speedometer/alerts';
-	import { buildChartData, buildChartOptions, type ChartPoint } from '$lib/speedometer/chart';
-	import { nextSelection, type SelectedPoint, selectionIsLive } from '$lib/speedometer/selection';
-	import { buildComparisonTable } from '$lib/speedometer/table';
-	import { chartSignatures, ALERT_WINDOW_DAYS } from '$lib/speedometer/data';
+	} from '#lib/speedometer/alerts.js';
+	import { buildChartData, buildChartOptions, type ChartPoint } from '#lib/speedometer/chart.js';
+	import {
+		nextSelection,
+		type SelectedPoint,
+		selectionIsLive
+	} from '#lib/speedometer/selection.js';
+	import { buildComparisonTable } from '#lib/speedometer/table.js';
+	import { chartSignatures, ALERT_WINDOW_DAYS } from '#lib/speedometer/data.js';
 	import {
 		displayName,
 		JETSTREAM_FRAMEWORK,
@@ -26,22 +30,22 @@
 		PLATFORMS,
 		platformByKey,
 		SCORE_TEST
-	} from '$lib/jetstream/config';
+	} from '#lib/jetstream/config.js';
 	import {
 		fetchJetStreamSnapshot,
 		loadJetStreamSeries,
 		loadJetStreamSignatures,
 		testsIn,
 		toMeasurements
-	} from '$lib/jetstream/data';
-	import { FILTER_PRESETS, filterTests } from '$lib/jetstream/filter';
-	import { jetStreamHref, type JetStreamState, parseJetStreamState } from '$lib/jetstream/state';
-	import { toggleHidden } from '$lib/speedometer/state';
+	} from '#lib/jetstream/data.js';
+	import { FILTER_PRESETS, filterTests } from '#lib/jetstream/filter.js';
+	import { jetStreamHref, type JetStreamState, parseJetStreamState } from '#lib/jetstream/state.js';
+	import { toggleHidden } from '#lib/speedometer/state.js';
 
 	const view = $derived(parseJetStreamState(page.url));
 	const href = (patch: Partial<JetStreamState>) => jetStreamHref(page.url, patch);
 	const apply = (patch: Partial<JetStreamState>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+		goto(href(patch), { replace: true, reset: false });
 
 	const platform = $derived(platformByKey(view.os));
 
@@ -186,7 +190,7 @@
 <svelte:head><title>JetStream 3 — {displayName(view.test)}</title></svelte:head>
 
 <div class="page">
-	<nav class="platforms" aria-label="Platform" data-sveltekit-noscroll>
+	<nav class="platforms" aria-label="Platform" data-sveltekit-reset="false">
 		{#each PLATFORMS as entry (entry.key)}
 			<a href={href({ os: entry.key })} class:active={view.os === entry.key}>{entry.label}</a>
 		{/each}
@@ -268,7 +272,7 @@
 				value={view.filter}
 				oninput={(event) => apply({ filter: event.currentTarget.value })}
 			/>
-			<span class="presets" data-sveltekit-noscroll>
+			<span class="presets" data-sveltekit-reset="false">
 				<strong>Presets:</strong>
 				{#each FILTER_PRESETS as preset (preset.label)}
 					<a href={href({ filter: preset.value })} class:active={view.filter === preset.value}>

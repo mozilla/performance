@@ -2,6 +2,9 @@
  * Typed URL state. Controls read query parameters and apply patches that keep
  * unrelated fields and the hash intact. Default values are omitted from URLs.
  */
+
+import type { ReadonlyURL } from '$app/state';
+
 export interface Field<T> {
 	/** Value used when the parameter is absent or unparseable. */
 	default: T;
@@ -98,7 +101,7 @@ export function stringSet(defaultValue: readonly string[] = []): Field<ReadonlyS
 }
 
 /** Read the full state for `schema` out of a URL's query string. */
-export function parseState<S extends Schema>(schema: S, url: URL): StateOf<S> {
+export function parseState<S extends Schema>(schema: S, url: ReadonlyURL): StateOf<S> {
 	const out = {} as Record<string, unknown>;
 	for (const [key, field] of Object.entries(schema)) {
 		out[key] = field.parse(url.searchParams.get(key));
@@ -115,7 +118,7 @@ export function parseState<S extends Schema>(schema: S, url: URL): StateOf<S> {
  */
 export function patchUrl<S extends Schema>(
 	schema: S,
-	url: URL,
+	url: ReadonlyURL,
 	patch: Partial<StateOf<S>>
 ): string {
 	const next = { ...parseState(schema, url), ...patch };

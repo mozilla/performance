@@ -1,5 +1,5 @@
-import { FRAMEWORK } from '$lib/api/treeherder';
-import type { Field } from '$lib/url-state';
+import { FRAMEWORK } from '#lib/api/treeherder.js';
+import type { Field } from '#lib/url-state.js';
 
 export const SPEEDOMETER_FRAMEWORK = FRAMEWORK.browsertime;
 export const SPEEDOMETER_SUITE = 'speedometer3';

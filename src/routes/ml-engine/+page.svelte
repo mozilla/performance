@@ -2,10 +2,10 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import EngineChart from './EngineChart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import { resource } from '$lib/resource.svelte';
-	import { dateRange, failureRate, fetchEngineData } from '$lib/ml/engine';
-	import { parseState, patchUrl, str } from '$lib/url-state';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import { resource } from '#lib/resource.svelte.js';
+	import { dateRange, failureRate, fetchEngineData } from '#lib/ml/engine.js';
+	import { parseState, patchUrl, str } from '#lib/url-state.js';
 
 	const schema = { engine: str('') };
 
@@ -36,11 +36,7 @@
 	};
 
 	const select = (event: Event & { currentTarget: HTMLSelectElement }) =>
-		goto(href({ engine: event.currentTarget.value }), {
-			replaceState: true,
-			noScroll: true,
-			keepFocus: true
-		});
+		goto(href({ engine: event.currentTarget.value }), { replace: true, reset: false });
 </script>
 
 <svelte:head><title>Firefox AI Runtime Engines</title></svelte:head>
@@ -75,7 +71,7 @@
 			</select>
 		</label>
 		{#if view.engine !== ''}
-			<a class="clear" href={href({ engine: '' })} data-sveltekit-noscroll>Show all</a>
+			<a class="clear" href={href({ engine: '' })} data-sveltekit-reset="false">Show all</a>
 		{/if}
 	</div>
 
