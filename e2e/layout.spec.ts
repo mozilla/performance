@@ -153,7 +153,7 @@ test('NavBench: recordings are grouped by site and open on the charted one', asy
  *
  * Every control here is a real link, so SvelteKit scrolls to the top on click
  * like a browser does -- which threw the page to the top when you picked a
- * range on a chart you were already looking at. `data-sveltekit-noscroll`
+ * range on a chart you were already looking at. `data-sveltekit-reset="false"`
  * suppresses it, but the attribute is the mechanism, not the behaviour: a
  * control that suppressed the reset some other way would be equally correct.
  * So these click the real thing and look at where the page ended up.

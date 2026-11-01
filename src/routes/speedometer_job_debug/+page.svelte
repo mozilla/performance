@@ -1,40 +1,40 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { base } from '$app/paths';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
-	import Chart from '$lib/components/Chart.svelte';
-	import PlatformPicker from '$lib/components/PlatformPicker.svelte';
-	import RangePicker from '$lib/components/RangePicker.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import ToggleChip from '$lib/components/ToggleChip.svelte';
+	import Chart from '#lib/components/Chart.svelte';
+	import PlatformPicker from '#lib/components/PlatformPicker.svelte';
+	import RangePicker from '#lib/components/RangePicker.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import ToggleChip from '#lib/components/ToggleChip.svelte';
 	import MachineLegend from './MachineLegend.svelte';
-	import { fetchTaskRef, taskclusterTaskUrl } from '$lib/api/treeherder';
-	import { BROWSERS, classify } from '$lib/browsers';
-	import { resource } from '$lib/resource.svelte';
-	import { ALL_TESTS, displayName, lowerIsBetter, platformByKey } from '$lib/speedometer/config';
+	import { fetchTaskRef, taskclusterTaskUrl } from '#lib/api/treeherder.js';
+	import { BROWSERS, classify } from '#lib/browsers.js';
+	import { resource } from '#lib/resource.svelte.js';
+	import { ALL_TESTS, displayName, lowerIsBetter, platformByKey } from '#lib/speedometer/config.js';
 	import {
 		chartSignatures,
 		loadMeasurements,
 		loadSignatures,
 		TABLE_WINDOW_DAYS,
 		tableSignatures
-	} from '$lib/speedometer/data';
+	} from '#lib/speedometer/data.js';
 	import {
 		buildMachineChartData,
 		buildMachineChartOptions,
 		type MachinePoint
-	} from '$lib/speedometer/job-debug-chart';
-	import { groupByMachine, paddedBounds } from '$lib/speedometer/machines';
-	import { parseSpeedometerState, speedometerHref } from '$lib/speedometer/state';
-	import { buildComparisonTable } from '$lib/speedometer/table';
-	import ComparisonTable from '$lib/components/ComparisonTable.svelte';
+	} from '#lib/speedometer/job-debug-chart.js';
+	import { groupByMachine, paddedBounds } from '#lib/speedometer/machines.js';
+	import { parseSpeedometerState, speedometerHref } from '#lib/speedometer/state.js';
+	import { buildComparisonTable } from '#lib/speedometer/table.js';
+	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
 
 	const view = $derived(parseSpeedometerState(page.url));
 	const platform = $derived(platformByKey(view.os));
 
 	const href = (patch: Parameters<typeof speedometerHref>[1]) => speedometerHref(page.url, patch);
 	const apply = (patch: Parameters<typeof speedometerHref>[1]) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+		goto(href(patch), { replace: true, reset: false });
 
 	// One field at a time: `view` is a fresh object per URL change, so reading it
 	// inside a resource makes that resource depend on the whole URL. See the
@@ -137,7 +137,7 @@
 	const loading = $derived(signatures.loading || chartData.loading);
 
 	const mainDashboardHref = $derived(
-		speedometerHref(new URL(`${base}/speedometer/`, page.url), view)
+		speedometerHref(new URL(resolve('/speedometer'), page.url.href), view)
 	);
 </script>
 

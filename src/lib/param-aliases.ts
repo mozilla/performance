@@ -1,3 +1,5 @@
+import type { ReadonlyURL } from '$app/state';
+
 /** Normalize query aliases while preserving unrelated parameters. */
 export interface ParamAliases {
 	/** Alias -> canonical parameter name. */
@@ -11,7 +13,7 @@ export interface ParamAliases {
  * Returns the input URL unchanged when no normalization is needed; otherwise
  * returns a copy with aliases and unsupported parameters removed.
  */
-export function normalizeParams(url: URL, { rename, drop }: ParamAliases): URL {
+export function normalizeParams(url: ReadonlyURL, { rename, drop }: ParamAliases): ReadonlyURL {
 	const renames = Object.entries(rename ?? {}).filter(
 		([from, to]) => url.searchParams.has(from) && !url.searchParams.has(to)
 	);

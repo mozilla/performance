@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { RANGES } from '$lib/speedometer/config';
+	import { RANGES } from '#lib/speedometer/config.js';
 
 	interface Props {
 		selected: number;
@@ -9,7 +9,7 @@
 	let { selected, href }: Props = $props();
 </script>
 
-<nav class="ranges" aria-label="Time range" data-sveltekit-noscroll>
+<nav class="ranges" aria-label="Time range" data-sveltekit-reset="false">
 	{#each RANGES as range (range.days)}
 		<a
 			href={href(range.days)}

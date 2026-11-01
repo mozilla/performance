@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { nextSort, type SortDirection } from '$lib/sort';
+	import { nextSort, type SortDirection } from '#lib/sort.js';
 	import {
 		type ComparisonTable,
 		comparisonColumnType,
@@ -7,7 +7,7 @@
 		sortComparisonRows,
 		TEST_COLUMN,
 		valueColumnKey
-	} from '$lib/speedometer/table';
+	} from '#lib/speedometer/table.js';
 
 	interface Props {
 		table: ComparisonTable;
@@ -41,7 +41,7 @@
 	<table class="styled-table">
 		<!-- Sorting reorders the rows in place, so keep the scroll position. Row
 		     links still scroll to the top, where the selected test's chart is. -->
-		<thead data-sveltekit-noscroll>
+		<thead data-sveltekit-reset="false">
 			<tr>
 				<th rowspan="2" class="name-header" aria-sort={ariaSort(TEST_COLUMN)}>
 					<a href={nextHref(TEST_COLUMN)} class:sorted={sort === TEST_COLUMN}>

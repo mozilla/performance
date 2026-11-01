@@ -14,9 +14,13 @@ import {
 	findPerfherderArtifact,
 	type PerfherderData,
 	replicatesFor
-} from '$lib/api/taskcluster';
-import { fetchTaskRef, type Repository, type TaskRef } from '$lib/api/treeherder';
-import { NoVideoError, pairVideosWithReplicates, type ReplicateVideo } from '$lib/replicate-videos';
+} from '#lib/api/taskcluster.js';
+import { fetchTaskRef, type Repository, type TaskRef } from '#lib/api/treeherder.js';
+import {
+	NoVideoError,
+	pairVideosWithReplicates,
+	type ReplicateVideo
+} from '#lib/replicate-videos.js';
 import type { AndroidTest } from './config';
 
 export interface ReplicateSet {

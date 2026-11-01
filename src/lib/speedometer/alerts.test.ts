@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Alert, AlertSummary } from '$lib/api/treeherder';
+import type { Alert, AlertSummary } from '#lib/api/treeherder.js';
 import { signature } from '../../tests/factories';
 import {
 	type AlertData,

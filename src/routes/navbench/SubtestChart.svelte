@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { annotationsWithinDays } from '$lib/annotations';
-	import Chart from '$lib/components/Chart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import type { PerfSignature } from '$lib/api/treeherder';
-	import { annotationsFor, displayName } from '$lib/navbench/config';
-	import { loadNavBenchMeasurements, signaturesForTest } from '$lib/navbench/data';
-	import { resource } from '$lib/resource.svelte';
-	import { buildChartData, buildChartOptions } from '$lib/speedometer/chart';
+	import { annotationsWithinDays } from '#lib/annotations.js';
+	import Chart from '#lib/components/Chart.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import type { PerfSignature } from '#lib/api/treeherder.js';
+	import { annotationsFor, displayName } from '#lib/navbench/config.js';
+	import { loadNavBenchMeasurements, signaturesForTest } from '#lib/navbench/data.js';
+	import { resource } from '#lib/resource.svelte.js';
+	import { buildChartData, buildChartOptions } from '#lib/speedometer/chart.js';
 
 	interface Props {
 		test: string;

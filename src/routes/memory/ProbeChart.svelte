@@ -1,14 +1,14 @@
 <script lang="ts">
 	import { Chart as ChartJs } from 'chart.js/auto';
-	import Chart from '$lib/components/Chart.svelte';
-	import type { Probe } from '$lib/memory/config';
+	import Chart from '#lib/components/Chart.svelte';
+	import type { Probe } from '#lib/memory/config.js';
 	import {
 		buildProbeData,
 		buildProbeOptions,
 		datasetsForProbe,
 		versionEndLabels
-	} from '$lib/memory/chart';
-	import { type MemoryRow, thresholdCrossings } from '$lib/memory/data';
+	} from '#lib/memory/chart.js';
+	import { type MemoryRow, thresholdCrossings } from '#lib/memory/data.js';
 
 	// Registered once at module scope; Chart.js ignores a repeat registration.
 	ChartJs.register(versionEndLabels);

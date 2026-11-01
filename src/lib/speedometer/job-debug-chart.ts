@@ -3,7 +3,7 @@
  * coloured and shaped so individual machines can be told apart.
  */
 import type { ChartData, ChartOptions } from 'chart.js';
-import type { Repository } from '$lib/api/treeherder';
+import type { Repository } from '#lib/api/treeherder.js';
 import { lowerIsBetter } from './config';
 import type { Bounds, MachineGroup } from './machines';
 

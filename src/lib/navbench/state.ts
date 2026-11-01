@@ -6,9 +6,10 @@
  * recording needs a group as well as a replicate, because one job's archive
  * holds a set per site and scenario.
  */
-import { normalizeParams } from '$lib/param-aliases';
-import { bool, parseState, patchUrl, str } from '$lib/url-state';
-import { rangeField } from '$lib/speedometer/config';
+import type { ReadonlyURL } from '$app/state';
+import { normalizeParams } from '#lib/param-aliases.js';
+import { bool, parseState, patchUrl, str } from '#lib/url-state.js';
+import { rangeField } from '#lib/speedometer/config.js';
 import { DEFAULT_PLATFORM, OVERALL_TEST, PLATFORM_KEYS } from './config';
 
 export const navBenchSchema = {
@@ -45,15 +46,15 @@ export interface NavBenchState {
 	dir: 'asc' | 'desc';
 }
 
-function normalizePageParams(url: URL): URL {
+function normalizePageParams(url: ReadonlyURL): ReadonlyURL {
 	return normalizeParams(url, { rename: { subtest: 'test' } });
 }
 
-export function parseNavBenchState(url: URL): NavBenchState {
+export function parseNavBenchState(url: ReadonlyURL): NavBenchState {
 	return parseState(navBenchSchema, normalizePageParams(url)) as NavBenchState;
 }
 
-export function navBenchHref(url: URL, patch: Partial<NavBenchState>): string {
+export function navBenchHref(url: ReadonlyURL, patch: Partial<NavBenchState>): string {
 	return patchUrl(navBenchSchema, normalizePageParams(url), patch);
 }
 

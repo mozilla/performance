@@ -1,6 +1,7 @@
-import type { Repository } from '$lib/api/treeherder';
-import { normalizeParams } from '$lib/param-aliases';
-import { bool, parseState, patchUrl, str, stringSet } from '$lib/url-state';
+import type { ReadonlyURL } from '$app/state';
+import type { Repository } from '#lib/api/treeherder.js';
+import { normalizeParams } from '#lib/param-aliases.js';
+import { bool, parseState, patchUrl, str, stringSet } from '#lib/url-state.js';
 import { DEFAULT_PLATFORM, PLATFORM_KEYS, rangeField, SCORE_TEST } from './config';
 
 const REPOSITORIES: readonly Repository[] = ['mozilla-central', 'autoland'];
@@ -61,12 +62,12 @@ export type SpeedometerState = {
 	dir: 'asc' | 'desc';
 };
 
-function normalizePageParams(url: URL): URL {
+function normalizePageParams(url: ReadonlyURL): ReadonlyURL {
 	return normalizeParams(url, { rename: { repo: 'repository' } });
 }
 
 export function parseSpeedometerState(
-	url: URL,
+	url: ReadonlyURL,
 	schema: SpeedometerSchema = speedometerSchema
 ): SpeedometerState {
 	return parseState(schema, normalizePageParams(url)) as SpeedometerState;
@@ -74,7 +75,7 @@ export function parseSpeedometerState(
 
 /** URL for the current view with `patch` applied and everything else kept. */
 export function speedometerHref(
-	url: URL,
+	url: ReadonlyURL,
 	patch: Partial<SpeedometerState>,
 	schema: SpeedometerSchema = speedometerSchema
 ): string {

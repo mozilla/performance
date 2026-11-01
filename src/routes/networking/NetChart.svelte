@@ -1,16 +1,16 @@
 <script lang="ts">
-	import Chart from '$lib/components/Chart.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import { resource } from '$lib/resource.svelte';
-	import { ANNOTATIONS, type ChartConfig } from '$lib/networking/config';
+	import Chart from '#lib/components/Chart.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import { resource } from '#lib/resource.svelte.js';
+	import { ANNOTATIONS, type ChartConfig } from '#lib/networking/config.js';
 	import {
 		annotationsFor,
 		buildPieChartData,
 		buildPieChartOptions,
 		buildSeriesChartData,
 		buildSeriesChartOptions
-	} from '$lib/networking/chart';
-	import { loadChart } from '$lib/networking/data';
+	} from '#lib/networking/chart.js';
+	import { loadChart } from '#lib/networking/data.js';
 
 	interface Props {
 		id: string;

@@ -1,4 +1,4 @@
-import { fetchJson } from '$lib/api/http';
+import { fetchJson } from '#lib/api/http.js';
 
 export const ML_ENGINE_DATA_URL =
 	'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/ml-engine-data.json';

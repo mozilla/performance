@@ -8,8 +8,8 @@
 		layoutFor,
 		type Platform,
 		PLATFORMS
-	} from '$lib/networking/config';
-	import { parseState, patchUrl, str } from '$lib/url-state';
+	} from '#lib/networking/config.js';
+	import { parseState, patchUrl, str } from '#lib/url-state.js';
 
 	const schema = {
 		platform: str('desktop', PLATFORMS),
@@ -30,7 +30,7 @@
 	<h1>Firefox Networking - {platformLabel[view.platform]}</h1>
 	<p class="lede">Networking telemetry from the pageload event, last 365 days unless noted.</p>
 
-	<div class="controls" data-sveltekit-noscroll>
+	<div class="controls" data-sveltekit-reset="false">
 		<div class="control-group">
 			<span class="control-label">Platform</span>
 			<div class="pills">

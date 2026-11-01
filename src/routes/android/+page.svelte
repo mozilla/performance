@@ -1,20 +1,20 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import Chart from '$lib/components/Chart.svelte';
-	import ComparisonTable from '$lib/components/ComparisonTable.svelte';
-	import RangePicker from '$lib/components/RangePicker.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import ToggleChip from '$lib/components/ToggleChip.svelte';
-	import VideoPanel from '$lib/components/VideoPanel.svelte';
+	import Chart from '#lib/components/Chart.svelte';
+	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
+	import RangePicker from '#lib/components/RangePicker.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import ToggleChip from '#lib/components/ToggleChip.svelte';
+	import VideoPanel from '#lib/components/VideoPanel.svelte';
 	import {
 		perfherderGraphsUrl,
 		pushlogUrl,
 		treeherderJobUrl,
 		type Repository
-	} from '$lib/api/treeherder';
-	import { resource } from '$lib/resource.svelte';
-	import { axisLabel, deviceByKey, DEVICES, testByKey, TESTS } from '$lib/android/config';
+	} from '#lib/api/treeherder.js';
+	import { resource } from '#lib/resource.svelte.js';
+	import { axisLabel, deviceByKey, DEVICES, testByKey, TESTS } from '#lib/android/config.js';
 	import {
 		ALERT_WINDOW_DAYS,
 		loadAndroidMeasurements,
@@ -23,7 +23,7 @@
 		signaturesForTest,
 		TABLE_WINDOW_DAYS,
 		testsWithData
-	} from '$lib/android/data';
+	} from '#lib/android/data.js';
 	import {
 		androidHref,
 		type AndroidState,
@@ -31,24 +31,28 @@
 		openReplicateIndex,
 		parseAndroidState,
 		withVideoClosed
-	} from '$lib/android/state';
-	import { loadReplicateVideos } from '$lib/android/video';
-	import { NoVideoError } from '$lib/replicate-videos';
+	} from '#lib/android/state.js';
+	import { loadReplicateVideos } from '#lib/android/video.js';
+	import { NoVideoError } from '#lib/replicate-videos.js';
 	import {
 		buildAlertMarkers,
 		fetchAlertsForTest,
 		markersWithinDays,
 		mergeAlertData
-	} from '$lib/speedometer/alerts';
-	import { buildChartData, buildChartOptions, type ChartPoint } from '$lib/speedometer/chart';
-	import { nextSelection, type SelectedPoint, selectionIsLive } from '$lib/speedometer/selection';
-	import { buildComparisonTable, type RowNaming } from '$lib/speedometer/table';
-	import { toggleHidden } from '$lib/speedometer/state';
+	} from '#lib/speedometer/alerts.js';
+	import { buildChartData, buildChartOptions, type ChartPoint } from '#lib/speedometer/chart.js';
+	import {
+		nextSelection,
+		type SelectedPoint,
+		selectionIsLive
+	} from '#lib/speedometer/selection.js';
+	import { buildComparisonTable, type RowNaming } from '#lib/speedometer/table.js';
+	import { toggleHidden } from '#lib/speedometer/state.js';
 
 	const view = $derived(parseAndroidState(page.url));
 	const href = (patch: Partial<AndroidState>) => androidHref(page.url, patch);
 	const apply = (patch: Partial<AndroidState>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+		goto(href(patch), { replace: true, reset: false });
 
 	const device = $derived(deviceByKey(view.device));
 	const test = $derived(testByKey(view.test));
@@ -219,7 +223,7 @@
 <svelte:head><title>Android — {test.label} ({device.label})</title></svelte:head>
 
 <div class="page">
-	<nav class="devices" aria-label="Device" data-sveltekit-noscroll>
+	<nav class="devices" aria-label="Device" data-sveltekit-reset="false">
 		{#each DEVICES as entry (entry.key)}
 			<a
 				href={href(withVideoClosed({ device: entry.key }))}

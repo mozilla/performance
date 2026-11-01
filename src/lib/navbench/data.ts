@@ -11,8 +11,8 @@ import {
 	type Measurement,
 	type PerfSignature,
 	selectCanonicalSignatures
-} from '$lib/api/treeherder';
-import { loadMeasurements } from '$lib/speedometer/data';
+} from '#lib/api/treeherder.js';
+import { loadMeasurements } from '#lib/speedometer/data.js';
 import {
 	NAVBENCH_FRAMEWORK,
 	NAVBENCH_REPOSITORY,

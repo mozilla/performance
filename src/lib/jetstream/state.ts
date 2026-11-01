@@ -1,7 +1,8 @@
-import type { Repository } from '$lib/api/treeherder';
-import { normalizeParams } from '$lib/param-aliases';
-import { JETSTREAM_RANGE_ALIASES, rangeField } from '$lib/speedometer/config';
-import { bool, parseState, patchUrl, str, stringSet } from '$lib/url-state';
+import type { ReadonlyURL } from '$app/state';
+import type { Repository } from '#lib/api/treeherder.js';
+import { normalizeParams } from '#lib/param-aliases.js';
+import { JETSTREAM_RANGE_ALIASES, rangeField } from '#lib/speedometer/config.js';
+import { bool, parseState, patchUrl, str, stringSet } from '#lib/url-state.js';
 import { DEFAULT_PLATFORM, PLATFORM_KEYS, SCORE_TEST } from './config';
 
 const REPOSITORIES: readonly Repository[] = ['mozilla-central', 'autoland'];
@@ -45,14 +46,14 @@ export interface JetStreamState {
 	dir: 'asc' | 'desc';
 }
 
-function normalizePageParams(url: URL): URL {
+function normalizePageParams(url: ReadonlyURL): ReadonlyURL {
 	return normalizeParams(url, { rename: { repo: 'repository' } });
 }
 
-export function parseJetStreamState(url: URL): JetStreamState {
+export function parseJetStreamState(url: ReadonlyURL): JetStreamState {
 	return parseState(jetStreamSchema, normalizePageParams(url)) as JetStreamState;
 }
 
-export function jetStreamHref(url: URL, patch: Partial<JetStreamState>): string {
+export function jetStreamHref(url: ReadonlyURL, patch: Partial<JetStreamState>): string {
 	return patchUrl(jetStreamSchema, normalizePageParams(url), patch);
 }

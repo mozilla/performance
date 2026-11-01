@@ -6,9 +6,9 @@
  * through speedometer-metrics.js. Here the differences are one object per
  * suite, and the dashboard reads them from it.
  */
-import type { ChartAnnotation } from '$lib/annotations';
-import { perfherderGraphsUrl, type PerfSignature, type Repository } from '$lib/api/treeherder';
-import type { BrowserKey } from '$lib/browsers';
+import type { ChartAnnotation } from '#lib/annotations.js';
+import { perfherderGraphsUrl, type PerfSignature, type Repository } from '#lib/api/treeherder.js';
+import type { BrowserKey } from '#lib/browsers.js';
 import {
 	ALL_TESTS,
 	type PlatformConfig,

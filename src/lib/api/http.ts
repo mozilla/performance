@@ -3,7 +3,7 @@
  * Successful cached responses last for the page lifetime; failures are evicted.
  * Use cache: false for changing measurements and pass the loader's abort signal.
  */
-import { createLimiter } from '$lib/limit';
+import { createLimiter } from '#lib/limit.js';
 
 const inFlight = new Map<string, Promise<unknown>>();
 

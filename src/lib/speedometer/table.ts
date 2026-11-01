@@ -1,12 +1,12 @@
-import type { Measurement } from '$lib/api/treeherder';
+import type { Measurement } from '#lib/api/treeherder.js';
 import {
 	BROWSERS,
 	type BrowserDef,
 	type BrowserKey,
 	classify,
 	isSafariApplication
-} from '$lib/browsers';
-import { type ColumnType, type SortDirection, sortRows } from '$lib/sort';
+} from '#lib/browsers.js';
+import { type ColumnType, type SortDirection, sortRows } from '#lib/sort.js';
 import { displayName, lowerIsBetter, unitFor } from './config';
 
 /** Browsers compared against Firefox, in table column order. */

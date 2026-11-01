@@ -1,9 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import Spinner from '$lib/components/Spinner.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
 	import ProbeChart from './ProbeChart.svelte';
-	import { resource } from '$lib/resource.svelte';
+	import { resource } from '#lib/resource.svelte.js';
 	import {
 		type Channel,
 		CHANNELS,
@@ -13,9 +13,9 @@
 		PROCESSES,
 		SECTIONS,
 		VERSION_CHANNEL
-	} from '$lib/memory/config';
-	import { fetchMemoryData, versionsIn } from '$lib/memory/data';
-	import { bool, parseState, patchUrl, str } from '$lib/url-state';
+	} from '#lib/memory/config.js';
+	import { fetchMemoryData, versionsIn } from '#lib/memory/data.js';
+	import { bool, parseState, patchUrl, str } from '#lib/url-state.js';
 
 	const schema = {
 		process: str(DEFAULT_PROCESS, PROCESSES),
@@ -25,8 +25,7 @@
 
 	const view = $derived(parseState(schema, page.url));
 	const href = (patch: Partial<typeof view>) => patchUrl(schema, page.url, patch);
-	const apply = (patch: Partial<typeof view>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+	const apply = (patch: Partial<typeof view>) => goto(href(patch), { replace: true, reset: false });
 
 	// `channel` on its own, not `view.channel`: `view` is a fresh object on every
 	// URL change, so reading it here would make the fetch depend on the whole
@@ -71,7 +70,7 @@
 		percentiles.
 	</p>
 
-	<div class="controls" data-sveltekit-noscroll>
+	<div class="controls" data-sveltekit-reset="false">
 		<div class="control-group">
 			<span class="control-label">Process</span>
 			<div class="pills">

@@ -1,7 +1,7 @@
 <script lang="ts">
-	import type { PerfSignature } from '$lib/api/treeherder';
-	import { OVERALL_TEST } from '$lib/navbench/config';
-	import { testsIn } from '$lib/navbench/data';
+	import type { PerfSignature } from '#lib/api/treeherder.js';
+	import { OVERALL_TEST } from '#lib/navbench/config.js';
+	import { testsIn } from '#lib/navbench/data.js';
 	import SubtestChart from './SubtestChart.svelte';
 
 	interface Props {

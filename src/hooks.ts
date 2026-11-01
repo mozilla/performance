@@ -2,7 +2,7 @@
  * Resolve .html URLs to extensionless routes without changing the address bar.
  * Preserve the path prefix: SvelteKit removes the app base after rerouting.
  */
-import type { Reroute } from '@sveltejs/kit';
+import type { Reroute } from '@sveltejs/kit/hooks';
 
 export const reroute: Reroute = ({ url }) => {
 	if (!url.pathname.endsWith('.html')) return;

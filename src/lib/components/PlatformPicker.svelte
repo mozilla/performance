@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { type PlatformConfig, PLATFORMS } from '$lib/speedometer/config';
+	import { type PlatformConfig, PLATFORMS } from '#lib/speedometer/config.js';
 
 	interface Props {
 		/** Defaults to every platform; Speedometer Experimental runs on four. */
@@ -15,7 +15,7 @@
 	const mobile = $derived(platforms.filter((p) => p.group === 'mobile'));
 </script>
 
-<nav class="platforms" aria-label="Platform" data-sveltekit-noscroll>
+<nav class="platforms" aria-label="Platform" data-sveltekit-reset="false">
 	<div class="group">
 		{#each desktop as platform (platform.key)}
 			<a

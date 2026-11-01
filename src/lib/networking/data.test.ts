@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseCsv } from '$lib/api/csv';
+import { parseCsv } from '#lib/api/csv.js';
 import type { ChartConfig } from './config';
 import { latestValue, reshape, reshapePie } from './data';
 

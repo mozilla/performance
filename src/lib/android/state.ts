@@ -1,8 +1,9 @@
-import type { Repository } from '$lib/api/treeherder';
-import { normalizeParams } from '$lib/param-aliases';
-import { bool, parseState, patchUrl, str, stringSet } from '$lib/url-state';
+import type { ReadonlyURL } from '$app/state';
+import type { Repository } from '#lib/api/treeherder.js';
+import { normalizeParams } from '#lib/param-aliases.js';
+import { bool, parseState, patchUrl, str, stringSet } from '#lib/url-state.js';
 
-import { rangeField } from '$lib/speedometer/config';
+import { rangeField } from '#lib/speedometer/config.js';
 import { DEFAULT_DEVICE, DEFAULT_TEST, DEVICE_KEYS, TEST_KEYS } from './config';
 
 const REPOSITORIES: readonly Repository[] = ['mozilla-central', 'autoland'];
@@ -41,18 +42,18 @@ export interface AndroidState {
 
 // timeline is a range alias. Recordings use Treeherder job IDs; Taskcluster
 // taskId/retryId cannot identify that selection and are removed from URLs.
-function normalizePageParams(url: URL): URL {
+function normalizePageParams(url: ReadonlyURL): ReadonlyURL {
 	return normalizeParams(url, {
 		rename: { timeline: 'range' },
 		drop: ['taskId', 'retryId']
 	});
 }
 
-export function parseAndroidState(url: URL): AndroidState {
+export function parseAndroidState(url: ReadonlyURL): AndroidState {
 	return parseState(androidSchema, normalizePageParams(url)) as AndroidState;
 }
 
-export function androidHref(url: URL, patch: Partial<AndroidState>): string {
+export function androidHref(url: ReadonlyURL, patch: Partial<AndroidState>): string {
 	return patchUrl(androidSchema, normalizePageParams(url), patch);
 }
 

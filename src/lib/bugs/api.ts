@@ -5,7 +5,7 @@
  * result, so the dashboard reads one static JSON file rather than hitting the
  * Bugzilla REST API from every visitor's browser.
  */
-import { fetchJson } from '$lib/api/http';
+import { fetchJson } from '#lib/api/http.js';
 
 export const BUGZILLA_DATA_URL =
 	'https://raw.githubusercontent.com/mozilla/performance-data/refs/heads/main/bugzilla-data-all.json';

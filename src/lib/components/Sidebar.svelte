@@ -1,10 +1,11 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { base } from '$app/paths';
-	import { NAV, type NavItem } from '$lib/nav';
+	import { resolve } from '$app/paths';
+	import type { RouteId } from '$app/types';
+	import { NAV, type NavItem } from '#lib/nav.js';
 
 	function href(item: NavItem): string {
-		return item.external ? item.href : `${base}${item.href}`;
+		return item.external ? item.href : resolve(item.href as RouteId);
 	}
 
 	function isActive(item: NavItem): boolean {

@@ -1,39 +1,43 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import Chart from '$lib/components/Chart.svelte';
-	import ComparisonTable from '$lib/components/ComparisonTable.svelte';
-	import PlatformPicker from '$lib/components/PlatformPicker.svelte';
-	import RangePicker from '$lib/components/RangePicker.svelte';
-	import Spinner from '$lib/components/Spinner.svelte';
-	import ToggleChip from '$lib/components/ToggleChip.svelte';
+	import Chart from '#lib/components/Chart.svelte';
+	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
+	import PlatformPicker from '#lib/components/PlatformPicker.svelte';
+	import RangePicker from '#lib/components/RangePicker.svelte';
+	import Spinner from '#lib/components/Spinner.svelte';
+	import ToggleChip from '#lib/components/ToggleChip.svelte';
 	import SubtestCharts from './SubtestCharts.svelte';
-	import { annotationsWithinDays } from '$lib/annotations';
-	import { pushlogUrl } from '$lib/api/treeherder';
-	import { resource } from '$lib/resource.svelte';
-	import { buildAlertMarkers, markersWithinDays } from '$lib/speedometer/alerts';
+	import { annotationsWithinDays } from '#lib/annotations.js';
+	import { pushlogUrl } from '#lib/api/treeherder.js';
+	import { resource } from '#lib/resource.svelte.js';
+	import { buildAlertMarkers, markersWithinDays } from '#lib/speedometer/alerts.js';
 	import {
 		axisLabel,
 		buildChartData,
 		buildChartOptions,
 		type ChartPoint
-	} from '$lib/speedometer/chart';
-	import { nextSelection, type SelectedPoint, selectionIsLive } from '$lib/speedometer/selection';
-	import { platformByKey } from '$lib/speedometer/config';
+	} from '#lib/speedometer/chart.js';
+	import {
+		nextSelection,
+		type SelectedPoint,
+		selectionIsLive
+	} from '#lib/speedometer/selection.js';
+	import { platformByKey } from '#lib/speedometer/config.js';
 	import {
 		loadAlerts,
 		loadMeasurements,
 		loadSignatures,
 		TABLE_WINDOW_DAYS
-	} from '$lib/speedometer/data';
+	} from '#lib/speedometer/data.js';
 	import {
 		parseSpeedometerState,
 		type SpeedometerState,
 		speedometerHref,
 		toggleHidden
-	} from '$lib/speedometer/state';
-	import { signaturesForTests, type SpeedometerSuite } from '$lib/speedometer/suite';
-	import { buildComparisonTable } from '$lib/speedometer/table';
+	} from '#lib/speedometer/state.js';
+	import { signaturesForTests, type SpeedometerSuite } from '#lib/speedometer/suite.js';
+	import { buildComparisonTable } from '#lib/speedometer/table.js';
 
 	interface Props {
 		suite: SpeedometerSuite;
@@ -48,7 +52,7 @@
 
 	const href = (patch: Partial<SpeedometerState>) => speedometerHref(page.url, patch, suite.schema);
 	const apply = (patch: Partial<SpeedometerState>) =>
-		goto(href(patch), { replaceState: true, noScroll: true, keepFocus: true });
+		goto(href(patch), { replace: true, reset: false });
 
 	// --- Data -------------------------------------------------------------
 	// Each resource re-runs when the state it reads changes, aborting the
@@ -272,7 +276,7 @@
 		<p class="hint">Loading alerts…</p>
 	{/if}
 
-	<div class="subtest-toggle" data-sveltekit-noscroll>
+	<div class="subtest-toggle" data-sveltekit-reset="false">
 		<a class="button" href={href({ subtestCharts: !view.subtestCharts })}>
 			{view.subtestCharts ? 'Hide' : 'Load'} All Subtest Charts
 		</a>

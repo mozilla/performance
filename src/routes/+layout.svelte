@@ -1,6 +1,6 @@
 <script lang="ts">
 	import '../app.css';
-	import Sidebar from '$lib/components/Sidebar.svelte';
+	import Sidebar from '#lib/components/Sidebar.svelte';
 
 	let { children } = $props();
 </script>

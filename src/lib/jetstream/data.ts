@@ -1,6 +1,6 @@
-import type { Measurement, Repository } from '$lib/api/treeherder';
-import { isSafariApplication } from '$lib/browsers';
-import { loadMeasurements, loadSignatures } from '$lib/speedometer/data';
+import type { Measurement, Repository } from '#lib/api/treeherder.js';
+import { isSafariApplication } from '#lib/browsers.js';
+import { loadMeasurements, loadSignatures } from '#lib/speedometer/data.js';
 import { JETSTREAM_FRAMEWORK, JETSTREAM_SUITE, platformByKey } from './config';
 
 export const JETSTREAM_DATA_URL =

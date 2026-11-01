@@ -1,6 +1,6 @@
-import type { ChartAnnotation } from '$lib/annotations';
-import { FRAMEWORK } from '$lib/api/treeherder';
-import { PLATFORMS, type PlatformConfig } from '$lib/speedometer/config';
+import type { ChartAnnotation } from '#lib/annotations.js';
+import { FRAMEWORK } from '#lib/api/treeherder.js';
+import { PLATFORMS, type PlatformConfig } from '#lib/speedometer/config.js';
 
 export const NAVBENCH_SUITE = 'nav-bench-overall';
 export const NAVBENCH_FRAMEWORK = FRAMEWORK.browsertime;
