@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { measurement } from '../../tests/factories';
 import type { AlertMarker } from './alerts';
 import {
@@ -213,5 +213,44 @@ describe('buildChartOptions annotations', () => {
 
 		expect(afterBody([point('2026-09-03T20:00:00Z')])).toEqual(['Bug 1: Changed']);
 		expect(afterBody([point('2026-09-10T00:00:00Z')])).toEqual([]);
+	});
+});
+
+describe('buildChartOptions point clicks', () => {
+	type OnClick = (event: unknown, elements: unknown[], chart: unknown) => void;
+	type Footer = (items: Array<{ raw: unknown }>) => string[];
+
+	const point = { x: 0, y: 1, revision: 'abc', jobId: 42 } as ChartPoint;
+	const chart = { data: { datasets: [{ data: [point] }] } };
+	const hit = [{ datasetIndex: 0, index: 0 }];
+
+	const click = (options: ReturnType<typeof buildChartOptions>, shiftKey: boolean) =>
+		(options.onClick as unknown as OnClick)({ native: { shiftKey } }, hit, chart);
+
+	// Shift rather than double-click, since a double-click would also select
+	// and deselect the point for the pushlog.
+	it('routes a shift-click to the shift handler only', () => {
+		const onPointClick = vi.fn();
+		const onPointShiftClick = vi.fn();
+		const options = buildChartOptions(inputs(), { onPointClick, onPointShiftClick });
+
+		click(options, true);
+		expect(onPointShiftClick).toHaveBeenCalledWith(point);
+		expect(onPointClick).not.toHaveBeenCalled();
+
+		click(options, false);
+		expect(onPointClick).toHaveBeenCalledWith(point);
+		expect(onPointShiftClick).toHaveBeenCalledTimes(1);
+	});
+
+	it('mentions shift-click in the tooltip for points with a job', () => {
+		const options = buildChartOptions(inputs(), { tooltipFooter: () => 'Click to play' });
+		const footer = (options.plugins!.tooltip!.callbacks as unknown as { footer: Footer }).footer;
+
+		expect(footer([{ raw: point }])).toEqual([
+			'Click to play',
+			'Shift-click to open the job in Treeherder'
+		]);
+		expect(footer([{ raw: { ...point, jobId: 0 } }])).toEqual(['Click to play']);
 	});
 });

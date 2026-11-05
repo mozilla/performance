@@ -4,8 +4,9 @@ import {
 	buildAnnotationLines,
 	type ChartAnnotation
 } from '#lib/annotations.js';
-import type { Measurement } from '#lib/api/treeherder.js';
+import type { Measurement, Repository } from '#lib/api/treeherder.js';
 import { groupByBrowser } from '#lib/browsers.js';
+import { openTreeherderJob } from '#lib/open-job.js';
 import type { AlertMarker } from './alerts';
 import { lowerIsBetter } from './config';
 import type { RowNaming } from './table';
@@ -16,6 +17,7 @@ export interface ChartPoint {
 	y: number;
 	revision: string;
 	jobId: number;
+	repository: Repository;
 	signatureId: number;
 	machineName?: string;
 }
@@ -62,6 +64,7 @@ function toPoint(measurement: Measurement, replicates: boolean): ChartPoint {
 		y: measurement.value,
 		revision: measurement.revision,
 		jobId: measurement.jobId,
+		repository: measurement.repository,
 		signatureId: measurement.signatureId,
 		machineName: measurement.machineName
 	};
@@ -169,6 +172,8 @@ export function axisLabel(naming: RowNaming, test: string): string {
 
 export interface ChartHandlers {
 	onPointClick?(point: ChartPoint): void;
+	/** Shift-click on a point. Defaults to opening its job in Treeherder. */
+	onPointShiftClick?(point: ChartPoint): void;
 	onLegendClick?(label: string): void;
 	/** Extra tooltip line, e.g. Android's "Click to play the replicate videos". */
 	tooltipFooter?(): string | undefined;
@@ -189,10 +194,16 @@ export function buildChartOptions(
 		// chart taller as the window widens -- at 1400px it would be 933px
 		// tall, which is worse than the 900px cap it replaced.
 		maintainAspectRatio: false,
-		onClick: (_event, elements, chart) => {
+		onClick: (event, elements, chart) => {
 			const hit = elements[0];
 			if (!hit) return;
 			const point = chart.data.datasets[hit.datasetIndex].data[hit.index] as unknown as ChartPoint;
+			// Shift rather than double-click: a double-click is also two clicks,
+			// which would toggle the pushlog selection on and off again.
+			if ((event.native as MouseEvent | null)?.shiftKey) {
+				(handlers.onPointShiftClick ?? openTreeherderJob)(point);
+				return;
+			}
 			handlers.onPointClick?.(point);
 		},
 		onHover: (event, elements) => {
@@ -245,7 +256,12 @@ export function buildChartOptions(
 						const point = items[0]?.raw as ChartPoint | undefined;
 						return point ? annotationTooltipLines(annotations, point.x) : [];
 					},
-					footer: () => handlers.tooltipFooter?.() ?? ''
+					footer: (items) => {
+						const point = items[0]?.raw as ChartPoint | undefined;
+						const lines = [handlers.tooltipFooter?.()];
+						if (point?.jobId) lines.push('Shift-click to open the job in Treeherder');
+						return lines.filter((line): line is string => !!line);
+					}
 				}
 			},
 			annotation: {

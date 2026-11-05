@@ -297,6 +297,11 @@ export function taskclusterTaskUrl(taskId: string): string {
 	return `https://firefox-ci-tc.services.mozilla.com/tasks/${taskId}`;
 }
 
+/** Treeherder's job view of a whole push, with no job selected. */
+export function treeherderPushUrl(repository: Repository, revision: string): string {
+	return `${TREEHERDER}/jobs?repo=${repository}&revision=${revision}`;
+}
+
 /** Treeherder's job view, scrolled to one task run on one push. */
 export function treeherderJobUrl(repository: Repository, revision: string, task: TaskRef): string {
 	return (

@@ -4,6 +4,7 @@
  */
 import type { ChartData, ChartOptions } from 'chart.js';
 import type { Repository } from '#lib/api/treeherder.js';
+import { openTreeherderJob } from '#lib/open-job.js';
 import { lowerIsBetter } from './config';
 import type { Bounds, MachineGroup } from './machines';
 
@@ -89,12 +90,18 @@ export function buildMachineChartOptions(
 		// chart taller as the window widens -- at 1400px it would be 933px
 		// tall, which is worse than the 900px cap it replaced.
 		maintainAspectRatio: false,
-		onClick: (_event, elements, chart) => {
+		onClick: (event, elements, chart) => {
 			const hit = elements[0];
 			if (!hit) return;
 			const point = chart.data.datasets[hit.datasetIndex].data[
 				hit.index
 			] as unknown as MachinePoint;
+			// Plain click opens the Taskcluster task; shift-click, as on the
+			// other Treeherder-backed charts, opens the job in Treeherder.
+			if ((event.native as MouseEvent | null)?.shiftKey) {
+				void openTreeherderJob(point);
+				return;
+			}
 			handlers.onPointClick?.(point);
 		},
 		onHover: (event, elements) => {
@@ -121,7 +128,7 @@ export function buildMachineChartOptions(
 					label: (item) => {
 						const point = item.raw as MachinePoint;
 						const revision = point.revision ? ` (${point.revision.slice(0, 8)})` : '';
-						const task = point.jobId ? ' [click for task]' : '';
+						const task = point.jobId ? ' [click for task, shift-click for Treeherder]' : '';
 						const value = Math.round(point.y * 100) / 100;
 						return `${point.machineName}: ${value}${revision}${task}`;
 					}
