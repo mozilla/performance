@@ -701,5 +701,29 @@ export const ANNOTATIONS: Annotation[] = [
 		platform: 'android',
 		channel: 'release',
 		chart: 'lcp-android'
-	}
+	},
+	...[
+		{
+			label: 'Bug 2064052',
+			description:
+				'Fx159: pageload events now include background-tab loads (loaded_in_foreground=false). These inflated LCP the most and are now filtered out.',
+			url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2064052'
+		},
+		{
+			label: 'Bug 2064072',
+			description:
+				'Fx159: pageload events now include documents replaced before their load event. They have no loaded_in_foreground flag and are slower (TTRS p75 about 170 ms); the current filter still keeps them.',
+			url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2064072'
+		}
+	].flatMap((bug) =>
+		(['desktop', 'android'] as const).flatMap((platform) =>
+			['dns-lookup', 'ttrs', 'fcp', 'lcp'].map((metric) => ({
+				...bug,
+				date: '2026-10-27',
+				platform,
+				channel: 'release' as const,
+				chart: `${metric}-${platform}`
+			}))
+		)
+	)
 ];
