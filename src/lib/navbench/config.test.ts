@@ -3,6 +3,7 @@ import {
 	annotationsFor,
 	displayName,
 	OVERALL_TEST,
+	platformByKey,
 	proseList,
 	scenariosIn,
 	signatureTest,
@@ -115,5 +116,13 @@ describe('the explainer lists', () => {
 		expect(proseList(['A'])).toBe('A');
 		expect(proseList(['A', 'B'])).toBe('A and B');
 		expect(proseList(['A', 'B', 'C'])).toBe('A, B and C');
+	});
+});
+
+describe('the Android emulator', () => {
+	it('charts the emulator job, not a device', () => {
+		const platform = platformByKey('android-emu');
+		expect(platform.platforms).toEqual(['android-em-14-arm64-shippable']);
+		expect(platform.group).toBe('mobile');
 	});
 });
