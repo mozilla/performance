@@ -14,9 +14,24 @@ export const NAVBENCH_REPOSITORY = 'autoland' as const;
  */
 const NAVBENCH_PLATFORM_KEYS = ['linux', 'osxm4', 'windows', 'windows-hwref', 'android-a55'];
 
-export const NAVBENCH_PLATFORMS: readonly PlatformConfig[] = PLATFORMS.filter((platform) =>
-	NAVBENCH_PLATFORM_KEYS.includes(platform.key)
-);
+/**
+ * Fenix on an arm64 Android 14 emulator. Local to this page rather than in the
+ * shared table, since no other benchmark charts it. Shippable only: there is
+ * no nightlyasrelease emulator build. Its scores are not comparable with real
+ * devices', so it sits last, apart from the hardware.
+ */
+const ANDROID_EMULATOR: PlatformConfig = {
+	key: 'android-emu',
+	label: 'Android (Emulator)',
+	platforms: ['android-em-14-arm64-shippable'],
+	supportsSafari: false,
+	group: 'mobile'
+};
+
+export const NAVBENCH_PLATFORMS: readonly PlatformConfig[] = [
+	...PLATFORMS.filter((platform) => NAVBENCH_PLATFORM_KEYS.includes(platform.key)),
+	ANDROID_EMULATOR
+];
 
 export const PLATFORM_KEYS = NAVBENCH_PLATFORMS.map((platform) => platform.key);
 export const DEFAULT_PLATFORM = 'osxm4';
