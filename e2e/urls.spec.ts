@@ -14,6 +14,7 @@ const HTML_URLS: HtmlUrl[] = [
 	{ file: 'speedometer-experimental.html', title: /^Speedometer Experimental — / },
 	{ file: 'jetstream.html', title: /^JetStream 3 — / },
 	{ file: 'android.html', title: /^Android — / },
+	{ file: 'android_job_debug.html', title: /^Android Job Debug$/ },
 	{ file: 'navbench.html', title: /^Navigation Benchmark — / },
 	{ file: 'networking.html', title: /^Firefox Networking$/ },
 	{ file: 'memory.html', title: /^Firefox Memory — Desktop$/ },
@@ -100,6 +101,8 @@ for (const { path, label, submenu } of [
 	{ path: '/speedometer.html', label: 'Speedometer', submenu: 'Job Debug' },
 	{ path: '/speedometer_job_debug.html', label: 'Job Debug', submenu: 'Experimental' },
 	{ path: '/speedometer-experimental.html', label: 'Experimental', submenu: 'Job Debug' },
+	{ path: '/android.html', label: 'Android', submenu: 'Job Debug' },
+	{ path: '/android_job_debug.html', label: 'Job Debug', submenu: 'Job Debug' },
 	{ path: '/ml.html', label: 'ML', submenu: 'Runtime Engines' },
 	{ path: '/ml-engine.html', label: 'Runtime Engines', submenu: 'Runtime Engines' }
 ]) {

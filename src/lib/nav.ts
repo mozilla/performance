@@ -23,7 +23,13 @@ export const NAV: NavItem[] = [
 		]
 	},
 	{ label: 'JetStream', href: '/jetstream', icon: 'fa-solid fa-wind' },
-	{ label: 'Android', href: '/android', icon: 'fa-brands fa-android' },
+	{
+		label: 'Android',
+		href: '/android',
+		icon: 'fa-brands fa-android',
+
+		children: [{ label: 'Job Debug', href: '/android_job_debug', icon: 'fa-solid fa-arrow-right' }]
+	},
 	{ label: 'Navigation Benchmark', href: '/navbench', icon: 'fa-solid fa-compass' },
 	{ label: 'Networking', href: '/networking', icon: 'fa-solid fa-network-wired' },
 	{ label: 'Memory', href: '/memory', icon: 'fa-solid fa-memory' },
