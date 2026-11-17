@@ -154,6 +154,13 @@ export interface NavBenchAnnotation extends ChartAnnotation {
 
 export const NAVBENCH_ANNOTATIONS: readonly NavBenchAnnotation[] = [
 	{
+		date: '2026-11-13T23:43:10Z',
+		label: 'Bug 2084985',
+		description:
+			'Removed the initial 30s wait before the first site; set gfx.font_loader.delay=0 so the font loader no longer fires mid-run',
+		url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2084985'
+	},
+	{
 		date: '2026-10-08T21:44:57Z',
 		label: 'Bug 2073531',
 		description:
