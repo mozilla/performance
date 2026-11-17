@@ -21,6 +21,10 @@ export const androidSchema = {
 	job: str(''),
 	/** Which replicate's video is showing, as a string so it can be absent. */
 	replicate: str(''),
+	/** Job Debug: selected browser. Empty means "first with data". */
+	browser: str(''),
+	/** Job Debug: isolated machine. Empty means "all machines". */
+	machine: str(''),
 
 	sort: str(''),
 	dir: str('desc', ['asc', 'desc'] as const)
@@ -36,6 +40,8 @@ export interface AndroidState {
 	hide: ReadonlySet<string>;
 	job: string;
 	replicate: string;
+	browser: string;
+	machine: string;
 	sort: string;
 	dir: 'asc' | 'desc';
 }
