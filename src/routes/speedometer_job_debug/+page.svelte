@@ -95,7 +95,7 @@
 		isolated: view.machine,
 		hovered,
 		bounds,
-		test: view.subtest
+		yLabel: lowerIsBetter(view.subtest) ? 'Time (ms)' : 'Score (Higher is better)'
 	});
 
 	const chartConfig = $derived(buildMachineChartData(chartInputs));
