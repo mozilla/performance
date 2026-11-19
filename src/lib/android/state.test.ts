@@ -19,6 +19,8 @@ describe('parseAndroidState', () => {
 		expect(state.range).toBe(90);
 		expect(state.repository).toBe('mozilla-central');
 		expect(state.job).toBe('');
+		expect(state.browser).toBe('');
+		expect(state.machine).toBe('');
 	});
 
 	it('rejects an unknown device or test rather than charting nothing', () => {

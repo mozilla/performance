@@ -7,7 +7,7 @@
 	import RangePicker from '#lib/components/RangePicker.svelte';
 	import Spinner from '#lib/components/Spinner.svelte';
 	import ToggleChip from '#lib/components/ToggleChip.svelte';
-	import MachineLegend from './MachineLegend.svelte';
+	import MachineLegend from '#lib/components/MachineLegend.svelte';
 	import { fetchTaskRef, taskclusterTaskUrl } from '#lib/api/treeherder.js';
 	import { BROWSERS, classify } from '#lib/browsers.js';
 	import { resource } from '#lib/resource.svelte.js';
@@ -95,7 +95,7 @@
 		isolated: view.machine,
 		hovered,
 		bounds,
-		test: view.subtest
+		yLabel: lowerIsBetter(view.subtest) ? 'Time (ms)' : 'Score (Higher is better)'
 	});
 
 	const chartConfig = $derived(buildMachineChartData(chartInputs));

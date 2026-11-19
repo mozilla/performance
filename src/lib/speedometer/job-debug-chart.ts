@@ -5,7 +5,6 @@
 import type { ChartData, ChartOptions } from 'chart.js';
 import type { Repository } from '#lib/api/treeherder.js';
 import { openTreeherderJob } from '#lib/open-job.js';
-import { lowerIsBetter } from './config';
 import type { Bounds, MachineGroup } from './machines';
 
 export interface MachinePoint {
@@ -24,7 +23,8 @@ export interface MachineChartInputs {
 	/** Machine under the pointer, dimming the others. */
 	hovered: string | null;
 	bounds: Bounds | null;
-	test: string;
+	/** Y-axis title, which depends on the dashboard's units and direction. */
+	yLabel: string;
 }
 
 function withAlpha(hex: string, alpha: number): string {
@@ -81,7 +81,7 @@ export function buildMachineChartOptions(
 	inputs: MachineChartInputs,
 	handlers: MachineChartHandlers = {}
 ): ChartOptions<'scatter'> {
-	const { bounds, test, groups } = inputs;
+	const { bounds, yLabel, groups } = inputs;
 
 	return {
 		responsive: true,
@@ -147,10 +147,7 @@ export function buildMachineChartOptions(
 				beginAtZero: false,
 				min: bounds?.yMin,
 				max: bounds?.yMax,
-				title: {
-					display: true,
-					text: lowerIsBetter(test) ? 'Time (ms)' : 'Score (Higher is better)'
-				}
+				title: { display: true, text: yLabel }
 			}
 		}
 	} as ChartOptions<'scatter'>;
