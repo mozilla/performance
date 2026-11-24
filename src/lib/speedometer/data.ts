@@ -46,6 +46,11 @@ export interface SignatureOptions {
 	 * See `PlatformConfig.safariPlatform`.
 	 */
 	safariPlatform?: string;
+	/**
+	 * A platform to read Firefox Release signatures from, on mozilla-release.
+	 * See `PlatformConfig.releasePlatform`.
+	 */
+	releasePlatform?: string;
 }
 
 export async function loadSignatures(
@@ -87,7 +92,15 @@ export async function loadSignatures(
 			).then((all) => all.filter((sig) => include(sig) && isSafariApplication(sig.application)))
 		: Promise.resolve<PerfSignature[]>([]);
 
-	const found = await Promise.all([...perPlatform, safari]);
+	const releasePlatform = options.releasePlatform;
+	const release = releasePlatform
+		? fetchSignatures(
+				{ repository: 'mozilla-release', framework, platform: releasePlatform },
+				signal
+			).then((all) => all.filter((sig) => include(sig) && isFirefoxApp(sig)))
+		: Promise.resolve<PerfSignature[]>([]);
+
+	const found = await Promise.all([...perPlatform, safari, release]);
 	return selectCanonicalSignatures(found.flat());
 }
 

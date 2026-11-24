@@ -54,7 +54,7 @@
 				<!-- Firefox-only pages have nothing to compare against, and a group
 				     header spanning zero columns renders as a stray empty cell. -->
 				{#if table.diffColumns.length > 0}
-					<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Firefox</th>
+					<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Nightly</th>
 				{/if}
 			</tr>
 			<tr class="browser-row">

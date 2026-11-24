@@ -15,6 +15,21 @@ describe('classify', () => {
 		).toBe('firefox-nar');
 	});
 
+	it('classifies mozilla-release Firefox as Firefox Release', () => {
+		expect(
+			classify(measurement({ application: 'firefox', repository: 'mozilla-release' }))?.key
+		).toBe('firefox-release');
+		expect(
+			classify(
+				measurement({
+					application: 'firefox',
+					repository: 'mozilla-release',
+					extraOptions: ['nova']
+				})
+			)
+		).toBeUndefined();
+	});
+
 	it('treats fenix as Firefox', () => {
 		expect(
 			classify(
