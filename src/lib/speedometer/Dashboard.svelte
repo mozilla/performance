@@ -36,6 +36,11 @@
 		speedometerHref,
 		toggleHidden
 	} from '#lib/speedometer/state.js';
+	import {
+		fetchSpeedometerSnapshot,
+		snapshotCovers,
+		snapshotMeasurements
+	} from '#lib/speedometer/snapshot.js';
 	import { signaturesForTests, type SpeedometerSuite } from '#lib/speedometer/suite.js';
 	import { buildComparisonTable } from '#lib/speedometer/table.js';
 
@@ -78,16 +83,32 @@
 		!suite.browsers || suite.browsers.includes('safari') ? platform.safariPlatform : undefined
 	);
 
-	const signatures = resource((signal) =>
-		loadSignatures(os, repository, signal, { suite: suite.suite, safariPlatform })
+	const snapshotTests = $derived(suite.snapshot ? suite.tests([]) : []);
+	const tableFromSnapshot = $derived(
+		!!suite.snapshot && snapshotCovers(snapshotTests, TABLE_WINDOW_DAYS, repository, replicates)
 	);
+	const chartFromSnapshot = $derived(
+		!!suite.snapshot && snapshotCovers([subtest], range, repository, replicates)
+	);
+	const needSignatures = $derived(!tableFromSnapshot || !chartFromSnapshot || view.subtestCharts);
+
+	const signatures = resource(async (signal) => {
+		if (!needSignatures) return [];
+		return loadSignatures(os, repository, signal, { suite: suite.suite, safariPlatform });
+	});
 
 	// Which tests there are, and how each is named, can depend on the
 	// signatures: Speedometer Experimental discovers both.
 	const tests = $derived(suite.tests(signatures.value ?? []));
 	const naming = $derived(suite.naming(signatures.value ?? []));
 
+	const snapshotFilter = $derived({ platforms: platform.platforms, safariPlatform });
+
 	const tableData = resource(async (signal) => {
+		if (tableFromSnapshot) {
+			const filter = { ...snapshotFilter, tests: snapshotTests, days: TABLE_WINDOW_DAYS };
+			return snapshotMeasurements(await fetchSpeedometerSnapshot(), filter);
+		}
 		const all = signatures.value;
 		if (!all) return [];
 		const rows = signaturesForTests(suite, all, suite.tests(all));
@@ -95,6 +116,10 @@
 	});
 
 	const chartData = resource(async (signal) => {
+		if (chartFromSnapshot) {
+			const filter = { ...snapshotFilter, tests: [subtest], days: range };
+			return snapshotMeasurements(await fetchSpeedometerSnapshot(), filter);
+		}
 		const all = signatures.value;
 		if (!all) return [];
 		return loadMeasurements(signaturesForTests(suite, all, [subtest]), range, replicates, signal);
