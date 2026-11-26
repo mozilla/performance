@@ -99,6 +99,20 @@ export const SPEEDOMETER_EXPERIMENTAL: SpeedometerSuite = {
 			description:
 				'Switched the suite to the sp4 tag of the experimental workloads; scores before and after are not comparable',
 			url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2076189'
+		},
+		{
+			date: '2026-11-13T11:17:41Z',
+			label: 'Bug 2092114',
+			description:
+				'Updated the experimental workloads to Speedometer revision 0599c309; scores before and after are not comparable',
+			url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2092114'
+		},
+		{
+			date: '2026-11-17T15:36:19Z',
+			label: 'Bug 2094111',
+			description:
+				'Updated the experimental workloads to Speedometer revision 5a44ae9c; scores before and after are not comparable',
+			url: 'https://bugzilla.mozilla.org/show_bug.cgi?id=2094111'
 		}
 	],
 	perfherderUrl: (series) =>
