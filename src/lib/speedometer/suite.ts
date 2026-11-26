@@ -49,6 +49,7 @@ export interface SpeedometerSuite {
 	browsers?: readonly BrowserKey[];
 	/** Whether the page offers Perfherder alert markers. */
 	alerts: boolean;
+	snapshot?: boolean;
 	/** Dashed markers on every chart, for changes to the suite itself. */
 	annotations?: readonly ChartAnnotation[];
 	/** Where the chart title links. */
@@ -77,6 +78,7 @@ export const SPEEDOMETER3: SpeedometerSuite = {
 	subtests: availableSubtests,
 	naming: () => SPEEDOMETER_NAMING,
 	alerts: true,
+	snapshot: true,
 	perfherderUrl: (series) =>
 		perfherderGraphsUrl(series.map((each) => ({ ...each, framework: SPEEDOMETER_FRAMEWORK })))
 };
