@@ -1,11 +1,13 @@
 import type { Measurement } from './api/treeherder';
 
-export type BrowserKey = 'firefox' | 'firefox-nar' | 'chrome' | 'car' | 'safari' | 'safari-tp';
+export type BrowserKey =
+	'firefox-release' | 'firefox' | 'firefox-nar' | 'chrome' | 'car' | 'safari' | 'safari-tp';
 
 export interface BrowserDef {
 	key: BrowserKey;
 	label: string;
 
+	/** Hue follows the vendor: warm for Firefox, green and blue for Chrome, grey for Safari. */
 	color: string;
 	matches(measurement: Measurement): boolean;
 }
@@ -26,18 +28,27 @@ export const isSafariApplication = (application: string | undefined) =>
 
 const isNightlyAsRelease = (m: Measurement) => m.platform.includes('nightlyasrelease');
 
+/** Firefox Release runs on the same shippable platforms, in its own repository. */
+const isRelease = (m: Measurement) => m.repository === 'mozilla-release';
+
 export const BROWSERS: readonly BrowserDef[] = [
 	{
 		key: 'firefox',
-		label: 'Firefox',
+		label: 'Nightly',
 		color: '#FF9500',
-		matches: (m) => isFirefoxFamily(m) && !isNightlyAsRelease(m) && !isVariant(m)
+		matches: (m) => isFirefoxFamily(m) && !isRelease(m) && !isNightlyAsRelease(m) && !isVariant(m)
 	},
 	{
 		key: 'firefox-nar',
 		label: 'Nightly-as-Release',
-		color: '#dd2500',
-		matches: (m) => isFirefoxFamily(m) && isNightlyAsRelease(m) && !isVariant(m)
+		color: '#c42b00',
+		matches: (m) => isFirefoxFamily(m) && !isRelease(m) && isNightlyAsRelease(m) && !isVariant(m)
+	},
+	{
+		key: 'firefox-release',
+		label: 'Firefox Release',
+		color: '#fff01f',
+		matches: (m) => isFirefoxFamily(m) && isRelease(m) && !isVariant(m)
 	},
 	{
 		key: 'chrome',

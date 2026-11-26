@@ -33,7 +33,7 @@ describe('buildChartData', () => {
 			})
 		);
 
-		expect(data.datasets.map((d) => d.label)).toEqual(['Firefox', 'Chrome']);
+		expect(data.datasets.map((d) => d.label)).toEqual(['Nightly', 'Chrome']);
 	});
 
 	it('creates no dataset for a browser with no data', () => {
@@ -56,7 +56,7 @@ describe('buildChartData', () => {
 			})
 		);
 
-		expect(data.datasets.find((d) => d.label === 'Firefox')?.hidden).toBe(false);
+		expect(data.datasets.find((d) => d.label === 'Nightly')?.hidden).toBe(false);
 		expect(data.datasets.find((d) => d.label === 'Chrome')?.hidden).toBe(true);
 	});
 

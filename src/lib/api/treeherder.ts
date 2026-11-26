@@ -2,8 +2,12 @@ import { fetchJson } from './http';
 
 const TREEHERDER = 'https://treeherder.mozilla.org';
 
-/** Repositories the dashboards read from. */
-export type Repository = 'mozilla-central' | 'autoland';
+/**
+ * Repositories the dashboards read from. The pages offer mozilla-central and
+ * autoland as a choice; mozilla-release is read only for the Firefox Release
+ * series on Speedometer.
+ */
+export type Repository = 'mozilla-central' | 'autoland' | 'mozilla-release';
 
 /** Treeherder's numeric id for autoland, used by the alert summary endpoint. */
 export const AUTOLAND_REPOSITORY_ID = 77;
@@ -66,14 +70,14 @@ export interface Measurement {
 }
 
 /**
- * One signature per application/platform/suite/test: the Fission run if there
+ * One signature per repository/application/platform/suite/test: the Fission run if there
  * is one, then the fewest extra_options (so not a profiled or other variant).
  * Desktop always runs with Fission; Android also has a non-Fission job, which
  * is not the one to chart.
  */
 export function selectCanonicalSignatures(signatures: PerfSignature[]): PerfSignature[] {
 	const canonicalKey = (sig: PerfSignature) =>
-		[sig.application, sig.machine_platform, sig.suite, sig.test].join('|');
+		[sig.repository, sig.application, sig.machine_platform, sig.suite, sig.test].join('|');
 
 	const hasFission = (sig: PerfSignature) => (sig.extra_options ?? []).includes('fission');
 

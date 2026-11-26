@@ -46,6 +46,11 @@ export interface PlatformConfig {
 	 * feeds the breakdown table.
 	 */
 	safariPlatform?: string;
+	/**
+	 * Where Firefox Release runs, on mozilla-release. Desktop only: Fenix
+	 * Release is not tested there.
+	 */
+	releasePlatform?: string;
 	/** Laid out as two rows in the picker, desktop then mobile. */
 	group: 'desktop' | 'mobile';
 }
@@ -55,6 +60,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 		key: 'windows',
 		label: 'Windows 11',
 		platforms: ['windows11-64-24h2-nightlyasrelease', 'windows11-64-24h2-shippable'],
+		releasePlatform: 'windows11-64-24h2-shippable',
 		supportsSafari: false,
 		group: 'desktop'
 	},
@@ -62,6 +68,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 		key: 'windows-hwref',
 		label: 'Windows 11 (ref)',
 		platforms: ['windows11-64-24h2-hw-ref-nightlyasrelease', 'windows11-64-24h2-hw-ref-shippable'],
+		releasePlatform: 'windows11-64-24h2-hw-ref-shippable',
 		supportsSafari: false,
 		group: 'desktop'
 	},
@@ -69,6 +76,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 		key: 'linux',
 		label: 'Linux',
 		platforms: ['linux2404-64-nightlyasrelease', 'linux2404-64-shippable'],
+		releasePlatform: 'linux2404-64-shippable',
 		supportsSafari: false,
 		group: 'desktop'
 	},
@@ -76,6 +84,7 @@ export const PLATFORMS: readonly PlatformConfig[] = [
 		key: 'osxm4',
 		label: 'Mac',
 		platforms: ['macosx1500-aarch64-nightlyasrelease', 'macosx1500-aarch64-shippable'],
+		releasePlatform: 'macosx1500-aarch64-shippable',
 		supportsSafari: true,
 		// Safari and Safari TP run on a dedicated macOS 27 pool (Bug 2075598).
 		safariPlatform: 'macosx2700-aarch64-shippable',

@@ -78,8 +78,15 @@
 		!suite.browsers || suite.browsers.includes('safari') ? platform.safariPlatform : undefined
 	);
 
+	// Likewise Firefox Release, which only Speedometer 3 charts.
+	const releasePlatform = $derived(
+		!suite.browsers || suite.browsers.includes('firefox-release')
+			? platform.releasePlatform
+			: undefined
+	);
+
 	const signatures = resource((signal) =>
-		loadSignatures(os, repository, signal, { suite: suite.suite, safariPlatform })
+		loadSignatures(os, repository, signal, { suite: suite.suite, safariPlatform, releasePlatform })
 	);
 
 	// Which tests there are, and how each is named, can depend on the
@@ -90,7 +97,11 @@
 	const tableData = resource(async (signal) => {
 		const all = signatures.value;
 		if (!all) return [];
-		const rows = signaturesForTests(suite, all, suite.tests(all));
+		// The table has no Firefox Release column: Release runs about once a
+		// week, so its 7-day average would rest on one or two points.
+		const rows = signaturesForTests(suite, all, suite.tests(all)).filter(
+			(sig) => sig.repository !== 'mozilla-release'
+		);
 		return loadMeasurements(rows, TABLE_WINDOW_DAYS, replicates, signal);
 	});
 
