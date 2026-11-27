@@ -97,6 +97,20 @@ describe('replicatesByTest', () => {
 		expect(replicatesByTest(data).has('amazon-nav-load-min-si')).toBe(false);
 	});
 
+	it("reads the accessibility-enabled variant's overall suite", () => {
+		const a11y: PerfherderData = {
+			suites: [
+				{
+					name: 'nav-bench-a11y-overall',
+					unit: 'score',
+					subtests: [{ name: 'amazon-nav-load-score', value: 150, replicates: [140, 160] }]
+				}
+			]
+		};
+
+		expect(replicatesByTest(a11y).get('amazon-nav-load-score')).toEqual([140, 160]);
+	});
+
 	it('returns nothing when the artifact has no overall suite', () => {
 		expect(replicatesByTest({ suites: [] }).size).toBe(0);
 	});

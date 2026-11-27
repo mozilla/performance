@@ -68,6 +68,36 @@ describe('classify', () => {
 		);
 	});
 
+	it('gives the accessibility-enabled runs their own series', () => {
+		expect(
+			classify(measurement({ application: 'firefox', suite: 'nav-bench-a11y-overall' }))?.key
+		).toBe('firefox-a11y');
+		expect(
+			classify(
+				measurement({
+					application: 'fenix',
+					suite: 'nav-bench-a11y-overall',
+					platform: 'android-hw-a55-14-0-aarch64-shippable'
+				})
+			)?.key
+		).toBe('firefox-a11y');
+		expect(classify(measurement({ application: 'firefox', suite: 'nav-bench-overall' }))?.key).toBe(
+			'firefox'
+		);
+	});
+
+	it('does not chart an accessibility run as Nightly-as-Release', () => {
+		expect(
+			classify(
+				measurement({
+					application: 'firefox',
+					suite: 'nav-bench-a11y-overall',
+					platform: 'macosx1500-aarch64-nightlyasrelease'
+				})
+			)
+		).toBeUndefined();
+	});
+
 	it('returns undefined for an unknown application', () => {
 		expect(classify(measurement({ application: 'edge' }))).toBeUndefined();
 	});

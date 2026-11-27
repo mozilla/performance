@@ -21,7 +21,7 @@ import {
 	pairVideosWithReplicates,
 	type VideoGroup
 } from '#lib/replicate-videos.js';
-import { displayName, NAVBENCH_REPOSITORY, NAVBENCH_SUITE, videoScenario } from './config';
+import { displayName, NAVBENCH_REPOSITORY, NAVBENCH_SUITES, videoScenario } from './config';
 
 const ARCHIVE_PREFERENCE = [
 	'public/test_info/browsertime-videos-annotated.tgz',
@@ -62,8 +62,12 @@ export function groupByScenario(entries: readonly TarEntry[]): Map<string, TarEn
 	return groups;
 }
 
+/**
+ * Each score subtest's replicates. A job reports one overall suite, plain or
+ * a11y, depending on which variant ran.
+ */
 export function replicatesByTest(data: PerfherderData): Map<string, number[]> {
-	const suite = data.suites?.find((each) => each.name === NAVBENCH_SUITE);
+	const suite = data.suites?.find((each) => NAVBENCH_SUITES.includes(each.name));
 	const byTest = new Map<string, number[]>();
 
 	for (const subtest of suite?.subtests ?? []) {

@@ -1,7 +1,14 @@
 import type { Measurement } from './api/treeherder';
 
 export type BrowserKey =
-	'firefox-release' | 'firefox' | 'firefox-nar' | 'chrome' | 'car' | 'safari' | 'safari-tp';
+	| 'firefox-release'
+	| 'firefox'
+	| 'firefox-nar'
+	| 'firefox-a11y'
+	| 'chrome'
+	| 'car'
+	| 'safari'
+	| 'safari-tp';
 
 export interface BrowserDef {
 	key: BrowserKey;
@@ -17,6 +24,12 @@ const isFirefoxFamily = (m: Measurement) =>
 
 /** Instrumented or otherwise non-comparable variants of the base Firefox job. */
 const isVariant = (m: Measurement) => m.extraOptions.includes('nova');
+
+/**
+ * Runs with the accessibility service enabled, told apart by suite name, e.g.
+ * `nav-bench-a11y-overall`. Their own series, not the base Firefox job's.
+ */
+const isAccessibility = (m: Measurement) => m.suite.split(/[-.]/).includes('a11y');
 
 /**
  * Safari and Safari TP. On Mac they run on a different machine pool from
@@ -36,19 +49,42 @@ export const BROWSERS: readonly BrowserDef[] = [
 		key: 'firefox',
 		label: 'Nightly',
 		color: '#FF9500',
-		matches: (m) => isFirefoxFamily(m) && !isRelease(m) && !isNightlyAsRelease(m) && !isVariant(m)
+		matches: (m) =>
+			isFirefoxFamily(m) &&
+			!isRelease(m) &&
+			!isNightlyAsRelease(m) &&
+			!isVariant(m) &&
+			!isAccessibility(m)
 	},
 	{
 		key: 'firefox-nar',
 		label: 'Nightly-as-Release',
 		color: '#c42b00',
-		matches: (m) => isFirefoxFamily(m) && !isRelease(m) && isNightlyAsRelease(m) && !isVariant(m)
+		matches: (m) =>
+			isFirefoxFamily(m) &&
+			!isRelease(m) &&
+			isNightlyAsRelease(m) &&
+			!isVariant(m) &&
+			!isAccessibility(m)
 	},
 	{
 		key: 'firefox-release',
 		label: 'Firefox Release',
 		color: '#fff01f',
-		matches: (m) => isFirefoxFamily(m) && isRelease(m) && !isVariant(m)
+		matches: (m) => isFirefoxFamily(m) && isRelease(m) && !isVariant(m) && !isAccessibility(m)
+	},
+	{
+		// Shippable Nightly only: there is no Nightly-as-Release or Release
+		// accessibility job, and should one appear it would need a series of its own.
+		key: 'firefox-a11y',
+		label: 'Nightly (a11y)',
+		color: '#8a3ffc',
+		matches: (m) =>
+			isFirefoxFamily(m) &&
+			isAccessibility(m) &&
+			!isRelease(m) &&
+			!isNightlyAsRelease(m) &&
+			!isVariant(m)
 	},
 	{
 		key: 'chrome',

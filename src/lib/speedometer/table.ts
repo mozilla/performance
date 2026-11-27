@@ -16,6 +16,7 @@ const COMPARISON_KEYS: readonly BrowserKey[] = ['chrome', 'car', 'safari', 'safa
 const VALUE_KEYS: readonly BrowserKey[] = [
 	'firefox',
 	'firefox-nar',
+	'firefox-a11y',
 	'chrome',
 	'car',
 	'safari',
@@ -172,10 +173,13 @@ export function buildComparisonTable(
 	const naming = options.naming ?? SPEEDOMETER_NAMING;
 
 	const allowed = options.browsers ? new Set(options.browsers) : null;
+	// Nightly (a11y) only where a page asks for it: only NavBench has the data,
+	// and elsewhere the column would read N/A on every row.
 	const included = (key: BrowserKey) =>
 		allowed
 			? allowed.has(key)
-			: options.supportsSafari || (key !== 'safari' && key !== 'safari-tp');
+			: key !== 'firefox-a11y' &&
+				(options.supportsSafari || (key !== 'safari' && key !== 'safari-tp'));
 
 	const column = (key: BrowserKey): TableColumn => ({
 		key,

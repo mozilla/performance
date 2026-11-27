@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { annotationsWithinDays } from '#lib/annotations.js';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Chart from '#lib/components/Chart.svelte';
 	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
@@ -96,7 +97,7 @@
 	const table = $derived(
 		buildComparisonTable(tableData.value ?? [], tests, {
 			supportsSafari: false,
-			browsers: ['firefox', 'firefox-nar'],
+			browsers: ['firefox', 'firefox-nar', 'firefox-a11y'],
 			rowKey: rowKeyFor,
 			naming
 		})
@@ -224,9 +225,10 @@
 			{sites}{/if}.{' '}{#if scenarios}
 			Sites are tested across a mix of {scenarios} scenarios, scored using SpeedIndex.{:else}
 			Sites are scored using SpeedIndex.{/if}
-		Per-site and overall scores are geometric means; higher is better. Click a point to play the screen
-		recordings that run made. Dashed markers on the charts flag benchmark changes; hover for details,
-		or click the label to open the bug.
+		Per-site and overall scores are geometric means; higher is better. <em>Nightly (a11y)</em> is
+		the same benchmark run with accessibility (a11y) enabled, as it is for screen reader users.
+		Click a point to play the screen recordings that run made. Dashed markers on the charts flag
+		benchmark changes; hover for details, or click the label to open the bug.
 		<p class="links">
 			<a
 				href="https://firefox-source-docs.mozilla.org/testing/perfdocs/raptor.html#nav-bench"
@@ -238,6 +240,7 @@
 				target="_blank"
 				rel="noreferrer">Meta bug 2057233</a
 			>
+			<a href="{resolve('/navbench_a11y')}?os={view.os}">Accessibility on vs off</a>
 		</p>
 	</div>
 

@@ -229,6 +229,30 @@ describe('buildComparisonTable', () => {
 		expect(table.rows[0].values['firefox-nar'].average).toBe(200);
 	});
 
+	// Only NavBench has accessibility-enabled runs, so the column is opt-in.
+	it('omits the Nightly (a11y) column unless a page asks for it', () => {
+		expect(
+			buildComparisonTable([], [], { supportsSafari: true }).valueColumns.map((c) => c.key)
+		).not.toContain('firefox-a11y');
+
+		const table = buildComparisonTable(
+			[
+				measurement({ test: 'score', suite: 'nav-bench-overall', value: 100, date: at(1) }),
+				measurement({ test: 'score', suite: 'nav-bench-a11y-overall', value: 90, date: at(1) })
+			],
+			['score'],
+			{ supportsSafari: false, browsers: ['firefox', 'firefox-nar', 'firefox-a11y'] }
+		);
+
+		expect(table.valueColumns.map((c) => c.key)).toEqual([
+			'firefox',
+			'firefox-nar',
+			'firefox-a11y'
+		]);
+		expect(table.rows[0].values.firefox.average).toBe(100);
+		expect(table.rows[0].values['firefox-a11y'].average).toBe(90);
+	});
+
 	it('averages Safari over its current platform only', () => {
 		const safariPlatform = 'macosx2700-aarch64-shippable';
 		const table = buildComparisonTable(
