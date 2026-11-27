@@ -103,6 +103,8 @@ for (const { path, label, submenu } of [
 	{ path: '/speedometer-experimental.html', label: 'Experimental', submenu: 'Job Debug' },
 	{ path: '/android.html', label: 'Android', submenu: 'Job Debug' },
 	{ path: '/android_job_debug.html', label: 'Job Debug', submenu: 'Job Debug' },
+	{ path: '/navbench.html', label: 'Navigation Benchmark', submenu: 'Accessibility' },
+	{ path: '/navbench_a11y.html', label: 'Accessibility', submenu: 'Accessibility' },
 	{ path: '/ml.html', label: 'ML', submenu: 'Runtime Engines' },
 	{ path: '/ml-engine.html', label: 'Runtime Engines', submenu: 'Runtime Engines' }
 ]) {

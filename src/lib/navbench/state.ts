@@ -79,3 +79,28 @@ export function openReplicateIndex(state: NavBenchState, count: number): number 
 	const index = Number(state.replicate);
 	return Number.isInteger(index) && index >= 0 && index < count ? index : 0;
 }
+
+/**
+ * URL state for the accessibility comparison page: a platform, a test to chart
+ * and a range. A month by default rather than three: the accessibility variant
+ * only started running in November 2026, so a longer default is mostly empty.
+ */
+export const navBenchA11ySchema = {
+	os: str(DEFAULT_PLATFORM, PLATFORM_KEYS),
+	test: str(OVERALL_TEST),
+	range: rangeField(30)
+};
+
+export interface NavBenchA11yState {
+	os: string;
+	test: string;
+	range: number;
+}
+
+export function parseNavBenchA11yState(url: ReadonlyURL): NavBenchA11yState {
+	return parseState(navBenchA11ySchema, normalizePageParams(url)) as NavBenchA11yState;
+}
+
+export function navBenchA11yHref(url: ReadonlyURL, patch: Partial<NavBenchA11yState>): string {
+	return patchUrl(navBenchA11ySchema, normalizePageParams(url), patch);
+}

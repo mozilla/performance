@@ -64,6 +64,12 @@ const ROUTES: RouteCase[] = [
 		evidence: (page) => rows(page, 1)
 	},
 	{
+		name: 'Navigation Benchmark Accessibility',
+		path: '/navbench_a11y',
+		heading: /with accessibility on, by site/,
+		evidence: (page) => rows(page, 1)
+	},
+	{
 		name: 'Networking',
 		path: '/networking',
 		heading: /Firefox Networking/,

@@ -30,7 +30,13 @@ export const NAV: NavItem[] = [
 
 		children: [{ label: 'Job Debug', href: '/android_job_debug', icon: 'fa-solid fa-arrow-right' }]
 	},
-	{ label: 'Navigation Benchmark', href: '/navbench', icon: 'fa-solid fa-compass' },
+	{
+		label: 'Navigation Benchmark',
+		href: '/navbench',
+		icon: 'fa-solid fa-compass',
+
+		children: [{ label: 'Accessibility', href: '/navbench_a11y', icon: 'fa-solid fa-arrow-right' }]
+	},
 	{ label: 'Networking', href: '/networking', icon: 'fa-solid fa-network-wired' },
 	{ label: 'Memory', href: '/memory', icon: 'fa-solid fa-memory' },
 	{

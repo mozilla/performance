@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { annotationsWithinDays } from '#lib/annotations.js';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import Chart from '#lib/components/Chart.svelte';
 	import ComparisonTable from '#lib/components/ComparisonTable.svelte';
@@ -239,6 +240,7 @@
 				target="_blank"
 				rel="noreferrer">Meta bug 2057233</a
 			>
+			<a href="{resolve('/navbench_a11y')}?os={view.os}">Accessibility on vs off</a>
 		</p>
 	</div>
 
