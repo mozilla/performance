@@ -109,6 +109,13 @@ function signaturesFor(framework: number, platform: string): SignatureSpec[] {
 					{ id: next(), suite, test: 'powerUsage_gpu', application, measurement_unit: 'uWh' }
 				);
 			}
+			// Speedometer 3 Accessibility: the tests it shares with Speedometer 3
+			// above, which its page pairs them with. Safari does not run it.
+			if (!application.startsWith('safari')) {
+				for (const test of ['score', 'TodoMVC-Vue/total']) {
+					out.push({ id: next(), suite: 'speedometer3-a11y', test, application });
+				}
+			}
 		}
 
 		// Nav Bench: Firefox only, autoland only, one overall plus two sites, for

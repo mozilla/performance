@@ -18,9 +18,20 @@
 		dir: SortDirection;
 		/** Link that applies the sort a click on `column` would produce. */
 		sortHref(column: string, direction: SortDirection): string;
+		valueHeading?: string;
+		diffHeading?: string;
 	}
 
-	let { table, selected, href, sort, dir, sortHref }: Props = $props();
+	let {
+		table,
+		selected,
+		href,
+		sort,
+		dir,
+		sortHref,
+		valueHeading = 'Value',
+		diffHeading = 'Difference vs Nightly'
+	}: Props = $props();
 
 	const rows = $derived(sortComparisonRows(table.rows, sort, dir));
 
@@ -50,11 +61,13 @@
 						>
 					</a>
 				</th>
-				<th colspan={table.valueColumns.length} scope="colgroup">Value<br />7 day average</th>
+				<th colspan={table.valueColumns.length} scope="colgroup"
+					>{valueHeading}<br />7 day average</th
+				>
 				<!-- Firefox-only pages have nothing to compare against, and a group
 				     header spanning zero columns renders as a stray empty cell. -->
 				{#if table.diffColumns.length > 0}
-					<th colspan={table.diffColumns.length} scope="colgroup">Difference vs Nightly</th>
+					<th colspan={table.diffColumns.length} scope="colgroup">{diffHeading}</th>
 				{/if}
 			</tr>
 			<tr class="browser-row">

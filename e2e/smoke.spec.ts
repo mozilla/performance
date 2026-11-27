@@ -58,6 +58,16 @@ const ROUTES: RouteCase[] = [
 		}
 	},
 	{
+		name: 'Speedometer 3 Accessibility',
+		path: '/speedometer-a11y',
+		heading: /Accessibility slowdown: Overall Score/,
+		// The overall and the workload, each paired with its Speedometer 3 run.
+		evidence: async (page) => {
+			await rows(page, 2);
+			await expect(page.locator('tbody')).toContainText(' pp');
+		}
+	},
+	{
 		name: 'Navigation Benchmark',
 		path: '/navbench',
 		heading: /Navigation Benchmark/,

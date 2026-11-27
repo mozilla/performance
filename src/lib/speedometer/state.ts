@@ -13,6 +13,7 @@ export interface SchemaDefaults {
 	/** The test charted when the URL names none. */
 	test: string;
 	repository: Repository;
+	repositories?: readonly Repository[];
 }
 
 export function speedometerSchemaFor(defaults: SchemaDefaults) {
@@ -20,7 +21,7 @@ export function speedometerSchemaFor(defaults: SchemaDefaults) {
 		os: str(defaults.os, defaults.platformKeys),
 		subtest: str(defaults.test),
 		range: rangeField(),
-		repository: str(defaults.repository, REPOSITORIES),
+		repository: str(defaults.repository, defaults.repositories ?? REPOSITORIES),
 		replicates: bool(false),
 
 		alerts: bool(false),

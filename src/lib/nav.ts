@@ -19,7 +19,8 @@ export const NAV: NavItem[] = [
 
 		children: [
 			{ label: 'Job Debug', href: '/speedometer_job_debug', icon: 'fa-solid fa-arrow-right' },
-			{ label: 'Experimental', href: '/speedometer-experimental', icon: 'fa-solid fa-arrow-right' }
+			{ label: 'Experimental', href: '/speedometer-experimental', icon: 'fa-solid fa-arrow-right' },
+			{ label: 'Accessibility', href: '/speedometer-a11y', icon: 'fa-solid fa-arrow-right' }
 		]
 	},
 	{ label: 'JetStream', href: '/jetstream', icon: 'fa-solid fa-wind' },

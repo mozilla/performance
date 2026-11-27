@@ -3,8 +3,9 @@
 # crawlers off those pages, and off every URL-parameter variant, so indexing
 # the site does not turn into load on Treeherder.
 #
-# `/speedometer` also covers `/speedometer_job_debug` and
-# `/speedometer-experimental`, since rules match by prefix.
+# `/speedometer` also covers `/speedometer_job_debug`,
+# `/speedometer-experimental` and `/speedometer-a11y`, since rules match by
+# prefix.
 
 User-agent: *
 Disallow: /speedometer

@@ -177,6 +177,8 @@ export interface ChartHandlers {
 	onLegendClick?(label: string): void;
 	/** Extra tooltip line, e.g. Android's "Click to play the replicate videos". */
 	tooltipFooter?(): string | undefined;
+	/** Replaces a point's tooltip line. Undefined keeps the default. */
+	tooltipLabel?(point: ChartPoint, series: string): string | undefined;
 }
 
 export function buildChartOptions(
@@ -242,6 +244,8 @@ export function buildChartOptions(
 					},
 					label: (item) => {
 						const point = item.raw as ChartPoint;
+						const custom = handlers.tooltipLabel?.(point, item.dataset.label ?? '');
+						if (custom !== undefined) return custom;
 						const revision = point.revision ? ` (${point.revision.slice(0, 6)})` : '';
 						let label = `${item.dataset.label}: ${round(point.y, 2)}${revision}`;
 
