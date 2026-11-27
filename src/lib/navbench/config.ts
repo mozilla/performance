@@ -3,6 +3,17 @@ import { FRAMEWORK } from '#lib/api/treeherder.js';
 import { PLATFORMS, type PlatformConfig } from '#lib/speedometer/config.js';
 
 export const NAVBENCH_SUITE = 'nav-bench-overall';
+
+/**
+ * The same benchmark with the accessibility service enabled at startup
+ * (nav-bench-a11y, and nav-bench-m-a11y on Android; bug 2093693). Its own
+ * suite name since bug 2098176, so its scores are a separate series with the
+ * same test names as the plain run's.
+ */
+export const NAVBENCH_A11Y_SUITE = 'nav-bench-a11y-overall';
+
+/** Every suite this page charts. */
+export const NAVBENCH_SUITES: readonly string[] = [NAVBENCH_SUITE, NAVBENCH_A11Y_SUITE];
 export const NAVBENCH_FRAMEWORK = FRAMEWORK.browsertime;
 
 export const NAVBENCH_REPOSITORY = 'autoland' as const;

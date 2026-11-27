@@ -111,11 +111,15 @@ function signaturesFor(framework: number, platform: string): SignatureSpec[] {
 			}
 		}
 
-		// Nav Bench: Firefox only, autoland only, one overall plus two sites.
+		// Nav Bench: Firefox only, autoland only, one overall plus two sites, for
+		// both the plain run and the accessibility-enabled one.
 		if (!android) {
-			out.push({ id: next(), suite: 'nav-bench-overall', application: 'firefox' });
-			for (const test of ['amazon-nav-load-score', 'bbc-nav-subnav-score']) {
-				out.push({ id: next(), suite: 'nav-bench-overall', test, application: 'firefox' });
+			let navBenchId = NAVBENCH_ID_BASE;
+			for (const suite of ['nav-bench-overall', 'nav-bench-a11y-overall']) {
+				out.push({ id: ++navBenchId, suite, application: 'firefox' });
+				for (const test of ['amazon-nav-load-score', 'bbc-nav-subnav-score']) {
+					out.push({ id: ++navBenchId, suite, test, application: 'firefox' });
+				}
 			}
 		}
 
@@ -178,6 +182,13 @@ function machineCount(days: number): number {
 	return 4;
 }
 
+/**
+ * Nav Bench signature ids start here. Its plain and accessibility-enabled runs
+ * share pushes, as they do on autoland, so the accessibility page has pairs to
+ * compare; every other series keeps revisions of its own.
+ */
+const NAVBENCH_ID_BASE = 9000;
+
 /** One series: daily points with a mild upward trend. */
 function seriesResponse(signatureId: number, days: number) {
 	const count = Math.min(days, 120);
@@ -191,7 +202,9 @@ function seriesResponse(signatureId: number, days: number) {
 			value: 100 + (signatureId % 40) + noise(signatureId + i) * 8 + i * 0.05,
 			push_timestamp: new Date(at).toISOString().replace('Z', ''),
 			push_id: 2_000_000 + i,
-			revision: `${signatureId}`.padStart(6, '0') + `${i}`.padStart(34, 'a'),
+			revision:
+				(signatureId > NAVBENCH_ID_BASE ? 'navben' : `${signatureId}`.padStart(6, '0')) +
+				`${i}`.padStart(34, 'a'),
 			machine_name: `stub-worker-${String(i % machines).padStart(3, '0')}`
 		};
 	});

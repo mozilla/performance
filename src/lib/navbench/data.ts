@@ -16,7 +16,7 @@ import { loadMeasurements } from '#lib/speedometer/data.js';
 import {
 	NAVBENCH_FRAMEWORK,
 	NAVBENCH_REPOSITORY,
-	NAVBENCH_SUITE,
+	NAVBENCH_SUITES,
 	OVERALL_TEST,
 	platformByKey,
 	testKey
@@ -26,8 +26,9 @@ import {
 export const TABLE_WINDOW_DAYS = 30;
 
 /**
- * Every nav-bench signature on a platform, both Firefox and Nightly-as-Release.
- * On Android the application is Fenix rather than Firefox.
+ * Every nav-bench signature on a platform: Firefox, Nightly-as-Release and the
+ * accessibility-enabled variant. On Android the application is Fenix rather
+ * than Firefox.
  */
 export async function loadNavBenchSignatures(
 	platformKey: string,
@@ -52,7 +53,7 @@ export async function loadNavBenchSignatures(
 		.flat()
 		.filter(
 			(sig) =>
-				sig.suite === NAVBENCH_SUITE &&
+				NAVBENCH_SUITES.includes(sig.suite) &&
 				(sig.application === 'firefox' || sig.application === 'fenix')
 		);
 
